@@ -7,31 +7,57 @@
 </head>
 <body>
     <?php include 'includes/header.php'; ?>
+    <?php include 'db.php'; ?>
 
     <h2>Listado de Empresas</h2>
 
     <div class="empresas-grid">
-        <div class="empresa-card">
-            <h3>Tienda ABC</h3>
-            <p><strong>Rubro:</strong> Comercio</p>
-            <p><strong>Teléfono:</strong> 999111222</p>
-            <p><strong>Dirección:</strong> Av. Principal 123</p>
-        </div>
+        <?php
+        if (!empty($_GET['id_empresa'])) {
+            $id = intval($_GET['id_empresa']);
+            $sql = "SELECT e.nombre, e.telefono, e.direccion, c.nombre AS categoria
+                    FROM empresas e
+                    JOIN categorias c ON e.id_categoria = c.id_categoria
+                    WHERE e.id_empresa = $id";
+            $resultado = $conexion->query($sql);
 
-        <div class="empresa-card">
-            <h3>Restaurante El Sabor</h3>
-            <p><strong>Rubro:</strong> Gastronomía</p>
-            <p><strong>Teléfono:</strong> 988222333</p>
-            <p><strong>Dirección:</strong> Jr. Central 456</p>
-        </div>
+            if ($resultado->num_rows > 0) {
+                $fila = $resultado->fetch_assoc();
+                echo "<div class='empresa-card'>
+                        <h3>{$fila['nombre']}</h3>
+                        <p><strong>Rubro:</strong> {$fila['categoria']}</p>
+                        <p><strong>Teléfono:</strong> {$fila['telefono']}</p>
+                        <p><strong>Dirección:</strong> {$fila['direccion']}</p>
+                      </div>";
+            } else {
+                echo "<p>No se encontró la empresa</p>";
+            }
 
-        <div class="empresa-card">
-            <h3>Servicios Rápidos</h3>
-            <p><strong>Rubro:</strong> Servicios</p>
-            <p><strong>Teléfono:</strong> 977444555</p>
-            <p><strong>Dirección:</strong> Calle Norte 789</p>
-        </div>
+        } else {
+            $id_categoria = $_GET['id_categoria'] ?? null;
+
+            $sql = "SELECT e.nombre, e.telefono, e.direccion, c.nombre AS categoria
+                    FROM empresas e
+                    JOIN categorias c ON e.id_categoria = c.id_categoria";
+
+            if ($id_categoria) {
+                $sql .= " WHERE e.id_categoria = " . intval($id_categoria);
+            }
+
+            $resultado = $conexion->query($sql);
+
+            while($fila = $resultado->fetch_assoc()) {
+                echo "<div class='empresa-card'>
+                        <h3>{$fila['nombre']}</h3>
+                        <p><strong>Rubro:</strong> {$fila['categoria']}</p>
+                        <p><strong>Teléfono:</strong> {$fila['telefono']}</p>
+                        <p><strong>Dirección:</strong> {$fila['direccion']}</p>
+                      </div>";
+            }
+        }
+        ?>
     </div>
+
 
     <?php include 'includes/footer.php'; ?>
 </body>

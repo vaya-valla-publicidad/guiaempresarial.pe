@@ -21,16 +21,32 @@
         </p>
     </section>
 
-    <section>
+   <section>
         <h2>Buscar Empresas</h2>
-        <form method="GET" action="empresas.php">
-            <input type="text" name="buscar" placeholder="Buscar empresa...">
-            <button type="submit">Buscar</button>
+        <form onsubmit="return false;">
+            <input type="text" id="buscar" name="buscar" placeholder="Buscar empresa...">
+            <button type="button">Buscar</button>
         </form>
+        <div id="resultados"></div>
 
         <p><a href="empresas.php">Ver todas las empresas</a></p>
     </section>
+    <script>
+    document.getElementById('buscar').addEventListener('keyup', function() {
+        let query = this.value;
+        let resultadosDiv = document.getElementById('resultados');
 
+        if (query.length > 0) {
+            fetch('buscar.php?q=' + encodeURIComponent(query))
+                .then(response => response.text())
+                .then(data => {
+                    resultadosDiv.innerHTML = data;
+                });
+        } else {
+            resultadosDiv.innerHTML = "";
+        }
+    });
+    </script>
     <?php include 'includes/footer.php'; ?>
 </body>
 </html>
