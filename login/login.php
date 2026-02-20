@@ -4,8 +4,24 @@ include '../db.php';
 
 $error = "";
 
-if (isset($_POST['usu'], $_POST['pass'])) {
-    $usu = $_POST['usu'];
+$max_intentos = 3;        
+$bloqueo_minutos = 5;     
+
+if (!isset($_SESSION['intentos'])) {
+    $_SESSION['intentos'] = 0;
+    $_SESSION['ultimo_intento'] = 0;
+}
+
+$tiempo_actual = time();
+$tiempo_bloqueo = $_SESSION['ultimo_intento'] + ($bloqueo_minutos * 60);
+
+if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) {
+    $restante = $tiempo_bloqueo - $tiempo_actual;
+    $minutos = floor($restante / 60);
+    $segundos = $restante % 60;
+    $error = "Demasiados intentos fallidos. Intenta de nuevo en {$minutos} min {$segundos} seg.";
+} elseif (isset($_POST['usu'], $_POST['pass'])) {
+    $usu = trim($_POST['usu']);
     $pass = $_POST['pass'];
 
     $stmt = $conexion->prepare("SELECT id_usuario, nombre, contraseña_hash, rol FROM usuarios WHERE nombre = ?");
@@ -20,18 +36,27 @@ if (isset($_POST['usu'], $_POST['pass'])) {
             $_SESSION['usuario'] = $fila['nombre'];
             $_SESSION['rol'] = $fila['rol'];
 
+           
+            $_SESSION['intentos'] = 0;
+            $_SESSION['ultimo_intento'] = 0;
+
+            
             if ($fila['rol'] === 'admin') {
                 header("Location: admin.php");
-            } elseif ($fila['rol'] === 'editor') {
-                header("Location: editor.php");
             } else {
-                header("Location: ../index.php"); 
+                header("Location: editor.php");
             }
             exit;
         } else {
+            
+            $_SESSION['intentos']++;
+            $_SESSION['ultimo_intento'] = time();
             $error = "Contraseña incorrecta.";
         }
     } else {
+        
+        $_SESSION['intentos']++;
+        $_SESSION['ultimo_intento'] = time();
         $error = "Usuario no encontrado.";
     }
 }
@@ -54,6 +79,7 @@ if (isset($_POST['usu'], $_POST['pass'])) {
             <p class="login-error"><?= htmlspecialchars($error) ?></p>
         <?php endif; ?>
 
+        <?php if (!($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo)): ?>
         <form action="" method="post" class="login-form">
             <div class="form-group">
                 <label for="usu">Usuario</label>
@@ -67,6 +93,7 @@ if (isset($_POST['usu'], $_POST['pass'])) {
 
             <button type="submit" class="login-btn">Ingresar</button>
         </form>
+        <?php endif; ?>
     </section>
 </div>
 

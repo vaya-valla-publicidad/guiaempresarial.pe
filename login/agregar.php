@@ -1,32 +1,39 @@
 <?php
-session_start();
+include 'proteger.php';   
 include '../db.php';
 
-// Solo admin puede acceder
-if (!isset($_SESSION['rol']) || $_SESSION['rol'] !== 'admin') {
-    header("Location: login.php");
+$error = "";
+$success = "";
+
+if (!in_array($_SESSION['rol'], ['admin', 'editor'])) {
+    header("Location: ../login/login.php");
     exit;
 }
 
-$error = "";
-$exito = "";
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
-if (isset($_POST['nombre'], $_POST['pass'], $_POST['rol'])) {
     $nombre = trim($_POST['nombre']);
     $pass = $_POST['pass'];
-    $rol = $_POST['rol'];
+    $rol_usuario = $_POST['rol'];
 
-    // Hashear la contraseña
-    $hash = password_hash($pass, PASSWORD_DEFAULT);
+    if (!empty($nombre) && !empty($pass) && !empty($rol_usuario)) {
 
-    // Preparar la consulta (sin email)
-    $stmt = $conexion->prepare("INSERT INTO usuarios (nombre, contraseña_hash, rol) VALUES (?, ?, ?)");
-    $stmt->bind_param("sss", $nombre, $hash, $rol);
+        $hash = password_hash($pass, PASSWORD_DEFAULT);
 
-    if ($stmt->execute()) {
-        $exito = "Usuario agregado correctamente.";
+        $stmt = $conexion->prepare(
+            "INSERT INTO usuarios (nombre, contraseña_hash, rol) VALUES (?, ?, ?)"
+        );
+        $stmt->bind_param("sss", $nombre, $hash, $rol_usuario);
+
+        if (!$stmt->execute()) {
+            $error = "Error al agregar usuario. Puede que el nombre ya exista.";
+        } else {
+            $success = "Usuario agregado correctamente ✅";
+        }
+
+        $stmt->close();
     } else {
-        $error = "Error al agregar usuario. Revisa que no exista otro con el mismo nombre.";
+        $error = "Todos los campos son obligatorios.";
     }
 }
 ?>
@@ -34,38 +41,43 @@ if (isset($_POST['nombre'], $_POST['pass'], $_POST['rol'])) {
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Agregar Usuario</title>
-    <link rel="stylesheet" href="../assets/css/login.css">
+<meta charset="UTF-8">
+<title>Agregar Usuario</title>
+<link rel="stylesheet" href="../assets/css/login.css">
 </head>
 <body>
-<section class="login-section">
-    <h1>Agregar Usuario</h1>
 
-    <?php if ($error): ?>
+<section class="panel">
+    <h2>Agregar Usuario</h2>
+
+    <?php if($error): ?>
         <p style="color:red;"><?= htmlspecialchars($error) ?></p>
     <?php endif; ?>
-    <?php if ($exito): ?>
-        <p style="color:green;"><?= htmlspecialchars($exito) ?></p>
+
+    <?php if($success): ?>
+        <p style="color:green;"><?= htmlspecialchars($success) ?></p>
     <?php endif; ?>
 
-    <form action="" method="post">
-        <label for="nombre">Nombre</label>
-        <input type="text" name="nombre" id="nombre" required>
+    <form method="post">
 
-        <label for="pass">Contraseña</label>
-        <input type="password" name="pass" id="pass" required>
+        <label>Nombre</label>
+        <input type="text" name="nombre" required>
 
-        <label for="rol">Rol</label>
-        <select name="rol" id="rol" required>
+        <label>Contraseña</label>
+        <input type="password" name="pass" required>
+
+        <label>Rol</label>
+        <select name="rol" required>
             <option value="admin">Admin</option>
             <option value="editor">Editor</option>
         </select>
 
-        <button type="submit">Agregar Usuario</button>
+        <button type="submit" class="btn">Agregar Usuario</button>
     </form>
 
-    <p><a href="admin.php">Volver al panel de Admin</a></p>
+    <br>
+    <a href="admin.php" class="btn btn-danger">Volver al Panel</a>
 </section>
+
 </body>
 </html>

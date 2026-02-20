@@ -1,12 +1,6 @@
 <?php
-session_start();
+include 'proteger.php';
 include '../db.php';
-
-// 🔐 Seguridad
-if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['admin', 'editor'])) {
-    header("Location: login.php");
-    exit;
-}
 
 $error = "";
 $success = "";

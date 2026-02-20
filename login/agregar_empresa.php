@@ -1,17 +1,10 @@
 <?php
-session_start();
+include 'proteger.php';
 include '../db.php';
-
-// 🔐 Verificación correcta (estás dentro de login/)
-if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['admin', 'editor'])) {
-    header("Location: login.php");
-    exit;
-}
 
 $error = "";
 $success = "";
 
-// ✅ Procesar formulario
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     $nombre = trim($_POST['nombre']);
@@ -35,7 +28,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $stmt->close();
 }
 
-// ✅ Obtener categorías
 $categorias = $conexion->query("SELECT id_categoria, nombre FROM categorias");
 ?>
 

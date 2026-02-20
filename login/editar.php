@@ -1,12 +1,6 @@
 <?php
-session_start();
+include 'proteger.php';
 include '../db.php';
-
-// 🔐 Seguridad
-if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['admin', 'editor'])) {
-    header("Location: login.php");
-    exit;
-}
 
 if (!isset($_GET['id'])) {
     header("Location: admin.php");
@@ -18,7 +12,6 @@ $id = intval($_GET['id']);
 $error = "";
 $success = "";
 
-// Obtener datos actuales
 $stmt = $conexion->prepare("SELECT * FROM empresas WHERE id_empresa = ?");
 $stmt->bind_param("i", $id);
 $stmt->execute();
@@ -31,7 +24,6 @@ if ($resultado->num_rows === 0) {
 $empresa = $resultado->fetch_assoc();
 $stmt->close();
 
-// Actualizar
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     $nombre = trim($_POST['nombre']);

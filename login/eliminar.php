@@ -2,9 +2,8 @@
 session_start();
 include '../db.php';
 
-// 🔐 Seguridad
 if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['admin', 'editor'])) {
-    header("Location: login.php");
+    header("Location: ../login/login.php");
     exit;
 }
 
