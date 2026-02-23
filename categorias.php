@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Categorías</title>
     <link rel="stylesheet" href="assets/css/style.css">
+     <meta charset="UTF-8">
+    <title>Guia Empresarial</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="icon" href="assets/img/image.png" type="image/png">
 </head>
 <body>
     <?php include 'includes/header.php'; ?>

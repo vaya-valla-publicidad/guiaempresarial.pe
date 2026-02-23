@@ -16,7 +16,7 @@
             <a href="sobre.php" style="color:#FFD700; text-decoration:none; margin:0 10px;">
                 Sobre Nosotros
             </a>
-            <a href="">📞 987 226 299 </a>
+            <a href="https://wa.me/51987226299" target="_blank">📞 987 226 299</a>
         </p>
     </div>
 </footer>

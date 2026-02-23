@@ -1,5 +1,5 @@
+<?php require_once __DIR__ . '/proteger.php'; ?>
 <?php
-include 'proteger.php';   
 include '../db.php';
 
 $rol = $_SESSION['rol'];

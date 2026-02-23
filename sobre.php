@@ -2,7 +2,9 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Sobre Nosotros</title>
+    <title>Guia Empresarial</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="icon" href="assets/img/image.png" type="image/png">
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>

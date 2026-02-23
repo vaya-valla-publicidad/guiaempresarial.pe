@@ -1,5 +1,18 @@
 <?php
-session_start();
+//http://localhost/clon/guiaempresarial.pe/login/login.php?acceso=admin2026 //
+//este es el enlace para poder ingresar al login, 
+//como yo uso una carpeta clon, creo que solo de deberia quitar eso //
+$clave_acceso = "admin2026";
+
+if (!isset($_GET['acceso']) || $_GET['acceso'] !== $clave_acceso) {
+    header("Location: /clon/guiaempresarial.pe/index.php");
+    exit();
+}
+?>
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 include '../db.php'; 
 
 $error = "";
