@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 23-02-2026 a las 18:02:54
+-- Tiempo de generación: 25-02-2026 a las 19:03:22
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -54,18 +54,24 @@ CREATE TABLE `empresas` (
   `telefono` varchar(20) DEFAULT NULL,
   `direccion` varchar(200) DEFAULT NULL,
   `id_categoria` int(11) DEFAULT NULL,
-  `fecha_registro` timestamp NOT NULL DEFAULT current_timestamp()
+  `fecha_registro` timestamp NOT NULL DEFAULT current_timestamp(),
+  `horario` varchar(100) DEFAULT NULL,
+  `descripcion` text DEFAULT NULL,
+  `latitud` decimal(10,8) DEFAULT NULL,
+  `longitud` decimal(11,8) DEFAULT NULL,
+  `link_empresa` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Volcado de datos para la tabla `empresas`
 --
 
-INSERT INTO `empresas` (`id_empresa`, `nombre`, `email`, `telefono`, `direccion`, `id_categoria`, `fecha_registro`) VALUES
-(3, 'Tech Solutions Perú', 'info@techsolutions.pe', '912345678', 'Av. Innovación 321, Huacho', 1, '2026-02-18 16:29:03'),
-(6, 'Restaurante El Sabor', 'contacto@elsabor.com', '988222333', 'Jr. Central 456, Huacho', 2, '2026-02-18 16:32:21'),
-(7, 'InnovaTech S.A.', 'contacto@innovatech.com', '987111222', 'Av. Tecnología 100, Lima', 1, '2026-02-19 14:47:46'),
-(9, 'GlobalSoft Corp.', 'info@globalsoft.mx', '987555666', 'Av. Digital 300, Ciudad de México', 1, '2026-02-19 14:47:46');
+INSERT INTO `empresas` (`id_empresa`, `nombre`, `email`, `telefono`, `direccion`, `id_categoria`, `fecha_registro`, `horario`, `descripcion`, `latitud`, `longitud`, `link_empresa`) VALUES
+(3, 'Tech Solutions Perú', 'info@techsolutions.pe', '912345678', 'Av. Innovación 321, Huacho', 1, '2026-02-18 16:29:03', NULL, NULL, NULL, NULL, NULL),
+(6, 'Restaurante El Sabor', 'contacto@elsabor.com', '988222333', 'Jr. Central 456, Huacho', 2, '2026-02-18 16:32:21', NULL, NULL, NULL, NULL, NULL),
+(7, 'InnovaTech S.A.', 'contacto@innovatech.com', '987111222', 'Av. Tecnología 100, Lima', 1, '2026-02-19 14:47:46', NULL, NULL, NULL, NULL, NULL),
+(9, 'GlobalSoft Corp.', 'info@globalsoft.mx', '987555666', 'Av. Digital 300, Ciudad de México', 1, '2026-02-19 14:47:46', NULL, NULL, NULL, NULL, NULL),
+(11, 'TechSoluciones Perú', NULL, '987226299', 'Av. Javier Prado Este 1234, San Isidro, Lima', 1, '2026-02-24 17:03:08', 'Lunes a Viernes 09:00 - 18:00 / Sábados 09:00 - 13:00', 'Soporte técnico empresarial, desarrollo web y mantenimiento de equipos informáticos.', -12.09750000, -77.03650000, 'https://techsoluciones.pe');
 
 -- --------------------------------------------------------
 
@@ -130,7 +136,7 @@ ALTER TABLE `categorias`
 -- AUTO_INCREMENT de la tabla `empresas`
 --
 ALTER TABLE `empresas`
-  MODIFY `id_empresa` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id_empresa` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT de la tabla `usuarios`

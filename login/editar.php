@@ -1,6 +1,5 @@
 <?php require_once __DIR__ . '/proteger.php'; ?>
 <?php
-include 'proteger.php';
 include '../db.php';
 
 if (!isset($_GET['id'])) {
@@ -32,18 +31,51 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $direccion = trim($_POST['direccion']);
     $id_categoria = intval($_POST['id_categoria']);
 
+    $descripcion = trim($_POST['descripcion']) ?: null;
+    $horario = trim($_POST['horario']) ?: null;
+    $latitud = trim($_POST['latitud']) ?: null;
+    $longitud = trim($_POST['longitud']) ?: null;
+    $link_empresa = trim($_POST['link_empresa']) ?: null;
+
     $stmt = $conexion->prepare(
-        "UPDATE empresas 
-         SET nombre=?, telefono=?, direccion=?, id_categoria=? 
-         WHERE id_empresa=?"
+        "UPDATE empresas SET 
+            nombre=?, 
+            telefono=?, 
+            direccion=?, 
+            id_categoria=?, 
+            descripcion=?, 
+            horario=?, 
+            latitud=?, 
+            longitud=?, 
+            link_empresa=? 
+        WHERE id_empresa=?"
     );
 
-    $stmt->bind_param("sssii", $nombre, $telefono, $direccion, $id_categoria, $id);
+    $stmt->bind_param(
+        "sssissddsi",
+        $nombre,
+        $telefono,
+        $direccion,
+        $id_categoria,
+        $descripcion,
+        $horario,
+        $latitud,
+        $longitud,
+        $link_empresa,
+        $id
+    );
 
     if (!$stmt->execute()) {
         $error = "Error: " . $stmt->error;
     } else {
         $success = "Empresa actualizada correctamente ✅";
+
+        // recargar datos actualizados
+        $stmt2 = $conexion->prepare("SELECT * FROM empresas WHERE id_empresa = ?");
+        $stmt2->bind_param("i", $id);
+        $stmt2->execute();
+        $empresa = $stmt2->get_result()->fetch_assoc();
+        $stmt2->close();
     }
 
     $stmt->close();
@@ -75,15 +107,15 @@ $categorias = $conexion->query("SELECT id_categoria, nombre FROM categorias");
     <form method="post">
 
         <label>Nombre</label>
-        <input type="text" name="nombre" 
+        <input type="text" name="nombre"
                value="<?= htmlspecialchars($empresa['nombre']) ?>" required>
 
         <label>Teléfono</label>
-        <input type="text" name="telefono" 
+        <input type="text" name="telefono"
                value="<?= htmlspecialchars($empresa['telefono']) ?>">
 
         <label>Dirección</label>
-        <input type="text" name="direccion" 
+        <input type="text" name="direccion"
                value="<?= htmlspecialchars($empresa['direccion']) ?>">
 
         <label>Categoría</label>
@@ -95,6 +127,25 @@ $categorias = $conexion->query("SELECT id_categoria, nombre FROM categorias");
                 </option>
             <?php endwhile; ?>
         </select>
+
+        <label>Descripción</label>
+        <textarea name="descripcion"><?= htmlspecialchars($empresa['descripcion']) ?></textarea>
+
+        <label>Horario de atención</label>
+        <input type="text" name="horario"
+               value="<?= htmlspecialchars($empresa['horario']) ?>">
+
+        <label>Latitud</label>
+        <input type="text" name="latitud"
+               value="<?= htmlspecialchars($empresa['latitud']) ?>">
+
+        <label>Longitud</label>
+        <input type="text" name="longitud"
+               value="<?= htmlspecialchars($empresa['longitud']) ?>">
+
+        <label>Enlace externo de la empresa</label>
+        <input type="url" name="link_empresa"
+               value="<?= htmlspecialchars($empresa['link_empresa']) ?>">
 
         <button type="submit" class="btn">Actualizar</button>
     </form>

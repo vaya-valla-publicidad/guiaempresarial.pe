@@ -201,3 +201,97 @@ footer a:hover {
     background: rgba(255,235,59,0.8);
     color: #0D47A1; 
 }
+.contacto-detalle {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+}
+
+.contacto-card.activo .contacto-detalle {
+    max-height: 500px;
+    margin-top: 10px;
+}
+
+.contacto-card {
+    cursor: pointer;
+}
+.contacto-card {
+    background: linear-gradient(135deg, #ffffff, #f5f5f5);
+    border-left: 6px solid #0D47A1;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 20px auto;
+    max-width: 750px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.contacto-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.25);
+}
+.contacto-card h3 {
+    color: #B71C1C;
+    text-align: center;
+    margin-bottom: 10px;
+    font-size: 22px;
+}
+.contacto-detalle {
+    background: rgba(13, 71, 161, 0.05);
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 10px;
+    border: 1px solid rgba(13, 71, 161, 0.2);
+}
+
+.contacto-detalle p {
+    margin: 6px 0;
+    font-weight: 500;
+}
+.whatsapp-btn {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 8px 14px;
+
+    background: #25D366 !important;
+    color: black !important;
+
+    border-radius: 5px;
+    border: 2px solid #25D366 !important;
+
+    font-weight: bold;
+    font-size: 13px;
+    text-decoration: none !important;
+
+    transition: all 0.25s ease;
+}
+
+.whatsapp-btn:hover {
+    background: #25D366 !important;
+    color: white !important;
+    transform: scale(1.04);
+}
+.contacto-detalle {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: all 0.4s ease;
+}
+
+.contacto-card.activo .contacto-detalle {
+    max-height: 500px;
+    opacity: 1;
+}
+.contacto-card::before {
+    content: "CONTACTO";
+    position: absolute;
+    top: -10px;
+    left: 15px;
+    background: #B71C1C;
+    color: #FFEB3B;
+    font-size: 12px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+}

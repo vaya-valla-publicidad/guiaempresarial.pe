@@ -12,12 +12,30 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $direccion = trim($_POST['direccion']);
     $id_categoria = intval($_POST['id_categoria']);
 
+    $descripcion = trim($_POST['descripcion']) ?: null;
+    $horario = trim($_POST['horario']) ?: null;
+    $latitud = trim($_POST['latitud']) ?: null;
+    $longitud = trim($_POST['longitud']) ?: null;
+    $link_empresa = trim($_POST['link_empresa']) ?: null;
+
     $stmt = $conexion->prepare(
-        "INSERT INTO empresas (nombre, telefono, direccion, id_categoria) 
-         VALUES (?, ?, ?, ?)"
+        "INSERT INTO empresas 
+        (nombre, telefono, direccion, id_categoria, descripcion, horario, latitud, longitud, link_empresa) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
     );
 
-    $stmt->bind_param("sssi", $nombre, $telefono, $direccion, $id_categoria);
+    $stmt->bind_param(
+        "sssissdds",
+        $nombre,
+        $telefono,
+        $direccion,
+        $id_categoria,
+        $descripcion,
+        $horario,
+        $latitud,
+        $longitud,
+        $link_empresa
+    );
 
     if (!$stmt->execute()) {
         $error = "Error SQL: " . $stmt->error;
@@ -70,6 +88,21 @@ $categorias = $conexion->query("SELECT id_categoria, nombre FROM categorias");
                 </option>
             <?php endwhile; ?>
         </select>
+
+        <label>Descripción</label>
+        <textarea name="descripcion"></textarea>
+
+        <label>Horario de atención</label>
+        <input type="text" name="horario">
+
+        <label>Latitud</label>
+        <input type="text" name="latitud" placeholder="-12.046374">
+
+        <label>Longitud</label>
+        <input type="text" name="longitud" placeholder="-77.042793">
+
+        <label>Enlace externo de la empresa</label>
+        <input type="url" name="link_empresa">
 
         <button type="submit" class="btn">Agregar Empresa</button>
     </form>
