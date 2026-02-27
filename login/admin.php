@@ -58,7 +58,7 @@ Eliminar
 <?php endwhile; ?>
 </table>
 <?php endif; ?>
-
+<br><br>
 <a href="../index.php" class="btn" style="margin-bottom:20px; display:inline-block;">
 Ver sitio principal
 </a>

@@ -15,11 +15,15 @@
 
     <section>
         <h2>Buscar Empresas</h2>
-        <form onsubmit="return false;">
-            <input type="text" id="buscar" name="buscar" placeholder="Buscar empresa...">
-            <button type="button">Buscar</button>
+
+        <form id="formBuscar">
+            <input type="text" id="buscar" name="buscar" placeholder="Buscar empresa..." autocomplete="off">
+
+            <!-- RESULTADOS ARRIBA DEL BOTÓN -->
+            <div id="resultados" class="empresas-grid"></div>
+
+            <button type="submit">Buscar</button>
         </form>
-        <div id="resultados" class="empresas-grid"></div>
 
         <p><a href="empresas.php">Ver todas las empresas</a></p>
     </section>
@@ -28,9 +32,12 @@
 <?php include 'includes/footer.php'; ?>
 
 <script>
-document.getElementById('buscar').addEventListener('keyup', function() {
-    let query = this.value;
-    let resultadosDiv = document.getElementById('resultados');
+const inputBuscar = document.getElementById('buscar');
+const resultadosDiv = document.getElementById('resultados');
+const formBuscar = document.getElementById('formBuscar');
+
+inputBuscar.addEventListener('keyup', function() {
+    let query = this.value.trim();
 
     if (query.length > 0) {
         fetch('buscar.php?q=' + encodeURIComponent(query))
@@ -40,6 +47,16 @@ document.getElementById('buscar').addEventListener('keyup', function() {
             });
     } else {
         resultadosDiv.innerHTML = "";
+    }
+});
+
+formBuscar.addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    let query = inputBuscar.value.trim();
+
+    if (query.length > 0) {
+        window.location.href = "empresas.php?buscar=" + encodeURIComponent(query);
     }
 });
 </script>
