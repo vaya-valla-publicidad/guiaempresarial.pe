@@ -1,6 +1,6 @@
 body {
     font-family: Arial, sans-serif;
-    background: #F5F2E9; /* color hueso */
+    background: #F5F2E9;
     margin: 0;
     min-height: 100vh;
 }
@@ -189,4 +189,97 @@ body {
     display: flex;
     justify-content: center;
     gap: 5px;
+}
+
+.panel form, 
+.panel .form-container {
+    background: #FAFAFA;
+    padding: 25px;
+    border-radius: 12px;
+    margin: 20px auto;
+    max-width: 700px;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.panel .form-group {
+    margin-bottom: 20px;
+}
+
+.panel form label {
+    font-weight: bold;
+    color: #003f8a;
+}
+
+.panel form input,
+.panel form select,
+.panel form textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid #003f8a;
+    font-size: 15px;
+    background: #fff;
+    transition: border 0.25s;
+}
+
+.panel form input:focus,
+.panel form select:focus,
+.panel form textarea:focus {
+    border-color: #FFD100;
+    outline: none;
+}
+
+.panel form textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.panel form .btn,
+.panel .btn-agregar, 
+.panel .btn-editar {
+    width: 200px;
+    align-self: center;
+    background: linear-gradient(90deg, #003f8a, #0056b3);
+    color: #FFD100;
+    font-weight: bold;
+    font-size: 15px;
+    padding: 12px 0;
+    border-radius: 8px;
+    border: 2px solid #003f8a;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: block;
+    margin: 15px auto;
+}
+
+.panel form .btn:hover,
+.panel .btn-agregar:hover, 
+.panel .btn-editar:hover {
+    background: linear-gradient(90deg, #0056b3, #003f8a);
+    color: #FFD100;
+    transform: scale(1.05);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+}
+
+.panel a.btn-danger {
+    display: inline-block;
+    text-align: center;
+    margin: 15px auto 0 auto;
+    padding: 10px 20px;
+    background: #e60023;
+    color: #FFD100;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.panel a.btn-danger:hover {
+    background: #003f8a;
+    color: #FFD100;
+    transform: scale(1.05);
 }

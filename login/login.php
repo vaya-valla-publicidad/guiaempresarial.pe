@@ -1,22 +1,18 @@
 <?php
-//http://localhost/clon/guiaempresarial.pe/login/login.php?acceso=admin2026 //
-//este es el enlace para poder ingresar al login, 
-//como yo uso una carpeta clon, creo que solo de deberia quitar eso //
+// Acceso especial al login
 $clave_acceso = "admin2026";
 
 if (!isset($_GET['acceso']) || $_GET['acceso'] !== $clave_acceso) {
     header("Location: /clon/guiaempresarial.pe/index.php");
     exit();
 }
-?>
-<?php
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 include '../db.php'; 
 
 $error = "";
-
 $max_intentos = 3;        
 $bloqueo_minutos = 5;     
 
@@ -49,25 +45,22 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) 
             $_SESSION['usuario'] = $fila['nombre'];
             $_SESSION['rol'] = $fila['rol'];
 
-           
             $_SESSION['intentos'] = 0;
             $_SESSION['ultimo_intento'] = 0;
 
-            
+            // Rutas absolutas dentro del proyecto
             if ($fila['rol'] === 'admin') {
-                header("Location: admin.php");
+                header("Location: /clon/guiaempresarial.pe/login/admin.php");
             } else {
-                header("Location: editor.php");
+                header("Location: /clon/guiaempresarial.pe/login/editor.php");
             }
-            exit;
+            exit();
         } else {
-            
             $_SESSION['intentos']++;
             $_SESSION['ultimo_intento'] = time();
             $error = "Contraseña incorrecta.";
         }
     } else {
-        
         $_SESSION['intentos']++;
         $_SESSION['ultimo_intento'] = time();
         $error = "Usuario no encontrado.";
@@ -83,7 +76,6 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) 
     <link rel="stylesheet" href="/clon/guiaempresarial.pe/assets/css/login.css">
 </head>
 <body>
-
 <div class="login-container">
     <section class="login-section">
         <h1 class="login-title">Inicio de sesión</h1>
@@ -109,6 +101,5 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) 
         <?php endif; ?>
     </section>
 </div>
-
 </body>
 </html>

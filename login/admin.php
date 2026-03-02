@@ -1,5 +1,5 @@
-<?php require_once __DIR__ . '/proteger.php'; ?>
 <?php
+require_once __DIR__ . '/proteger.php';
 include '../db.php';
 
 $rol = $_SESSION['rol'];
@@ -24,7 +24,10 @@ Bienvenido, <?= htmlspecialchars($_SESSION['usuario']) ?> |
 <a href="cerrar.php">Cerrar sesión</a>
 </div>
 
-<?php if ($rol === 'admin'): ?>
+<a href="/clon/guiaempresarial.pe/index.php" class="btn" style="margin-bottom:20px; display:inline-block;">
+Ver sitio principal
+</a>
+
 <h2>Administración de Usuarios</h2>
 <a href="agregar.php" class="btn">Agregar Usuarios</a>
 <br><br>
@@ -57,11 +60,6 @@ Eliminar
 
 <?php endwhile; ?>
 </table>
-<?php endif; ?>
-<br><br>
-<a href="../index.php" class="btn" style="margin-bottom:20px; display:inline-block;">
-Ver sitio principal
-</a>
 
 <h2>Empresas</h2>
 <a href="agregar_empresa.php" class="btn">Agregar Empresa</a>
@@ -106,27 +104,18 @@ while($fila = $res->fetch_assoc()):
 <td><?= htmlspecialchars($fila['telefono']) ?></td>
 <td><?= htmlspecialchars($fila['direccion']) ?></td>
 <td><?= htmlspecialchars($fila['categoria']) ?></td>
-
 <td><?= !empty($fila['horario']) ? htmlspecialchars($fila['horario']) : '—' ?></td>
-
 <td><?= !empty($fila['descripcion']) ? htmlspecialchars($fila['descripcion']) : '—' ?></td>
-
 <td>
 <?php if(!empty($fila['latitud']) && !empty($fila['longitud'])): ?>
 <?= $fila['latitud'] ?> , <?= $fila['longitud'] ?>
-<?php else: ?>
-—
-<?php endif; ?>
+<?php else: ?>—<?php endif; ?>
 </td>
-
 <td>
 <?php if(!empty($fila['link_empresa'])): ?>
 <a href="<?= htmlspecialchars($fila['link_empresa']) ?>" target="_blank">Ver</a>
-<?php else: ?>
-—
-<?php endif; ?>
+<?php else: ?>—<?php endif; ?>
 </td>
-
 <td class="acciones">
 <a href="editar.php?id=<?= $fila['id_empresa'] ?>" class="btn">Editar</a>
 <a href="eliminar.php?id=<?= $fila['id_empresa'] ?>" class="btn btn-danger"

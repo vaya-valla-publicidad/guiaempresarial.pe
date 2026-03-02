@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 25-02-2026 a las 19:03:22
+-- Tiempo de generación: 02-03-2026 a las 16:21:42
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -112,7 +112,8 @@ ALTER TABLE `categorias`
 --
 ALTER TABLE `empresas`
   ADD PRIMARY KEY (`id_empresa`),
-  ADD KEY `id_categoria` (`id_categoria`);
+  ADD KEY `id_categoria` (`id_categoria`),
+  ADD KEY `idx_empresa_nombre` (`nombre`);
 
 --
 -- Indices de la tabla `usuarios`
