@@ -1,35 +1,55 @@
 <?php include 'includes/header.php'; ?>
 
-<main>
-    <h1>Guía Empresarial</h1>
+<section class="hero">
+    <div class="hero-content">
+        <h1>Impulsando Negocios Locales</h1>
 
-    <section>
-        <h2>Bienvenido a Guía Empresarial</h2>
-        <p style="text-align:center; font-style:italic;">
-            Tu espacio para descubrir y conectar con negocios locales.
+        <p class="hero-subtitle">
+            Descubre, conecta y potencia empresas de tu región
         </p>
-        <p style="text-align:center; font-style:italic;">
-            "Impulsando negocios locales con visibilidad real"
+
+        <p class="hero-tagline">
+            Visibilidad real para negocios reales
         </p>
-    </section>
 
-    <section>
-        <h2>Buscar Empresas</h2>
+        <div class="hero-actions">
+            <a href="empresas.php" class="btn-primary">Ver Empresas</a>
+            <a href="categorias.php" class="btn-outline">Explorar Categorías</a>
+        </div>
+    </div>
+</section>
 
-        <form id="formBuscar">
-            <input type="text" id="buscar" name="buscar" placeholder="Buscar empresa..." autocomplete="off">
+<section class="search-section">
+    <div class="search-wrapper">
 
-            <!-- RESULTADOS ARRIBA DEL BOTÓN -->
-            <div id="resultados" class="empresas-grid"></div>
+        <h2 class="search-title">Buscar Empresas</h2>
+        <p class="search-description">
+            Escribe el nombre de la empresa y encuentra resultados en tiempo real.
+        </p>
 
-            <button type="submit">Buscar</button>
+        <form id="formBuscar" class="search-form">
+            <div class="search-box">
+                <input 
+                    type="text" 
+                    id="buscar" 
+                    name="buscar" 
+                    placeholder="Ejemplo: Restaurante, Ferretería..."
+                    autocomplete="off"
+                >
+                <button type="submit">
+                    Buscar
+                </button>
+            </div>
         </form>
 
-        <p><a href="empresas.php">Ver todas las empresas</a></p>
-    </section>
-</main>
+        <div id="resultados" class="empresas-grid resultados-live"></div>
+
+    </div>
+</section>
+
 
 <?php include 'includes/footer.php'; ?>
+
 
 <script>
 const inputBuscar = document.getElementById('buscar');

@@ -36,28 +36,37 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 </head>
 <body>
 
-<section class="panel">
-<h2>Agregar Categoría</h2>
+<div class="panel-container">
+    <section class="panel">
 
-<?php if($error): ?>
-<p style="color:red;"><?= htmlspecialchars($error) ?></p>
-<?php endif; ?>
+        <h1 class="panel-title">Agregar Categoría</h1>
 
-<?php if($success): ?>
-<p style="color:green;"><?= htmlspecialchars($success) ?></p>
-<?php endif; ?>
+        <div class="form-container">
 
-<form method="post">
-    <label>Nombre de la categoría</label>
-    <input type="text" name="nombre" required>
+            <?php if($error): ?>
+                <p style="color:red; text-align:center;"><?= htmlspecialchars($error) ?></p>
+            <?php endif; ?>
 
-    <button type="submit" class="btn">Agregar</button>
-</form>
+            <?php if($success): ?>
+                <p style="color:green; text-align:center;"><?= htmlspecialchars($success) ?></p>
+            <?php endif; ?>
 
-<br>
-<a href="admin.php" class="btn btn-danger">Volver al Panel</a>
+            <form method="post">
 
-</section>
+                <div class="form-group">
+                    <label>Nombre de la categoría</label>
+                    <input type="text" name="nombre" required>
+                </div>
+
+                <button type="submit" class="btn">Agregar</button>
+            </form>
+
+            <a href="admin.php" class="btn btn-danger">Volver al Panel</a>
+
+        </div>
+
+    </section>
+</div>
 
 </body>
 </html>

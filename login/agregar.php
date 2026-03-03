@@ -47,37 +47,51 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 </head>
 <body>
 
-<section class="panel">
-    <h2>Agregar Usuario</h2>
+<div class="panel-container">
+    <section class="panel">
 
-    <?php if($error): ?>
-        <p style="color:red;"><?= htmlspecialchars($error) ?></p>
-    <?php endif; ?>
+        <h1 class="panel-title">Agregar Usuario</h1>
 
-    <?php if($success): ?>
-        <p style="color:green;"><?= htmlspecialchars($success) ?></p>
-    <?php endif; ?>
+        <div class="form-container">
 
-    <form method="post">
+            <?php if($error): ?>
+                <p style="color:red; text-align:center;"><?= htmlspecialchars($error) ?></p>
+            <?php endif; ?>
 
-        <label>Nombre</label>
-        <input type="text" name="nombre" required>
+            <?php if($success): ?>
+                <p style="color:green; text-align:center;"><?= htmlspecialchars($success) ?></p>
+            <?php endif; ?>
 
-        <label>Contraseña</label>
-        <input type="password" name="pass" required>
+            <form method="post">
 
-        <label>Rol</label>
-        <select name="rol" required>
-            <option value="admin">Admin</option>
-            <option value="editor">Editor</option>
-        </select>
+                <div class="form-group">
+                    <label>Nombre</label>
+                    <input type="text" name="nombre" required>
+                </div>
 
-        <button type="submit" class="btn">Agregar Usuario</button>
-    </form>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" name="pass" required>
+                </div>
 
-    <br>
-    <a href="admin.php" class="btn btn-danger">Volver al Panel</a>
-</section>
+                <div class="form-group">
+                    <label>Rol</label>
+                    <select name="rol" required>
+                        <option value="admin">Admin</option>
+                        <option value="editor">Editor</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn">Agregar Usuario</button>
+
+            </form>
+
+            <a href="admin.php" class="btn btn-danger">Volver al Panel</a>
+
+        </div>
+
+    </section>
+</div>
 
 </body>
 </html>

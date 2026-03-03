@@ -28,8 +28,8 @@ Bienvenido, <?= htmlspecialchars($_SESSION['usuario']) ?> |
 Ver sitio principal
 </a>
 
-<h2>Empresas</h2>
-<a href="agregar_empresa.php" class="btn">Agregar Empresa</a>
+<h2>Empresas</h2><br><br>
+<a href="agregar_empresa.php" class="btn">Agregar Empresa</a><br><br>
 
 <table>
 <tr>
@@ -87,6 +87,36 @@ while($fila = $res->fetch_assoc()):
 <a href="editar.php?id=<?= $fila['id_empresa'] ?>" class="btn">Editar</a>
 <a href="eliminar.php?id=<?= $fila['id_empresa'] ?>" class="btn btn-danger"
 onclick="return confirm('¿Seguro que deseas eliminar esta empresa?');">
+Eliminar
+</a>
+</td>
+</tr>
+
+<?php endwhile; ?>
+</table>
+<br><br>
+<h2 style="margin-top:40px;">Categorías</h2><br><br>
+<a href="agregar_categoria.php" class="btn">Agregar Categoría</a><br><br>
+
+<table>
+<tr>
+<th>ID</th>
+<th>Nombre de la Categoría</th>
+<th>Acciones</th>
+</tr>
+
+<?php
+$res_cat = $conexion->query("SELECT * FROM categorias");
+
+while($cat = $res_cat->fetch_assoc()):
+?>
+
+<tr>
+<td><?= $cat['id_categoria'] ?></td>
+<td><?= htmlspecialchars($cat['nombre']) ?></td>
+<td class="acciones">
+<a href="eliminar_categoria.php?id=<?= $cat['id_categoria'] ?>" class="btn btn-danger"
+onclick="return confirm('¿Seguro que deseas eliminar esta categoría?');">
 Eliminar
 </a>
 </td>

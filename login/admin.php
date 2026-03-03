@@ -28,7 +28,7 @@ Bienvenido, <?= htmlspecialchars($_SESSION['usuario']) ?> |
 Ver sitio principal
 </a>
 
-<h2>Administración de Usuarios</h2>
+<h2>Administración de Usuarios</h2><br><br>
 <a href="agregar.php" class="btn">Agregar Usuarios</a>
 <br><br>
 
@@ -60,8 +60,8 @@ Eliminar
 
 <?php endwhile; ?>
 </table>
-
-<h2>Empresas</h2>
+<br><br>
+<h2>Empresas</h2><br><br>
 <a href="agregar_empresa.php" class="btn">Agregar Empresa</a>
 
 <table>
@@ -127,9 +127,9 @@ Eliminar
 
 <?php endwhile; ?>
 </table>
-
-<h2>Categorías</h2>
-<a href="agregar_categoria.php" class="btn">Agregar Categoría</a>
+<br><br>
+<h2>Categorías</h2><br><br>
+<a href="agregar_categoria.php" class="btn">Agregar Categoría</a><br>
 
 <table>
 <tr>

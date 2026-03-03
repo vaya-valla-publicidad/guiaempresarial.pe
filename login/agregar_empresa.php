@@ -58,59 +58,83 @@ $categorias = $conexion->query("SELECT id_categoria, nombre FROM categorias");
 </head>
 <body>
 
-<section class="panel">
-    <h2>Agregar Empresa</h2>
+<div class="panel-container">
+    <section class="panel">
 
-    <?php if($error): ?>
-        <p style="color:red;"><?= htmlspecialchars($error) ?></p>
-    <?php endif; ?>
+        <h1 class="panel-title">Agregar Empresa</h1>
 
-    <?php if($success): ?>
-        <p style="color:green;"><?= htmlspecialchars($success) ?></p>
-    <?php endif; ?>
+        <div class="form-container">
 
-    <form method="post">
+            <?php if($error): ?>
+                <p style="color:red; text-align:center;"><?= htmlspecialchars($error) ?></p>
+            <?php endif; ?>
 
-        <label>Nombre</label>
-        <input type="text" name="nombre" required>
+            <?php if($success): ?>
+                <p style="color:green; text-align:center;"><?= htmlspecialchars($success) ?></p>
+            <?php endif; ?>
 
-        <label>Teléfono</label>
-        <input type="text" name="telefono">
+            <form method="post">
 
-        <label>Dirección</label>
-        <input type="text" name="direccion">
+                <div class="form-group">
+                    <label>Nombre</label>
+                    <input type="text" name="nombre" required>
+                </div>
 
-        <label>Categoría</label>
-        <select name="id_categoria" required>
-            <?php while($fila = $categorias->fetch_assoc()): ?>
-                <option value="<?= $fila['id_categoria'] ?>">
-                    <?= htmlspecialchars($fila['nombre']) ?>
-                </option>
-            <?php endwhile; ?>
-        </select>
+                <div class="form-group">
+                    <label>Teléfono</label>
+                    <input type="text" name="telefono">
+                </div>
 
-        <label>Descripción</label>
-        <textarea name="descripcion"></textarea>
+                <div class="form-group">
+                    <label>Dirección</label>
+                    <input type="text" name="direccion">
+                </div>
 
-        <label>Horario de atención</label>
-        <input type="text" name="horario">
+                <div class="form-group">
+                    <label>Categoría</label>
+                    <select name="id_categoria" required>
+                        <?php while($fila = $categorias->fetch_assoc()): ?>
+                            <option value="<?= $fila['id_categoria'] ?>">
+                                <?= htmlspecialchars($fila['nombre']) ?>
+                            </option>
+                        <?php endwhile; ?>
+                    </select>
+                </div>
 
-        <label>Latitud</label>
-        <input type="text" name="latitud" placeholder="-12.046374">
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <textarea name="descripcion"></textarea>
+                </div>
 
-        <label>Longitud</label>
-        <input type="text" name="longitud" placeholder="-77.042793">
+                <div class="form-group">
+                    <label>Horario de atención</label>
+                    <input type="text" name="horario">
+                </div>
 
-        <label>Enlace externo de la empresa</label>
-        <input type="url" name="link_empresa">
+                <div class="form-group">
+                    <label>Latitud</label>
+                    <input type="text" name="latitud" placeholder="-12.046374">
+                </div>
 
-        <button type="submit" class="btn">Agregar Empresa</button>
-    </form>
+                <div class="form-group">
+                    <label>Longitud</label>
+                    <input type="text" name="longitud" placeholder="-77.042793">
+                </div>
 
-    <br>
-    <a href="admin.php" class="btn btn-danger">Volver al Panel</a>
+                <div class="form-group">
+                    <label>Enlace externo de la empresa</label>
+                    <input type="url" name="link_empresa">
+                </div>
 
-</section>
+                <button type="submit" class="btn">Agregar Empresa</button>
+            </form>
+
+            <a href="admin.php" class="btn btn-danger">Volver al Panel</a>
+
+        </div>
+
+    </section>
+</div>
 
 </body>
 </html>

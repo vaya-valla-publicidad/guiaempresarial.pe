@@ -1,35 +1,40 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Guia Empresarial</title>
-    <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="icon" href="assets/img/image.png" type="image/png">
-    <link rel="stylesheet" href="assets/css/style.css">
-</head>
-<body>
-    <?php include 'includes/header.php'; ?>
+<?php include 'includes/header.php'; ?>
 
-    <h1>Sobre Guía Empresarial</h1>
+<section class="page-section">
+    <div class="container">
 
-    <div class="empresas-grid">
-        <div class="empresa-card">
-            <h3>Quiénes Somos</h3>
-            <p>Impulsamos negocios locales con visibilidad real.</p>
-            <p>Conectamos empresas con clientes mediante web y redes sociales.</p>
+        <div class="section-header">
+            <h1>Sobre Guía Empresarial</h1>
+            <p>Conoce nuestra misión y visión</p>
         </div>
 
-        <div class="empresa-card">
-            <h3>Nuestra Misión</h3>
-            <p>Brindar a las empresas locales una herramienta sencilla y efectiva para darse a conocer.</p>
+        <div class="sobre-grid">
+
+            <div class="info-card">
+                <h3>Quiénes Somos</h3>
+                <p>
+                    Impulsamos negocios locales con visibilidad real.
+                    Conectamos empresas con clientes mediante web y redes sociales.
+                </p>
+            </div>
+
+            <div class="info-card">
+                <h3>Nuestra Misión</h3>
+                <p>
+                    Brindar a las empresas locales una herramienta sencilla y efectiva para darse a conocer.
+                </p>
+            </div>
+
+            <div class="info-card">
+                <h3>Nuestra Visión</h3>
+                <p>
+                    Convertirnos en la guía empresarial más confiable y completa de la región.
+                </p>
+            </div>
+
         </div>
 
-        <div class="empresa-card">
-            <h3>Nuestra Visión</h3>
-            <p>Convertirnos en la guía empresarial más confiable y completa de la región.</p>
-        </div>
     </div>
+</section>
 
-    <?php include 'includes/footer.php'; ?>
-</body>
-</html>
+<?php include 'includes/footer.php'; ?>
