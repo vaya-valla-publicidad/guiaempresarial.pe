@@ -38,6 +38,24 @@ if ("serviceWorker" in navigator) {
     });
 }
 </script>
+<script>
+const toggleBtn = document.getElementById('toggle-theme');
+
+if(localStorage.getItem("theme") === "dark") {
+  document.body.classList.add("dark-mode");
+  toggleBtn.checked = true;
+}
+
+toggleBtn.addEventListener('change', () => {
+
+  document.body.classList.toggle('dark-mode');
+
+  const dark = document.body.classList.contains('dark-mode');
+
+  localStorage.setItem("theme", dark ? "dark" : "light");
+
+});
+</script>
 
 </body>
 </html>

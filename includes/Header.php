@@ -16,22 +16,31 @@
 <body>
 
 <header class="main-header">
-    <div class="nav-container">
+  <div class="nav-container">
 
-        <div class="brand">
-            <img src="assets/img/image.png" alt="Guía Empresarial" class="logo">
-            <span class="brand-name">GUÍA EMPRESARIAL</span>
-        </div>
-
-        <nav class="nav-links">
-            <a href="index.php">Inicio</a>
-            <a href="empresas.php">Empresas</a>
-            <a href="categorias.php">Categorías</a>
-            <a href="contacto.php">Contacto</a>
-            <a href="sobre.php">Sobre Nosotros</a>
-        </nav>
-
+    <div class="brand">
+      <img src="assets/img/image.png" alt="Guía Empresarial" class="logo">
+      <span class="brand-name">GUÍA EMPRESARIAL</span>
     </div>
+
+    <div class="nav-actions">
+      <nav class="nav-links">
+        <a href="index.php">Inicio</a>
+        <a href="#categorias">Categorías</a>
+        <a href="#empresas">Empresas</a>
+        <a href="#sobre">Sobre Nosotros</a>
+        <a href="#contacto">Contacto</a>
+      </nav>
+
+      <!-- Switch separado -->
+      <label class="theme-switch">
+        <input type="checkbox" id="toggle-theme">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+  </div>
 </header>
+
 
 <main>
