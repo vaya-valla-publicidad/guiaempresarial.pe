@@ -6,22 +6,18 @@
         <p class="hero-subtitle">Descubre, conecta y potencia empresas de tu región</p>
         <p class="hero-tagline">Visibilidad real para negocios reales</p>
         <div class="hero-actions">
-            <a href="empresas.php" class="btn-primary">Ver Empresas</a>
-        </div>
-    </div>
-</section>
-
-<section class="search-section">
+            <section class="search-section">
     <div class="search-wrapper">
-        <h2 class="search-title">Buscar Empresas</h2>
-        <p class="search-description">Escribe el nombre de la empresa y encuentra resultados en tiempo real.</p>
         <form id="formBuscar" class="search-form">
             <div class="search-box">
-                <input type="text" id="buscar" name="buscar" placeholder="Ejemplo: Restaurante, Ferretería..." autocomplete="off">
+                <input type="text" id="buscar" name="
                 <button type="submit">Buscar</button>
             </div>
         </form>
         <div id="resultados" class="empresas-grid resultados-live"></div>
+    </div>
+</section>
+        </div>
     </div>
 </section>
 
@@ -37,7 +33,7 @@
         $sql = "SELECT e.*, c.nombre AS categoria
                 FROM empresas e
                 JOIN categorias c ON e.id_categoria = c.id_categoria
-                LIMIT 4"; // 👈 aquí limitamos a 4 empresas
+                LIMIT 4";
         $resultado = $conexion->query($sql);
 
         if($resultado && $resultado->num_rows > 0):
@@ -92,7 +88,7 @@ function toggleContacto(elemento) {
         <div class="categorias-modern">
             <?php
                 include 'db.php';
-                $resultado = $conexion->query("SELECT * FROM categorias LIMIT 5"); // 👈 solo 5
+                $resultado = $conexion->query("SELECT * FROM categorias LIMIT 5"); 
                 while($fila = $resultado->fetch_assoc()):
             ?>
                 <a href="empresas.php?id_categoria=<?= $fila['id_categoria'] ?>" class="categoria-card">

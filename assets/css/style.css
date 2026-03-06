@@ -763,6 +763,79 @@ body.dark-mode .no-results {
   .main-header { padding: 18px 20px; }
   .search-container, .search-wrapper { padding: 30px 18px; }
   #toggle-theme { font-size: 12px; padding: 8px 16px; }
+  
+  /* Optimizaciones móviles */
+  .hero {
+    padding: 80px 15px 60px;
+  }
+  
+  .hero-subtitle {
+    font-size: 20px;
+    margin-bottom: 12px;
+  }
+  
+  .hero-tagline {
+    font-size: 15px;
+    margin-bottom: 30px;
+  }
+  
+  .search-section {
+    padding: 20px 15px;
+  }
+  
+  .search-box {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .search-box input {
+    font-size: 16px;
+  }
+  
+  .search-box button {
+    font-size: 16px;
+    padding: 14px 24px;
+  }
+  
+  .empresa-card-modern {
+    padding: 25px;
+    margin-bottom: 20px;
+  }
+  
+  .empresa-header h3 {
+    font-size: 18px;
+  }
+  
+  .categoria-card {
+    padding: 25px;
+    margin-bottom: 15px;
+  }
+  
+  .categorias-modern {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .sobre-grid, .contact-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .contact-card {
+    padding: 40px 20px;
+  }
+  
+  .page-section {
+    padding: 40px 15px;
+  }
+  
+  .section-header h1 {
+    font-size: 28px;
+  }
+  
+  .section-header p {
+    font-size: 16px;
+  }
 }
 .categorias-modern {
   display: grid;
