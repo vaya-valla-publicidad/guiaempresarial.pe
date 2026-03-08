@@ -1,10 +1,10 @@
 const CACHE_NAME = "guia-empresarial-v3";
 
 const urlsIniciales = [
-  "/clon/guiaempresarial.pe/",
-  "/clon/guiaempresarial.pe/index.php",
-  "/clon/guiaempresarial.pe/assets/css/style.css",
-  "/clon/guiaempresarial.pe/assets/img/image.png"
+  "/guiaempresarial.pe/",
+  "/guiaempresarial.pe/index.php",
+  "/guiaempresarial.pe/assets/css/style.css",
+  "/guiaempresarial.pe/assets/img/image.png"
 ];
 
 self.addEventListener("fetch", event => {

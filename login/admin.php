@@ -10,7 +10,7 @@ $rol = $_SESSION['rol'];
 <head>
 <meta charset="UTF-8">
 <title>Panel <?= ucfirst($rol) ?></title>
-<link rel="stylesheet" href="/clon/guiaempresarial.pe/assets/css/login.css">
+<link rel="stylesheet" href="/guiaempresarial.pe/assets/css/login.css">
 </head>
 <body>
 
@@ -24,7 +24,7 @@ Bienvenido, <?= htmlspecialchars($_SESSION['usuario']) ?> |
 <a href="cerrar.php">Cerrar sesión</a>
 </div>
 
-<a href="/clon/guiaempresarial.pe/index.php" class="btn" style="margin-bottom:20px; display:inline-block;">
+<a href="/guiaempresarial.pe/index.php" class="btn" style="margin-bottom:20px; display:inline-block;">
 Ver sitio principal
 </a>
 

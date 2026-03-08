@@ -2,6 +2,6 @@
 session_start();
 
 if (!isset($_SESSION['usuario'])) {
-    header("Location: /clon/guiaempresarial.pe/login/login.php?acceso=admin2026");
+    header("Location: /guiaempresarial.pe/login/login.php?acceso=admin2026");
     exit();
 }

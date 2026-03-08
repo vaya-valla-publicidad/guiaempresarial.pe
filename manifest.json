@@ -1,19 +1,19 @@
 {
   "name": "Guía Empresarial",
   "short_name": "Guía",
-  "start_url": "/clon/guiaempresarial.pe/",
+  "start_url": "/guiaempresarial.pe/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#0d6efd",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/clon/guiaempresarial.pe/assets/img/icon-192.png",
+      "src": "/guiaempresarial.pe/assets/img/icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/clon/guiaempresarial.pe/assets/img/icon-512.png",
+      "src": "/guiaempresarial.pe/assets/img/icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }

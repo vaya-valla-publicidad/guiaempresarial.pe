@@ -3,7 +3,7 @@
 $clave_acceso = "admin2026";
 
 if (!isset($_GET['acceso']) || $_GET['acceso'] !== $clave_acceso) {
-    header("Location: /clon/guiaempresarial.pe/index.php");
+    header("Location: /guiaempresarial.pe/index.php");
     exit();
 }
 
@@ -50,9 +50,9 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) 
 
             // Rutas absolutas dentro del proyecto
             if ($fila['rol'] === 'admin') {
-                header("Location: /clon/guiaempresarial.pe/login/admin.php");
+                header("Location: /guiaempresarial.pe/login/admin.php");
             } else {
-                header("Location: /clon/guiaempresarial.pe/login/editor.php");
+                header("Location: /guiaempresarial.pe/login/editor.php");
             }
             exit();
         } else {
@@ -73,7 +73,7 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) 
 <head>
     <meta charset="UTF-8">
     <title>Inicio de sesión</title>
-    <link rel="stylesheet" href="/clon/guiaempresarial.pe/assets/css/login.css">
+    <link rel="stylesheet" href="/guiaempresarial.pe/assets/css/login.css">
 </head>
 <body>
 <div class="login-container">

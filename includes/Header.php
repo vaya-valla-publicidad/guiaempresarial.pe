@@ -9,7 +9,7 @@
     <link rel="icon" href="assets/img/image.png" type="image/png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 
-    <link rel="manifest" href="/clon/guiaempresarial.pe/manifest.json">
+    <link rel="manifest" href="/guiaempresarial.pe/manifest.json">
     <meta name="theme-color" content="#0d6efd">
 </head>
 
