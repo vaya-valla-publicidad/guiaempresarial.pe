@@ -10,7 +10,7 @@
     <div class="search-wrapper">
         <form id="formBuscar" class="search-form">
             <div class="search-box">
-                <input type="text" id="buscar" name="
+                <input type="text" id="buscar" name="q" placeholder="Buscar empresas, productos o servicios...">
                 <button type="submit">Buscar</button>
             </div>
         </form>
@@ -98,35 +98,13 @@ function toggleContacto(elemento) {
 
             <!-- Sexta tarjeta: Ver más -->
             <a href="categorias.php" class="categoria-card ver-mas-card">
-                Ver más categorías
+               <br> Ver más categorías
             </a>
         </div>
     </div>
 </section>
 
 
-<section id="sobre" class="page-section">
-    <div class="container">
-        <div class="section-header">
-            <h1>Sobre Guía Empresarial</h1>
-            <p>Conoce nuestra misión y visión</p>
-        </div>
-        <div class="sobre-grid">
-            <div class="info-card">
-                <h3>Quiénes Somos</h3>
-                <p>Impulsamos negocios locales con visibilidad real. Conectamos empresas con clientes mediante web y redes sociales.</p>
-            </div>
-            <div class="info-card">
-                <h3>Nuestra Misión</h3>
-                <p>Brindar a las empresas locales una herramienta sencilla y efectiva para darse a conocer.</p>
-            </div>
-            <div class="info-card">
-                <h3>Nuestra Visión</h3>
-                <p>Convertirnos en la guía empresarial más confiable y completa de la región.</p>
-            </div>
-        </div>
-    </div>
-</section>
 
 <section id="contacto" class="page-section">
     <div class="container">

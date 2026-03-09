@@ -48,7 +48,13 @@ border-radius:10px;
 font-weight:800;
 letter-spacing:2px;
 font-size:20px;
-color:#F7DC05;
+color:black
+}
+.brand-name:after{
+content:"";
+position:absolute;
+color: yellow;
+transition:0.3s ease;
 }
 
 .nav-links{
@@ -93,7 +99,7 @@ background:radial-gradient(circle at center,#fffef8 0%,#fff9e6 70%);
 font-size:60px;
 font-weight:800;
 margin-bottom:25px;
-background:linear-gradient(90deg,#1B3A57,#E63946);
+background:linear-gradient(90deg,#F7DC05,#E63946);
 -webkit-background-clip:text;
 -webkit-text-fill-color:transparent;
 }
@@ -110,8 +116,18 @@ color:#4a5f7a;
 margin-bottom:50px;
 }
 
-.btn-primary,.btn-gold{
-background:linear-gradient(135deg,#F7DC05,#E63946);
+.btn-primary{
+  background:linear-gradient(135deg,#F7DC05,#E63946);
+color:#1B3A57;
+padding:14px 32px;
+border-radius:10px;
+font-weight:700;
+text-decoration:none;
+display:inline-block;
+transition:0.3s ease;
+}
+.btn-gold{
+background:linear-gradient(135deg,#88E788,#88E788);
 color:#1B3A57;
 padding:14px 32px;
 border-radius:10px;
@@ -165,6 +181,9 @@ margin-bottom:80px;
 .section-header h1{
 font-size:44px;
 margin-bottom:15px;
+background:linear-gradient(90deg,#F7DC05,#E63946);
+-webkit-background-clip:text;
+-webkit-text-fill-color:transparent;
 }
 
 .section-header p{
@@ -437,7 +456,9 @@ gap:30px;
   font-size: 38px;
   font-weight: 800;
   margin-bottom: 15px;
-  color: var(--texto-principal);
+  background:linear-gradient(90deg,#F7DC05,#E63946);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
 }
 
 .search-description {
@@ -481,6 +502,12 @@ gap:30px;
   cursor: pointer;
   transition: 0.3s ease;
   color: #ffffff;
+  box-shadow: 0 8px 20px rgba(230,57,70,0.3);
+}
+
+.search-box button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 12px 25px rgba(230,57,70,0.4);
 }
 
 .search-box button:hover {
@@ -555,9 +582,13 @@ body.dark-mode .hero-tagline {
   color: #b8bec7;
 }
 
-body.dark-mode .btn-primary,
-body.dark-mode .btn-gold {
+body.dark-mode .btn-primary{
   background: linear-gradient(135deg, #F7DC05, #E63946);
+  color: #ffffff;
+}
+body.dark-mode .btn-gold 
+{
+  background: linear-gradient(135deg, #88E788, #88E788);
   color: #ffffff;
 }
 
@@ -865,6 +896,18 @@ body.dark-mode .no-results {
 .ver-mas-card {
   font-weight: 700;
   color: var(--accent-dorado);
+  background: linear-gradient(135deg, #F7DC05, #E63946);
+  padding: 12px 28px;
+  border-radius: 25px;
+  text-decoration: none;
+  display: inline-block;
+  transition: 0.3s ease;
+  box-shadow: 0 8px 20px rgba(230,57,70,0.3);
+}
+
+.ver-mas-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 25px rgba(230,57,70,0.4);
 }
 
 .theme-switch {
@@ -887,7 +930,7 @@ body.dark-mode .no-results {
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, #F7DC05, #E63946);
+    background: linear-gradient(135deg, #F7DC05, #F7DC05);
     border-radius: 40px;
     transition: 0.4s;
 }

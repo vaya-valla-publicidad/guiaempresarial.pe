@@ -28,7 +28,6 @@
         <a href="index.php">Inicio</a>
         <a href="#categorias">Categorías</a>
         <a href="#empresas">Empresas</a>
-        <a href="#sobre">Sobre Nosotros</a>
         <a href="#contacto">Contacto</a>
       </nav>
 
