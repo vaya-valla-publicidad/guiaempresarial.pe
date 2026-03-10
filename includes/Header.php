@@ -31,7 +31,6 @@
         <a href="#contacto">Contacto</a>
       </nav>
 
-      <!-- Switch separado -->
       <label class="theme-switch">
         <input type="checkbox" id="toggle-theme">
         <span class="slider"></span>

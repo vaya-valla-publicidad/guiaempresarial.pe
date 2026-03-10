@@ -7,16 +7,16 @@
         <p class="hero-tagline">Visibilidad real para negocios reales</p>
         <div class="hero-actions">
             <section class="search-section">
-    <div class="search-wrapper">
-        <form id="formBuscar" class="search-form">
-            <div class="search-box">
-                <input type="text" id="buscar" name="q" placeholder="Buscar empresas, productos o servicios...">
-                <button type="submit">Buscar</button>
-            </div>
-        </form>
-        <div id="resultados" class="empresas-grid resultados-live"></div>
-    </div>
-</section>
+                <div class="search-wrapper">
+                    <form id="formBuscar" class="search-form">
+                        <div class="search-box">
+                            <input type="text" id="buscar" name="q" placeholder="Buscar empresas, productos o servicios...">
+                            <button type="submit">Buscar</button>
+                        </div>
+                    </form>
+                    <div id="resultados" class="empresas-grid resultados-live"></div>
+                </div>
+            </section>
         </div>
     </div>
 </section>
@@ -40,25 +40,41 @@
             while($fila = $resultado->fetch_assoc()):
         ?>
         <div class="empresa-card-modern" onclick="toggleContacto(this)">
-            <div class="empresa-header">
-                <h3><?= htmlspecialchars($fila['nombre']) ?></h3>
-                <span class="categoria-badge"><?= htmlspecialchars($fila['categoria']) ?></span>
+            <!-- Logo -->
+            <div class="empresa-logo">
+                <img src="assets/img/<?= htmlspecialchars($fila['logo'] ?? 'default.png') ?>" 
+                     alt="Logo de <?= htmlspecialchars($fila['nombre']) ?>">
             </div>
-            <p class="empresa-direccion"><?= htmlspecialchars($fila['direccion'] ?? '') ?></p>
-            <div class="empresa-detalle">
-                <?php
-                $telefono = $fila['telefono'] ?? $fila['celular'] ?? $fila['whatsapp'] ?? null;
-                if($telefono):
-                    $numero = preg_replace('/[^0-9]/', '', $telefono);
-                ?>
-                    <a class="btn-gold" href="https://wa.me/<?= $numero ?>" target="_blank">Contactar por WhatsApp</a>
-                <?php endif; ?>
-                <?php if(!empty($fila['email'])): ?>
-                    <p><strong>Email:</strong> <?= htmlspecialchars($fila['email']) ?></p>
-                <?php endif; ?>
-                <?php if(!empty($fila['direccion'])): ?>
-                    <p><strong>Dirección:</strong> <?= htmlspecialchars($fila['direccion']) ?></p>
-                <?php endif; ?>
+
+            <div class="empresa-info">
+                <div class="empresa-header">
+                    <h3><?= htmlspecialchars($fila['nombre']) ?></h3>
+                    <span class="categoria-badge"><?= htmlspecialchars($fila['categoria']) ?></span>
+                </div>
+
+                <p class="empresa-direccion"><?= htmlspecialchars($fila['direccion'] ?? '') ?></p>
+
+                <div class="empresa-detalle">
+                    <?php
+                    $telefono = $fila['telefono'] ?? $fila['celular'] ?? $fila['whatsapp'] ?? null;
+                    if($telefono):
+                        $numero = preg_replace('/[^0-9]/', '', $telefono);
+                    ?>
+                        <a class="btn-gold" href="https://wa.me/<?= $numero ?>" target="_blank">Contactar por WhatsApp</a>
+                    <?php endif; ?>
+
+                    <?php if(!empty($fila['email'])): ?>
+                        <p><strong>Email:</strong> <?= htmlspecialchars($fila['email']) ?></p>
+                    <?php endif; ?>
+
+                    <?php if(!empty($fila['ubicacion_link'])): ?>
+                        <p><a href="<?= htmlspecialchars($fila['ubicacion_link']) ?>" target="_blank">Ver ubicación en Google Maps</a></p>
+                    <?php endif; ?>
+
+                    <?php if(!empty($fila['link_empresa'])): ?>
+                        <p><a href="<?= htmlspecialchars($fila['link_empresa']) ?>" target="_blank">Página web oficial</a></p>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
         <?php
@@ -96,15 +112,12 @@ function toggleContacto(elemento) {
                 </a>
             <?php endwhile; ?>
 
-            <!-- Sexta tarjeta: Ver más -->
             <a href="categorias.php" class="categoria-card ver-mas-card">
                <br> Ver más categorías
             </a>
         </div>
     </div>
 </section>
-
-
 
 <section id="contacto" class="page-section">
     <div class="container">
@@ -165,4 +178,3 @@ formBuscar.addEventListener('submit', function(e) {
     }
 });
 </script>
-

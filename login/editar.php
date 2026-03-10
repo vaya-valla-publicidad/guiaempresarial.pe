@@ -33,9 +33,20 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     $descripcion = trim($_POST['descripcion']) ?: null;
     $horario = trim($_POST['horario']) ?: null;
-    $latitud = trim($_POST['latitud']) ?: null;
-    $longitud = trim($_POST['longitud']) ?: null;
+    $ubicacion_link = trim($_POST['ubicacion_link']) ?: null;
     $link_empresa = trim($_POST['link_empresa']) ?: null;
+
+    $logo = $empresa['logo']; // mantener el actual si no se sube nada
+    if (!empty($_FILES['logo']['name'])) {
+        $nombreArchivo = time() . "_" . basename($_FILES['logo']['name']);
+        $rutaDestino = __DIR__ . "/../assets/img/" . $nombreArchivo;
+
+        if (move_uploaded_file($_FILES['logo']['tmp_name'], $rutaDestino)) {
+            $logo = $nombreArchivo;
+        } else {
+            $error = "Error al subir la imagen. Verifica que exista la carpeta /assets/img/";
+        }
+    }
 
     $stmt = $conexion->prepare(
         "UPDATE empresas SET 
@@ -45,23 +56,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             id_categoria=?, 
             descripcion=?, 
             horario=?, 
-            latitud=?, 
-            longitud=?, 
-            link_empresa=? 
+            ubicacion_link=?, 
+            link_empresa=?, 
+            logo=? 
         WHERE id_empresa=?"
     );
 
     $stmt->bind_param(
-        "sssissddsi",
+        "sssisssssi",
         $nombre,
         $telefono,
         $direccion,
         $id_categoria,
         $descripcion,
         $horario,
-        $latitud,
-        $longitud,
+        $ubicacion_link,
         $link_empresa,
+        $logo,
         $id
     );
 
@@ -70,7 +81,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     } else {
         $success = "Empresa actualizada correctamente ✅";
 
-        // recargar datos actualizados
         $stmt2 = $conexion->prepare("SELECT * FROM empresas WHERE id_empresa = ?");
         $stmt2->bind_param("i", $id);
         $stmt2->execute();
@@ -104,10 +114,17 @@ $categorias = $conexion->query("SELECT id_categoria, nombre FROM categorias");
         <p style="color:green;"><?= htmlspecialchars($success) ?></p>
     <?php endif; ?>
 
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
+
+        <label>Logo de la empresa</label>
+        <?php if(!empty($empresa['logo'])): ?>
+            <img src="../assets/img/<?= htmlspecialchars($empresa['logo']) ?>" 
+                 alt="Logo actual" style="width:80px;height:80px;object-fit:cover;border-radius:5px;">
+        <?php endif; ?>
+        <input type="file" name="logo" accept="image/*">
 
         <label>Nombre</label>
-        <input type="text" name="nombre"
+        <input type="text" id="nombre" name="nombre"
                value="<?= htmlspecialchars($empresa['nombre']) ?>" required>
 
         <label>Teléfono</label>
@@ -135,13 +152,14 @@ $categorias = $conexion->query("SELECT id_categoria, nombre FROM categorias");
         <input type="text" name="horario"
                value="<?= htmlspecialchars($empresa['horario']) ?>">
 
-        <label>Latitud</label>
-        <input type="text" name="latitud"
-               value="<?= htmlspecialchars($empresa['latitud']) ?>">
+        <!-- Campo para pegar URL de Google Maps -->
+        <label>Ubicación desde Google Maps</label>
+        <input type="text" name="ubicacion_link"
+               value="<?= htmlspecialchars($empresa['ubicacion_link']) ?>"
+               placeholder="Pega aquí la URL de Google Maps">
 
-        <label>Longitud</label>
-        <input type="text" name="longitud"
-               value="<?= htmlspecialchars($empresa['longitud']) ?>">
+        <!-- Botón para abrir Google Maps con el nombre -->
+        <a id="mapsLink" href="#" target="_blank" class="btn">Buscar en Google Maps</a>
 
         <label>Enlace externo de la empresa</label>
         <input type="url" name="link_empresa"
@@ -154,6 +172,17 @@ $categorias = $conexion->query("SELECT id_categoria, nombre FROM categorias");
     <a href="admin.php" class="btn btn-danger">Volver al Panel</a>
 
 </section>
+
+<script>
+  function actualizarLink() {
+      var nombre = document.getElementById('nombre').value;
+      var url = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(nombre);
+      document.getElementById('mapsLink').href = url;
+  }
+
+  actualizarLink();
+  document.getElementById('nombre').addEventListener('input', actualizarLink);
+</script>
 
 </body>
 </html>

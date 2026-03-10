@@ -709,7 +709,7 @@ body.dark-mode .info-card h3 {
 }
 
 body.dark-mode .info-card p {
-  color: #b8bec7;
+  color: #b8bec6;
 }
 
 body.dark-mode .contact-card {
@@ -1005,4 +1005,53 @@ body.dark-mode .no-results {
     grid-template-columns: repeat(2, 1fr); 
     gap: 18px;
   }
+}
+.empresa-card-modern {
+    display: flex;
+    align-items: center;
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 8px;
+    background: #fff;
+}
+
+.empresa-logo img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-right: 15px;
+}
+
+.empresa-info {
+    flex: 1;
+}
+
+.empresa-nombre {
+    font-size: 1.2em;
+    margin: 0;
+    color: #333;
+}
+
+.categoria-badge {
+    display: inline-block;
+    background: #f0f0f0;
+    color: #555;
+    font-size: 0.85em;
+    padding: 3px 8px;
+    border-radius: 12px;
+    margin-left: 8px;
+}
+
+.empresa-ubicacion a,
+.empresa-web a {
+    color: #0066cc;
+    text-decoration: none;
+    font-size: 0.9em;
+}
+
+.empresa-ubicacion a:hover,
+.empresa-web a:hover {
+    text-decoration: underline;
 }

@@ -34,14 +34,15 @@ Ver sitio principal
 <table>
 <tr>
 <th>ID</th>
+<th>Logo</th>
 <th>Nombre</th>
 <th>Teléfono</th>
 <th>Dirección</th>
 <th>Rubro</th>
 <th>Horario</th>
 <th>Descripción</th>
-<th>Coordenadas</th>
-<th>Link</th>
+<th>Ubicación (Google Maps)</th>
+<th>Enlace externo</th>
 <th>Acciones</th>
 </tr>
 
@@ -49,13 +50,13 @@ Ver sitio principal
 $res = $conexion->query("
 SELECT 
 e.id_empresa,
+e.logo,
 e.nombre,
 e.telefono,
 e.direccion,
 e.descripcion,
 e.horario,
-e.latitud,
-e.longitud,
+e.ubicacion_link,
 e.link_empresa,
 c.nombre AS categoria
 FROM empresas e
@@ -67,6 +68,12 @@ while($fila = $res->fetch_assoc()):
 
 <tr>
 <td><?= $fila['id_empresa'] ?></td>
+<td>
+<?php if(!empty($fila['logo'])): ?>
+<img src="/guiaempresarial.pe/assets/img/<?= htmlspecialchars($fila['logo']) ?>" 
+     alt="Logo" style="width:50px;height:50px;object-fit:cover;border-radius:5px;">
+<?php else: ?>—<?php endif; ?>
+</td>
 <td><?= htmlspecialchars($fila['nombre']) ?></td>
 <td><?= htmlspecialchars($fila['telefono']) ?></td>
 <td><?= htmlspecialchars($fila['direccion']) ?></td>
@@ -74,13 +81,13 @@ while($fila = $res->fetch_assoc()):
 <td><?= !empty($fila['horario']) ? htmlspecialchars($fila['horario']) : '—' ?></td>
 <td><?= !empty($fila['descripcion']) ? htmlspecialchars($fila['descripcion']) : '—' ?></td>
 <td>
-<?php if(!empty($fila['latitud']) && !empty($fila['longitud'])): ?>
-<?= $fila['latitud'] ?> , <?= $fila['longitud'] ?>
+<?php if(!empty($fila['ubicacion_link'])): ?>
+<a href="<?= htmlspecialchars($fila['ubicacion_link']) ?>" target="_blank">Ver ubicación</a>
 <?php else: ?>—<?php endif; ?>
 </td>
 <td>
 <?php if(!empty($fila['link_empresa'])): ?>
-<a href="<?= htmlspecialchars($fila['link_empresa']) ?>" target="_blank">Ver</a>
+<a href="<?= htmlspecialchars($fila['link_empresa']) ?>" target="_blank">Ver página</a>
 <?php else: ?>—<?php endif; ?>
 </td>
 <td class="acciones">
@@ -95,6 +102,7 @@ Eliminar
 <?php endwhile; ?>
 </table>
 <br><br>
+
 <h2 style="margin-top:40px;">Categorías</h2><br><br>
 <a href="agregar_categoria.php" class="btn">Agregar Categoría</a><br><br>
 
