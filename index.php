@@ -20,74 +20,105 @@
         </div>
     </div>
 </section>
-
-<section id="empresas" class="page-section">
-    <div class="container">
-        <div class="section-header">
-            <h1>Empresas</h1>
-            <p>Explora negocios locales y descubre nuevas oportunidades</p>
-        </div>
-
-        <?php
-        include 'db.php';
-        $sql = "SELECT e.*, c.nombre AS categoria
-                FROM empresas e
-                JOIN categorias c ON e.id_categoria = c.id_categoria
-                LIMIT 4";
-        $resultado = $conexion->query($sql);
-
-        if($resultado && $resultado->num_rows > 0):
-            while($fila = $resultado->fetch_assoc()):
-        ?>
-        <div class="empresa-card-modern" onclick="toggleContacto(this)">
-            <!-- Logo -->
-            <div class="empresa-logo">
-                <img src="assets/img/<?= htmlspecialchars($fila['logo'] ?? 'default.png') ?>" 
-                     alt="Logo de <?= htmlspecialchars($fila['nombre']) ?>">
-            </div>
-
-            <div class="empresa-info">
-                <div class="empresa-header">
-                    <h3><?= htmlspecialchars($fila['nombre']) ?></h3>
-                    <span class="categoria-badge"><?= htmlspecialchars($fila['categoria']) ?></span>
-                </div>
-
-                <p class="empresa-direccion"><?= htmlspecialchars($fila['direccion'] ?? '') ?></p>
-
-                <div class="empresa-detalle">
-                    <?php
-                    $telefono = $fila['telefono'] ?? $fila['celular'] ?? $fila['whatsapp'] ?? null;
-                    if($telefono):
-                        $numero = preg_replace('/[^0-9]/', '', $telefono);
-                    ?>
-                        <a class="btn-gold" href="https://wa.me/<?= $numero ?>" target="_blank">Contactar por WhatsApp</a>
-                    <?php endif; ?>
-
-                    <?php if(!empty($fila['email'])): ?>
-                        <p><strong>Email:</strong> <?= htmlspecialchars($fila['email']) ?></p>
-                    <?php endif; ?>
-
-                    <?php if(!empty($fila['ubicacion_link'])): ?>
-                        <p><a href="<?= htmlspecialchars($fila['ubicacion_link']) ?>" target="_blank">Ver ubicación en Google Maps</a></p>
-                    <?php endif; ?>
-
-                    <?php if(!empty($fila['link_empresa'])): ?>
-                        <p><a href="<?= htmlspecialchars($fila['link_empresa']) ?>" target="_blank">Página web oficial</a></p>
-                    <?php endif; ?>
-                </div>
-            </div>
-        </div>
-        <?php
-            endwhile;
-        else:
-            echo "<p class='no-results'>No hay resultados disponibles.</p>";
-        endif;
-        ?>
-        <div class="ver-mas">
-            <a href="empresas.php" class="btn-primary">Ver todas las empresas</a>
-        </div>
+<section id="empresas" class="page-section empresas-section">
+  <div class="container">
+    <div class="section-header">
+      <h1>Empresas</h1>
+      <p>Explora negocios locales y descubre nuevas oportunidades</p>
     </div>
+
+    <?php
+    include 'db.php';
+    $sql = "SELECT e.*, c.nombre AS categoria
+            FROM empresas e
+            JOIN categorias c ON e.id_categoria = c.id_categoria
+            LIMIT 6";
+    $resultado = $conexion->query($sql);
+
+    if($resultado && $resultado->num_rows > 0):
+      echo '<div class="empresas-list">';
+      while($fila = $resultado->fetch_assoc()):
+        $logo = !empty($fila['logo']) ? htmlspecialchars($fila['logo']) : 'default.png';
+        $telefono = $fila['telefono'] ?? $fila['celular'] ?? $fila['whatsapp'] ?? null;
+        $numero = $telefono ? preg_replace('/[^0-9]/', '', $telefono) : null;
+    ?>
+      <div class="empresa-item">
+
+    <!-- Logo -->
+    <div class="empresa-img">
+        <img src="assets/img/<?= $logo ?>" alt="<?= htmlspecialchars($fila['nombre']) ?>">
+    </div>
+
+    <!-- Información -->
+    <div class="empresa-info">
+
+        <div class="empresa-header">
+            <h3><?= htmlspecialchars($fila['nombre']) ?></h3>
+            <span class="empresa-categoria"><?= htmlspecialchars($fila['categoria']) ?></span>
+        </div>
+
+        <p class="empresa-direccion">
+            📍 <?= htmlspecialchars($fila['direccion'] ?? '') ?>
+        </p>
+
+        <p class="empresa-slogan">
+            ✨ <?= !empty($fila['slogan']) ? htmlspecialchars($fila['slogan']) : 'Tu mejor opción local' ?>
+        </p>
+
+        <div class="empresa-datos">
+
+            <span>🕒 <?= !empty($fila['horario']) ? htmlspecialchars($fila['horario']) : '9:00 AM - 6:00 PM' ?></span>
+
+            <span>⭐ <?= !empty($fila['rating']) ? htmlspecialchars($fila['rating']) : '4.5' ?></span>
+
+            <?php if($numero): ?>
+                <span>📞 <?= $numero ?></span>
+            <?php endif; ?>
+
+            <span>👁 <?= rand(120,500) ?> visitas</span>
+
+        </div>
+
+        <!-- Mini galería -->
+        <div class="empresa-galeria">
+            <img src="assets/img/<?= $logo ?>" alt="">
+            <img src="assets/img/<?= $logo ?>" alt="">
+            <img src="assets/img/<?= $logo ?>" alt="">
+        </div>
+
+        <!-- Botones -->
+        <div class="empresa-actions">
+
+            <a href="empresas.php?empresa=<?= $fila['id_empresa'] ?>" class="btn-ver">
+                Ver más
+            </a>
+
+            <?php if($numero): ?>
+            <a href="https://wa.me/<?= $numero ?>" target="_blank" class="btn-whatsapp">
+                WhatsApp
+            </a>
+            <?php endif; ?>
+
+            <?php if(!empty($fila['ubicacion_link'])): ?>
+            <a href="<?= htmlspecialchars($fila['ubicacion_link']) ?>" target="_blank" class="btn-maps">
+                Ubicación
+            </a>
+            <?php endif; ?>
+
+        </div>
+
+    </div>
+</div>
+    <?php
+      endwhile;
+      echo '</div>';
+    else:
+      echo "<p class='no-results'>No hay resultados disponibles.</p>";
+    endif;
+    ?>
+  </div>
 </section>
+
 
 <script>
 function toggleContacto(elemento) {
@@ -127,20 +158,29 @@ function toggleContacto(elemento) {
         </div>
         <div class="contact-grid">
             <a href="https://wa.me/51987226299" target="_blank" class="contact-card whatsapp">
-                <div class="contact-icon">📱</div>
-                <h3>WhatsApp</h3>
-                <p>Comunícate directamente para consultas rápidas o información sobre publicidad.</p>
-            </a>
-            <a href="https://www.facebook.com/guiaempresarios" target="_blank" class="contact-card facebook">
-                <div class="contact-icon">🌐</div>
-                <h3>Facebook Oficial</h3>
-                <p>Síguenos para conocer novedades, publicaciones y negocios destacados.</p>
-            </a>
-            <a href="https://m.me/guiaempresarios" target="_blank" class="contact-card messenger">
-                <div class="contact-icon">💬</div>
-                <h3>Messenger</h3>
-                <p>Escríbenos por mensaje directo desde nuestra página oficial.</p>
-            </a>
+    <div class="contact-icon">
+        <img src="assets/img/whatsapp2.png" alt="WhatsApp">
+    </div>
+    <h3>WhatsApp</h3>
+    <p>Comunícate directamente para consultas rápidas o información sobre publicidad.</p>
+</a>
+
+<a href="https://www.facebook.com/guiaempresarios" target="_blank" class="contact-card facebook">
+    <div class="contact-icon">
+        <img src="assets/img/facebook2.png" alt="Facebook">
+    </div>
+    <h3>Facebook Oficial</h3>
+    <p>Síguenos para conocer novedades, publicaciones y negocios destacados.</p>
+</a>
+
+<a href="https://m.me/guiaempresarios" target="_blank" class="contact-card messenger">
+    <div class="contact-icon">
+        <img src="assets/img/messenger2.png" alt="Messenger">
+    </div>
+    <h3>Messenger</h3>
+    <p>Escríbenos por mensaje directo desde nuestra página oficial.</p>
+</a>
+
         </div>
         <div class="contact-info-box">
             <h3>Horario de Atención</h3>

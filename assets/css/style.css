@@ -1054,4 +1054,123 @@ body.dark-mode .no-results {
 .empresa-ubicacion a:hover,
 .empresa-web a:hover {
     text-decoration: underline;
+}.empresas-list{
+display:flex;
+flex-direction:column;
+gap:25px;
+}
+
+.empresa-item{
+display:flex;
+gap:25px;
+background:#fff;
+border-radius:14px;
+padding:25px;
+box-shadow:0 6px 18px rgba(0,0,0,0.08);
+transition:0.3s;
+}
+
+.empresa-item:hover{
+transform:translateY(-4px);
+box-shadow:0 12px 30px rgba(0,0,0,0.12);
+}
+
+.empresa-img img{
+width:150px;
+height:150px;
+border-radius:50%;
+object-fit:cover;
+border:5px solid #e63946;
+}
+
+.empresa-info{
+flex:1;
+}
+
+.empresa-header{
+display:flex;
+align-items:center;
+gap:10px;
+margin-bottom:5px;
+}
+
+.empresa-header h3{
+font-size:22px;
+}
+
+.empresa-categoria{
+background:#3b82f6;
+color:white;
+padding:3px 10px;
+border-radius:20px;
+font-size:12px;
+}
+
+.empresa-direccion{
+color:#555;
+margin-top:5px;
+}
+
+.empresa-slogan{
+color:#888;
+font-style:italic;
+margin-top:5px;
+}
+
+.empresa-datos{
+display:flex;
+flex-wrap:wrap;
+gap:15px;
+margin-top:10px;
+font-size:14px;
+color:#444;
+}
+
+.empresa-galeria{
+display:flex;
+gap:10px;
+margin-top:12px;
+}
+
+.empresa-galeria img{
+width:60px;
+height:60px;
+object-fit:cover;
+border-radius:8px;
+}
+
+.empresa-actions{
+margin-top:15px;
+display:flex;
+gap:10px;
+}
+
+.btn-ver{
+background:#2563eb;
+color:white;
+padding:8px 14px;
+border-radius:6px;
+text-decoration:none;
+}
+
+.btn-whatsapp{
+background:#22c55e;
+color:white;
+padding:8px 14px;
+border-radius:6px;
+text-decoration:none;
+}
+
+.btn-maps{
+background:#f97316;
+color:white;
+padding:8px 14px;
+border-radius:6px;
+text-decoration:none;
+}
+
+.btn-ver:hover,
+.btn-whatsapp:hover,
+.btn-maps:hover{
+opacity:0.85;
 }

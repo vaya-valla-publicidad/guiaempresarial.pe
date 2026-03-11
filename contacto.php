@@ -22,23 +22,29 @@
 
         <div class="contact-grid">
 
-            <a href="https://wa.me/51987226299" target="_blank" class="contact-card whatsapp">
-                <div class="contact-icon">📱</div>
-                <h3>WhatsApp</h3>
-                <p>Comunícate directamente para consultas rápidas o información sobre publicidad.</p>
-            </a>
+             <a href="https://wa.me/51987226299" target="_blank" class="contact-card whatsapp">
+    <div class="contact-icon">
+        <img src="assets/img/whatsapp.png" alt="WhatsApp">
+    </div>
+    <h3>WhatsApp</h3>
+    <p>Comunícate directamente para consultas rápidas o información sobre publicidad.</p>
+</a>
 
-            <a href="https://www.facebook.com/guiaempresarios" target="_blank" class="contact-card facebook">
-                <div class="contact-icon">🌐</div>
-                <h3>Facebook Oficial</h3>
-                <p>Síguenos para conocer novedades, publicaciones y negocios destacados.</p>
-            </a>
+<a href="https://www.facebook.com/guiaempresarios" target="_blank" class="contact-card facebook">
+    <div class="contact-icon">
+        <img src="assets/img/facebook.png" alt="Facebook">
+    </div>
+    <h3>Facebook Oficial</h3>
+    <p>Síguenos para conocer novedades, publicaciones y negocios destacados.</p>
+</a>
 
-            <a href="https://m.me/guiaempresarios" target="_blank" class="contact-card messenger">
-                <div class="contact-icon">💬</div>
-                <h3>Messenger</h3>
-                <p>Escríbenos por mensaje directo desde nuestra página oficial.</p>
-            </a>
+<a href="https://m.me/guiaempresarios" target="_blank" class="contact-card messenger">
+    <div class="contact-icon">
+        <img src="assets/img/messenger.png" alt="Messenger">
+    </div>
+    <h3>Messenger</h3>
+    <p>Escríbenos por mensaje directo desde nuestra página oficial.</p>
+</a>
 
         </div>
 
