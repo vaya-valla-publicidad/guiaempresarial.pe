@@ -36,71 +36,82 @@
             LIMIT 6";
     $resultado = $conexion->query($sql);
 
-    if($resultado && $resultado->num_rows > 0):
-      echo '<div class="empresas-list">';
-      while($fila = $resultado->fetch_assoc()):
-        $logo = !empty($fila['logo']) ? htmlspecialchars($fila['logo']) : 'default.png';
-        $telefono = $fila['telefono'] ?? $fila['celular'] ?? $fila['whatsapp'] ?? null;
-        $numero = $telefono ? preg_replace('/[^0-9]/', '', $telefono) : null;
-        $id_empresa = $fila['id_empresa'];
-
-        $fotos = $conexion->query("SELECT foto FROM empresa_galeria WHERE id_empresa = $id_empresa ORDER BY id_foto ASC");
+    if ($resultado && $resultado->num_rows > 0):
+        echo '<div class="empresas-list">';
+        while ($fila = $resultado->fetch_assoc()):
+            $logo     = !empty($fila['logo']) ? htmlspecialchars($fila['logo']) : 'default.png';
+            $telefono = $fila['telefono'] ?? $fila['celular'] ?? $fila['whatsapp'] ?? null;
+            $numero   = $telefono ? preg_replace('/[^0-9]/', '', $telefono) : null;
+            $id       = intval($fila['id_empresa']);
+            $fotos    = $conexion->query("SELECT foto FROM empresa_galeria WHERE id_empresa = $id ORDER BY orden ASC, id_foto ASC");
+            $fotos_arr = [];
+            if ($fotos && $fotos->num_rows > 0)
+                while ($f = $fotos->fetch_assoc()) $fotos_arr[] = $f['foto'];
     ?>
+        <div class="empresa-item">
 
-      <div class="empresa-item">
-
-        <div class="empresa-info-logo">
-            <!-- Logo -->
-            <div class="empresa-logo">
-                <img src="assets/img/<?= $logo ?>" alt="<?= htmlspecialchars($fila['nombre']) ?>">
-            </div>
-
-            <div class="empresa-info">
-                <div class="empresa-header">
-                    <h3><?= htmlspecialchars($fila['nombre']) ?></h3>
-                    <span class="empresa-categoria"><?= htmlspecialchars($fila['categoria']) ?></span>
+            <div class="empresa-info-logo">
+                <div class="empresa-top-row">
+                    <div class="empresa-logo">
+                        <img src="assets/img/<?= $logo ?>" alt="<?= htmlspecialchars($fila['nombre']) ?>">
+                    </div>
+                    <div class="empresa-titles">
+                        <h3><?= htmlspecialchars($fila['nombre']) ?></h3>
+                        <span class="empresa-categoria"><?= htmlspecialchars($fila['categoria']) ?></span>
+                    </div>
                 </div>
 
+                <p class="empresa-slogan"><?= !empty($fila['slogan']) ? htmlspecialchars($fila['slogan']) : 'Tu mejor opción local' ?></p>
                 <p class="empresa-direccion">📍 <?= htmlspecialchars($fila['direccion'] ?? '') ?></p>
-                <p class="empresa-slogan">✨ <?= !empty($fila['slogan']) ? htmlspecialchars($fila['slogan']) : 'Tu mejor opción local' ?></p>
 
                 <div class="empresa-datos">
                     <span>🕒 <?= !empty($fila['horario']) ? htmlspecialchars($fila['horario']) : '9:00 AM - 6:00 PM' ?></span>
-                    <span>⭐ <?= !empty($fila['rating']) ? htmlspecialchars($fila['rating']) : '4.5' ?></span>
-                    <?php if($numero): ?><span>📞 <?= $numero ?></span><?php endif; ?>
-                    <span>👁 <?= rand(120,500) ?> visitas</span>
+                    <?php if ($numero): ?><span>📞 <?= $numero ?></span><?php endif; ?>
                 </div>
 
                 <div class="empresa-actions">
-                    <a href="empresas.php?empresa=<?= $fila['id_empresa'] ?>" class="btn-ver">Ver más</a>
-                    <?php if($numero): ?>
+                    <a href="empresas.php?empresa=<?= $id ?>" class="btn-ver">Ver más</a>
+                    <?php if ($numero): ?>
                     <a href="https://wa.me/<?= $numero ?>" target="_blank" class="btn-whatsapp">WhatsApp</a>
                     <?php endif; ?>
-                    <?php if(!empty($fila['ubicacion_link'])): ?>
+                    <?php if (!empty($fila['ubicacion_link'])): ?>
                     <a href="<?= htmlspecialchars($fila['ubicacion_link']) ?>" target="_blank" class="btn-maps">Ubicación</a>
                     <?php endif; ?>
                 </div>
             </div>
-        </div>
 
-        <?php if($fotos && $fotos->num_rows > 0): ?>
-        <div class="empresa-slider">
-            <?php while($foto = $fotos->fetch_assoc()): ?>
-            <div class="slide">
-                <img src="assets/img/empresascarrusel/<?= htmlspecialchars($foto['foto']) ?>" alt="Imagen de <?= htmlspecialchars($fila['nombre']) ?>">
+            <?php if (count($fotos_arr) > 0): ?>
+            <div class="empresa-slider">
+                <?php foreach ($fotos_arr as $i => $foto): ?>
+                <div class="slide <?= $i === 0 ? 'activo' : '' ?>">
+                    <img src="assets/img/empresascarrusel/<?= htmlspecialchars($foto) ?>"
+                         alt="Imagen de <?= htmlspecialchars($fila['nombre']) ?>" loading="lazy">
+                </div>
+                <?php endforeach; ?>
+                <?php if (count($fotos_arr) > 1): ?>
+                <div class="slider-dots">
+                    <?php foreach ($fotos_arr as $i => $_): ?>
+                    <button class="slider-dot <?= $i === 0 ? 'activo' : '' ?>" data-index="<?= $i ?>"></button>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
             </div>
-            <?php endwhile; ?>
-        </div>
-        <?php endif; ?>
+            <?php endif; ?>
 
-      </div>
+        </div>
     <?php
-      endwhile;
-      echo '</div>';
-    else:
-      echo "<p class='no-results'>No hay resultados disponibles.</p>";
-    endif;
+        endwhile;
+        echo '</div>';
     ?>
+
+    <div class="ver-mas-empresas">
+        <a href="empresas.php" class="btn-ver-mas">Ver más empresas →</a>
+    </div>
+
+    <?php else: ?>
+        <p class="no-results">No hay resultados disponibles.</p>
+    <?php endif; ?>
+
   </div>
 </section>
 
@@ -112,16 +123,14 @@
         </div>
         <div class="categorias-modern">
             <?php
-                $resultado = $conexion->query("SELECT * FROM categorias LIMIT 5"); 
-                while($fila = $resultado->fetch_assoc()):
+            $resultado = $conexion->query("SELECT * FROM categorias LIMIT 5");
+            while ($fila = $resultado->fetch_assoc()):
             ?>
                 <a href="empresas.php?id_categoria=<?= $fila['id_categoria'] ?>" class="categoria-card">
                     <?= htmlspecialchars($fila['nombre']) ?>
                 </a>
             <?php endwhile; ?>
-            <a href="categorias.php" class="categoria-card ver-mas-card">
-               <br> Ver más categorías
-            </a>
+            <a href="categorias.php" class="categoria-card ver-mas-card">Ver más categorías</a>
         </div>
     </div>
 </section>
@@ -138,13 +147,11 @@
                 <h3>WhatsApp</h3>
                 <p>Comunícate directamente para consultas rápidas o información sobre publicidad.</p>
             </a>
-
             <a href="https://www.facebook.com/guiaempresarios" target="_blank" class="contact-card facebook">
                 <div class="contact-icon"><img src="assets/img/facebook2.png" alt="Facebook"></div>
                 <h3>Facebook Oficial</h3>
                 <p>Síguenos para conocer novedades, publicaciones y negocios destacados.</p>
             </a>
-
             <a href="https://m.me/guiaempresarios" target="_blank" class="contact-card messenger">
                 <div class="contact-icon"><img src="assets/img/messenger2.png" alt="Messenger"></div>
                 <h3>Messenger</h3>
@@ -162,35 +169,34 @@
 <?php include 'includes/footer.php'; ?>
 
 <script>
-document.querySelectorAll('.empresa-slider').forEach(slider=>{
+document.querySelectorAll('.empresa-slider').forEach(slider => {
     const slides = slider.querySelectorAll('.slide');
-    let index = 0;
-    if(slides.length>0){ slides[0].classList.add("activo"); }
-    setInterval(()=>{
-        slides[index].classList.remove("activo");
-        index = (index+1) % slides.length;
-        slides[index].classList.add("activo");
-    },4000);
-});
-
-const inputBuscar = document.getElementById('buscar');
-const resultadosDiv = document.getElementById('resultados');
-const formBuscar = document.getElementById('formBuscar');
-
-inputBuscar.addEventListener('keyup', function() {
-    let query = this.value.trim();
-    if (query.length > 0) {
-        fetch('buscar.php?q=' + encodeURIComponent(query))
-            .then(response => response.text())
-            .then(data => { resultadosDiv.innerHTML = data; });
-    } else { resultadosDiv.innerHTML = ""; }
-});
-
-formBuscar.addEventListener('submit', function(e) {
-    e.preventDefault();
-    let query = inputBuscar.value.trim();
-    if (query.length > 0) {
-        window.location.href = "empresas.php?buscar=" + encodeURIComponent(query);
+    const dots   = slider.querySelectorAll('.slider-dot');
+    if (slides.length <= 1) return;
+    let idx = 0;
+    function goTo(n) {
+        slides[idx].classList.remove('activo');
+        if (dots[idx]) dots[idx].classList.remove('activo');
+        idx = (n + slides.length) % slides.length;
+        slides[idx].classList.add('activo');
+        if (dots[idx]) dots[idx].classList.add('activo');
     }
+    const autoplay = setInterval(() => goTo(idx + 1), 4000);
+    dots.forEach((dot, i) => dot.addEventListener('click', () => { clearInterval(autoplay); goTo(i); }));
+});
+
+const inputBuscar   = document.getElementById('buscar');
+const resultadosDiv = document.getElementById('resultados');
+const formBuscar    = document.getElementById('formBuscar');
+
+inputBuscar.addEventListener('keyup', function () {
+    const q = this.value.trim();
+    if (q.length > 0) fetch('buscar.php?q=' + encodeURIComponent(q)).then(r => r.text()).then(d => { resultadosDiv.innerHTML = d; });
+    else resultadosDiv.innerHTML = '';
+});
+formBuscar.addEventListener('submit', function (e) {
+    e.preventDefault();
+    const q = inputBuscar.value.trim();
+    if (q.length > 0) window.location.href = 'empresas.php?buscar=' + encodeURIComponent(q);
 });
 </script>
