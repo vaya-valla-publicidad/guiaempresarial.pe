@@ -14,107 +14,198 @@
                             <button type="submit">Buscar</button>
                         </div>
                     </form>
-                    <div id="resultados" class="empresas-grid resultados-live"></div>
+                    <div id="resultados" class="resultados-live"></div>
                 </div>
             </section>
         </div>
     </div>
 </section>
 
+<!-- ══════════════ EMPRESAS DESTACADAS ══════════════ -->
 <section id="empresas" class="page-section empresas-section">
   <div class="container">
     <div class="section-header">
-      <h1>Empresas</h1>
-      <p>Explora negocios locales y descubre nuevas oportunidades</p>
+      <h1>⭐ Empresas Destacadas</h1>
     </div>
 
     <?php
     include 'db.php';
-    $sql = "SELECT e.*, c.nombre AS categoria
-            FROM empresas e
-            JOIN categorias c ON e.id_categoria = c.id_categoria
-            LIMIT 6";
-    $resultado = $conexion->query($sql);
+    $sql_destacadas = "SELECT e.*, c.nombre AS categoria
+                       FROM empresas e
+                       JOIN categorias c ON e.id_categoria = c.id_categoria
+                       WHERE e.destacada = 1
+                       LIMIT 3";
+    $res_destacadas = $conexion->query($sql_destacadas);
 
-    if ($resultado && $resultado->num_rows > 0):
+    if ($res_destacadas && $res_destacadas->num_rows > 0):
         echo '<div class="empresas-list">';
-        while ($fila = $resultado->fetch_assoc()):
-            $logo     = !empty($fila['logo']) ? htmlspecialchars($fila['logo']) : 'default.png';
-            $telefono = $fila['telefono'] ?? $fila['celular'] ?? $fila['whatsapp'] ?? null;
+        while ($fila = $res_destacadas->fetch_assoc()):
+            $logo     = !empty($fila['logo']) ? htmlspecialchars($fila['logo']) : null;
+            $telefono = $fila['telefono'] ?? null;
             $numero   = $telefono ? preg_replace('/[^0-9]/', '', $telefono) : null;
             $id       = intval($fila['id_empresa']);
             $fotos    = $conexion->query("SELECT foto FROM empresa_galeria WHERE id_empresa = $id ORDER BY orden ASC, id_foto ASC");
             $fotos_arr = [];
             if ($fotos && $fotos->num_rows > 0)
                 while ($f = $fotos->fetch_assoc()) $fotos_arr[] = $f['foto'];
-    ?>
-        <div class="empresa-item">
-
-            <div class="empresa-info-logo">
-                <div class="empresa-top-row">
-                    <div class="empresa-logo">
-                        <img src="assets/img/<?= $logo ?>" alt="<?= htmlspecialchars($fila['nombre']) ?>">
+        ?>
+            <div class="empresa-item empresa-destacada">
+                <div class="empresa-info-logo">
+                    <div class="empresa-top-row">
+                        <div class="empresa-logo">
+                            <?php if ($logo): ?>
+                                <img src="/guiaempresarial.pe/assets/img/<?= $logo ?>" alt="<?= htmlspecialchars($fila['nombre']) ?>">
+                            <?php else: ?>
+                                <div class="logo-placeholder"><?= mb_strtoupper(mb_substr($fila['nombre'], 0, 1)) ?></div>
+                            <?php endif; ?>
+                        </div>
+                        <div class="empresa-titles">
+                            <h3><?= htmlspecialchars($fila['nombre']) ?> <span class="badge-destacada">⭐ Destacada</span></h3>
+                            <span class="empresa-categoria"><?= htmlspecialchars($fila['categoria']) ?></span>
+                        </div>
                     </div>
-                    <div class="empresa-titles">
-                        <h3><?= htmlspecialchars($fila['nombre']) ?></h3>
-                        <span class="empresa-categoria"><?= htmlspecialchars($fila['categoria']) ?></span>
+                    <p class="empresa-slogan">
+                        <?= !empty($fila['descripcion']) ? htmlspecialchars(mb_strimwidth($fila['descripcion'], 0, 80, '…')) : 'Tu mejor opción local' ?>
+                    </p>
+                    <?php if (!empty($fila['direccion'])): ?>
+                    <p class="empresa-direccion">📍 <?= htmlspecialchars($fila['direccion']) ?></p>
+                    <?php endif; ?>
+                    <div class="empresa-datos">
+                        <span>🕒 <?= !empty($fila['horario']) ? htmlspecialchars($fila['horario']) : '9:00 AM - 6:00 PM' ?></span>
+                        <?php if ($numero): ?><span>📞 <?= $numero ?></span><?php endif; ?>
+                        <span>👁 <?= number_format($fila['vistas']) ?> vistas</span>
+                    </div>
+                    <div class="empresa-actions">
+                        <a href="empresas.php?empresa=<?= $id ?>" class="btn-ver">Ver más</a>
+                        <?php if ($numero): ?>
+                        <a href="https://wa.me/<?= $numero ?>" target="_blank" class="btn-whatsapp">WhatsApp</a>
+                        <?php endif; ?>
+                        <?php if (!empty($fila['ubicacion_link'])): ?>
+                        <a href="<?= htmlspecialchars($fila['ubicacion_link']) ?>" target="_blank" class="btn-maps">Ubicación</a>
+                        <?php endif; ?>
                     </div>
                 </div>
-
-                <p class="empresa-slogan"><?= !empty($fila['slogan']) ? htmlspecialchars($fila['slogan']) : 'Tu mejor opción local' ?></p>
-                <p class="empresa-direccion">📍 <?= htmlspecialchars($fila['direccion'] ?? '') ?></p>
-
-                <div class="empresa-datos">
-                    <span>🕒 <?= !empty($fila['horario']) ? htmlspecialchars($fila['horario']) : '9:00 AM - 6:00 PM' ?></span>
-                    <?php if ($numero): ?><span>📞 <?= $numero ?></span><?php endif; ?>
-                </div>
-
-                <div class="empresa-actions">
-                    <a href="empresas.php?empresa=<?= $id ?>" class="btn-ver">Ver más</a>
-                    <?php if ($numero): ?>
-                    <a href="https://wa.me/<?= $numero ?>" target="_blank" class="btn-whatsapp">WhatsApp</a>
-                    <?php endif; ?>
-                    <?php if (!empty($fila['ubicacion_link'])): ?>
-                    <a href="<?= htmlspecialchars($fila['ubicacion_link']) ?>" target="_blank" class="btn-maps">Ubicación</a>
-                    <?php endif; ?>
-                </div>
-            </div>
-
-            <?php if (count($fotos_arr) > 0): ?>
-            <div class="empresa-slider">
-                <?php foreach ($fotos_arr as $i => $foto): ?>
-                <div class="slide <?= $i === 0 ? 'activo' : '' ?>">
-                    <img src="assets/img/empresascarrusel/<?= htmlspecialchars($foto) ?>"
-                         alt="Imagen de <?= htmlspecialchars($fila['nombre']) ?>" loading="lazy">
-                </div>
-                <?php endforeach; ?>
-                <?php if (count($fotos_arr) > 1): ?>
-                <div class="slider-dots">
-                    <?php foreach ($fotos_arr as $i => $_): ?>
-                    <button class="slider-dot <?= $i === 0 ? 'activo' : '' ?>" data-index="<?= $i ?>"></button>
+                <?php if (count($fotos_arr) > 0): ?>
+                <div class="empresa-slider">
+                    <?php foreach ($fotos_arr as $i => $foto): ?>
+                    <div class="slide <?= $i === 0 ? 'activo' : '' ?>">
+                        <img src="/guiaempresarial.pe/assets/img/empresascarrusel/<?= htmlspecialchars($foto) ?>"
+                             alt="Imagen de <?= htmlspecialchars($fila['nombre']) ?>" loading="lazy">
+                    </div>
                     <?php endforeach; ?>
+                    <?php if (count($fotos_arr) > 1): ?>
+                    <div class="slider-dots">
+                        <?php foreach ($fotos_arr as $i => $_): ?>
+                        <button class="slider-dot <?= $i === 0 ? 'activo' : '' ?>" data-index="<?= $i ?>"></button>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
                 </div>
                 <?php endif; ?>
             </div>
-            <?php endif; ?>
-
-        </div>
-    <?php
+        <?php
         endwhile;
         echo '</div>';
-    ?>
+    else: ?>
+        <p class="no-results">No hay empresas destacadas aún.</p>
+    <?php endif; ?>
+  </div>
+</section>
+
+<!-- ══════════════ MÁS VISTAS ══════════════ -->
+<section class="page-section empresas-section" style="padding-top:0;">
+  <div class="container">
+    <div class="section-header">
+      <h1>👁 Más Vistas</h1>
+      <p>Las empresas más populares de nuestra guía</p>
+    </div>
+
+    <?php
+    $sql_vistas = "SELECT e.*, c.nombre AS categoria
+                   FROM empresas e
+                   JOIN categorias c ON e.id_categoria = c.id_categoria
+                   ORDER BY e.vistas DESC
+                   LIMIT 3";
+    $res_vistas = $conexion->query($sql_vistas);
+
+    if ($res_vistas && $res_vistas->num_rows > 0):
+        echo '<div class="empresas-list">';
+        while ($fila = $res_vistas->fetch_assoc()):
+            $logo     = !empty($fila['logo']) ? htmlspecialchars($fila['logo']) : null;
+            $telefono = $fila['telefono'] ?? null;
+            $numero   = $telefono ? preg_replace('/[^0-9]/', '', $telefono) : null;
+            $id       = intval($fila['id_empresa']);
+            $fotos    = $conexion->query("SELECT foto FROM empresa_galeria WHERE id_empresa = $id ORDER BY orden ASC, id_foto ASC");
+            $fotos_arr = [];
+            if ($fotos && $fotos->num_rows > 0)
+                while ($f = $fotos->fetch_assoc()) $fotos_arr[] = $f['foto'];
+        ?>
+            <div class="empresa-item">
+                <div class="empresa-info-logo">
+                    <div class="empresa-top-row">
+                        <div class="empresa-logo">
+                            <?php if ($logo): ?>
+                                <img src="/guiaempresarial.pe/assets/img/<?= $logo ?>" alt="<?= htmlspecialchars($fila['nombre']) ?>">
+                            <?php else: ?>
+                                <div class="logo-placeholder"><?= mb_strtoupper(mb_substr($fila['nombre'], 0, 1)) ?></div>
+                            <?php endif; ?>
+                        </div>
+                        <div class="empresa-titles">
+                            <h3><?= htmlspecialchars($fila['nombre']) ?></h3>
+                            <span class="empresa-categoria"><?= htmlspecialchars($fila['categoria']) ?></span>
+                        </div>
+                    </div>
+                    <p class="empresa-slogan">
+                        <?= !empty($fila['descripcion']) ? htmlspecialchars(mb_strimwidth($fila['descripcion'], 0, 80, '…')) : 'Tu mejor opción local' ?>
+                    </p>
+                    <?php if (!empty($fila['direccion'])): ?>
+                    <p class="empresa-direccion">📍 <?= htmlspecialchars($fila['direccion']) ?></p>
+                    <?php endif; ?>
+                    <div class="empresa-datos">
+                        <span>🕒 <?= !empty($fila['horario']) ? htmlspecialchars($fila['horario']) : '9:00 AM - 6:00 PM' ?></span>
+                        <?php if ($numero): ?><span>📞 <?= $numero ?></span><?php endif; ?>
+                        <span>👁 <?= number_format($fila['vistas']) ?> vistas</span>
+                    </div>
+                    <div class="empresa-actions">
+                        <a href="empresas.php?empresa=<?= $id ?>" class="btn-ver">Ver más</a>
+                        <?php if ($numero): ?>
+                        <a href="https://wa.me/<?= $numero ?>" target="_blank" class="btn-whatsapp">WhatsApp</a>
+                        <?php endif; ?>
+                        <?php if (!empty($fila['ubicacion_link'])): ?>
+                        <a href="<?= htmlspecialchars($fila['ubicacion_link']) ?>" target="_blank" class="btn-maps">Ubicación</a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php if (count($fotos_arr) > 0): ?>
+                <div class="empresa-slider">
+                    <?php foreach ($fotos_arr as $i => $foto): ?>
+                    <div class="slide <?= $i === 0 ? 'activo' : '' ?>">
+                        <img src="/guiaempresarial.pe/assets/img/empresascarrusel/<?= htmlspecialchars($foto) ?>"
+                             alt="Imagen de <?= htmlspecialchars($fila['nombre']) ?>" loading="lazy">
+                    </div>
+                    <?php endforeach; ?>
+                    <?php if (count($fotos_arr) > 1): ?>
+                    <div class="slider-dots">
+                        <?php foreach ($fotos_arr as $i => $_): ?>
+                        <button class="slider-dot <?= $i === 0 ? 'activo' : '' ?>" data-index="<?= $i ?>"></button>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
+            </div>
+        <?php
+        endwhile;
+        echo '</div>';
+    endif; ?>
 
     <div class="ver-mas-empresas">
         <a href="empresas.php" class="btn-ver-mas">Ver más empresas →</a>
     </div>
-
-    <?php else: ?>
-        <p class="no-results">No hay resultados disponibles.</p>
-    <?php endif; ?>
-
   </div>
 </section>
 
+<!-- ══════════════ CATEGORÍAS ══════════════ -->
 <section id="categorias" class="page-section">
     <div class="container">
         <div class="section-header">
@@ -125,16 +216,27 @@
             <?php
             $resultado = $conexion->query("SELECT * FROM categorias LIMIT 5");
             while ($fila = $resultado->fetch_assoc()):
+                $nombre = htmlspecialchars($fila['nombre']);
+                $icono  = htmlspecialchars($fila['icono'] ?? 'bi-briefcase');
             ?>
                 <a href="empresas.php?id_categoria=<?= $fila['id_categoria'] ?>" class="categoria-card">
-                    <?= htmlspecialchars($fila['nombre']) ?>
+                    <div class="categoria-icono-wrap">
+                        <i class="bi <?= $icono ?>"></i>
+                    </div>
+                    <span class="categoria-nombre"><?= $nombre ?></span>
                 </a>
             <?php endwhile; ?>
-            <a href="categorias.php" class="categoria-card ver-mas-card">Ver más categorías</a>
+            <a href="categorias.php" class="categoria-card ver-mas-card">
+                <div class="categoria-icono-wrap">
+                    <i class="bi bi-plus-circle"></i>
+                </div>
+                <span class="categoria-nombre">Ver más categorías</span>
+            </a>
         </div>
     </div>
 </section>
 
+<!-- ══════════════ CONTACTO ══════════════ -->
 <section id="contacto" class="page-section">
     <div class="container">
         <div class="section-header">
@@ -194,6 +296,7 @@ inputBuscar.addEventListener('keyup', function () {
     if (q.length > 0) fetch('buscar.php?q=' + encodeURIComponent(q)).then(r => r.text()).then(d => { resultadosDiv.innerHTML = d; });
     else resultadosDiv.innerHTML = '';
 });
+
 formBuscar.addEventListener('submit', function (e) {
     e.preventDefault();
     const q = inputBuscar.value.trim();

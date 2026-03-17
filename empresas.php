@@ -23,7 +23,7 @@
         elseif ($id_categoria) $where[] = "e.id_categoria = " . intval($id_categoria);
         elseif ($buscar) {
             $texto   = $conexion->real_escape_string($buscar);
-            $where[] = "(e.nombre LIKE '%$texto%' OR e.slogan LIKE '%$texto%' OR c.nombre LIKE '%$texto%')";
+            $where[] = "(e.nombre LIKE '%$texto%' OR e.descripcion LIKE '%$texto%' OR c.nombre LIKE '%$texto%')";
         }
         if (!empty($where)) $sql .= " WHERE " . implode(" AND ", $where);
 
@@ -31,13 +31,16 @@
 
         if ($id_empresa && $resultado && $resultado->num_rows === 1):
             $fila     = $resultado->fetch_assoc();
-            $logo     = !empty($fila['logo']) ? htmlspecialchars($fila['logo']) : 'default.png';
-            $telefono = $fila['telefono'] ?? $fila['celular'] ?? $fila['whatsapp'] ?? null;
+            $logo     = !empty($fila['logo']) ? htmlspecialchars($fila['logo']) : null;
+            $telefono = $fila['telefono'] ?? null;
             $numero   = $telefono ? preg_replace('/[^0-9]/', '', $telefono) : null;
             $fotos_q  = $conexion->query("SELECT foto FROM empresa_galeria WHERE id_empresa = " . intval($id_empresa) . " ORDER BY orden ASC, id_foto ASC");
             $fotos_arr = [];
             if ($fotos_q && $fotos_q->num_rows > 0)
                 while ($f = $fotos_q->fetch_assoc()) $fotos_arr[] = $f['foto'];
+
+            // Sumar vista
+            $conexion->query("UPDATE empresas SET vistas = vistas + 1 WHERE id_empresa = " . intval($id_empresa));
         ?>
 
         <a href="empresas.php" class="btn-volver">← Volver a empresas</a>
@@ -46,11 +49,22 @@
             <div class="perfil-hero">
                 <div class="perfil-banner"></div>
                 <div class="perfil-hero-body">
-                    <img class="perfil-logo" src="assets/img/<?= $logo ?>" alt="<?= htmlspecialchars($fila['nombre']) ?>">
+                    <?php if ($logo): ?>
+                        <img class="perfil-logo" src="assets/img/<?= $logo ?>" alt="<?= htmlspecialchars($fila['nombre']) ?>">
+                    <?php else: ?>
+                        <div class="perfil-logo logo-placeholder" style="width:90px;height:90px;font-size:32px;">
+                            <?= mb_strtoupper(mb_substr($fila['nombre'], 0, 1)) ?>
+                        </div>
+                    <?php endif; ?>
                     <div class="perfil-hero-info">
                         <div class="perfil-hero-top">
                             <div>
-                                <h2 class="perfil-nombre"><?= htmlspecialchars($fila['nombre']) ?></h2>
+                                <h2 class="perfil-nombre">
+                                    <?= htmlspecialchars($fila['nombre']) ?>
+                                    <?php if ($fila['destacada']): ?>
+                                        <span class="badge-destacada">⭐ Destacada</span>
+                                    <?php endif; ?>
+                                </h2>
                                 <span class="empresa-card-badge"><?= htmlspecialchars($fila['categoria']) ?></span>
                             </div>
                             <div class="perfil-acciones">
@@ -62,9 +76,10 @@
                                 <?php endif; ?>
                             </div>
                         </div>
-                        <?php if (!empty($fila['slogan'])): ?>
-                        <p class="perfil-slogan">✨ <?= htmlspecialchars($fila['slogan']) ?></p>
+                        <?php if (!empty($fila['descripcion'])): ?>
+                        <p class="perfil-slogan">✨ <?= htmlspecialchars(mb_strimwidth($fila['descripcion'], 0, 100, '…')) ?></p>
                         <?php endif; ?>
+                        <p style="font-size:12px;color:var(--muted);margin-top:8px;">👁 <?= number_format($fila['vistas']) ?> vistas</p>
                     </div>
                 </div>
             </div>
@@ -145,7 +160,6 @@
 
         <?php
         elseif ($resultado && $resultado->num_rows > 0):
-
             if ($buscar): ?>
             <div class="filtro-activo">
                 🔍 Resultados para: "<?= htmlspecialchars($buscar) ?>"
@@ -164,8 +178,8 @@
         <div class="empresas-list">
         <?php
             while ($fila = $resultado->fetch_assoc()):
-                $logo      = !empty($fila['logo']) ? htmlspecialchars($fila['logo']) : 'default.png';
-                $telefono  = $fila['telefono'] ?? $fila['celular'] ?? $fila['whatsapp'] ?? null;
+                $logo      = !empty($fila['logo']) ? htmlspecialchars($fila['logo']) : null;
+                $telefono  = $fila['telefono'] ?? null;
                 $numero    = $telefono ? preg_replace('/[^0-9]/', '', $telefono) : null;
                 $id        = intval($fila['id_empresa']);
                 $fotos     = $conexion->query("SELECT foto FROM empresa_galeria WHERE id_empresa = $id ORDER BY orden ASC, id_foto ASC");
@@ -173,27 +187,32 @@
                 if ($fotos && $fotos->num_rows > 0)
                     while ($f = $fotos->fetch_assoc()) $fotos_arr[] = $f['foto'];
         ?>
-            <div class="empresa-item">
-
+            <div class="empresa-item <?= $fila['destacada'] ? 'empresa-destacada' : '' ?>">
                 <div class="empresa-info-logo">
                     <div class="empresa-top-row">
                         <div class="empresa-logo">
-                            <img src="assets/img/<?= $logo ?>" alt="<?= htmlspecialchars($fila['nombre']) ?>">
+                            <?php if ($logo): ?>
+                                <img src="assets/img/<?= $logo ?>" alt="<?= htmlspecialchars($fila['nombre']) ?>">
+                            <?php else: ?>
+                                <div class="logo-placeholder"><?= mb_strtoupper(mb_substr($fila['nombre'], 0, 1)) ?></div>
+                            <?php endif; ?>
                         </div>
                         <div class="empresa-titles">
-                            <h3><?= htmlspecialchars($fila['nombre']) ?></h3>
+                            <h3>
+                                <?= htmlspecialchars($fila['nombre']) ?>
+                                <?php if ($fila['destacada']): ?>
+                                    <span class="badge-destacada">⭐ Destacada</span>
+                                <?php endif; ?>
+                            </h3>
                             <span class="empresa-categoria"><?= htmlspecialchars($fila['categoria']) ?></span>
                         </div>
                     </div>
-
                     <p class="empresa-slogan">
-                        <?= !empty($fila['slogan']) ? htmlspecialchars($fila['slogan']) : 'Tu mejor opción local' ?>
+                        <?= !empty($fila['descripcion']) ? htmlspecialchars(mb_strimwidth($fila['descripcion'], 0, 80, '…')) : 'Tu mejor opción local' ?>
                     </p>
-
                     <?php if (!empty($fila['direccion'])): ?>
                     <p class="empresa-direccion">📍 <?= htmlspecialchars($fila['direccion']) ?></p>
                     <?php endif; ?>
-
                     <div class="empresa-datos">
                         <?php if (!empty($fila['horario'])): ?>
                         <span>🕒 <?= htmlspecialchars($fila['horario']) ?></span>
@@ -201,8 +220,8 @@
                         <?php if ($numero): ?>
                         <span>📞 <?= $numero ?></span>
                         <?php endif; ?>
+                        <span>👁 <?= number_format($fila['vistas']) ?> vistas</span>
                     </div>
-
                     <div class="empresa-actions">
                         <a href="empresas.php?empresa=<?= $id ?>" class="btn-ver">Ver más</a>
                         <?php if ($numero): ?>
@@ -213,7 +232,6 @@
                         <?php endif; ?>
                     </div>
                 </div>
-
                 <?php if (count($fotos_arr) > 0): ?>
                 <div class="empresa-slider">
                     <?php foreach ($fotos_arr as $i => $foto): ?>
@@ -232,7 +250,6 @@
                     <?php endif; ?>
                 </div>
                 <?php endif; ?>
-
             </div>
         <?php endwhile; ?>
         </div>

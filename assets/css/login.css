@@ -6,7 +6,7 @@
 
 body {
     font-family: 'Inter', sans-serif;
-    background: #f0f2f5; 
+    background: #f0f2f5;
     min-height: 100vh;
     color: #2c3e50;
     display: flex;
@@ -30,7 +30,6 @@ body {
     text-align: center;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
-
 .login-section:hover {
     transform: translateY(-5px);
     box-shadow: 0 25px 50px rgba(0,0,0,0.12);
@@ -70,7 +69,6 @@ body {
     background: #fdfdfd;
     transition: all 0.3s ease;
 }
-
 .login-form input:focus {
     border-color: #3498db;
     box-shadow: 0 0 8px rgba(52,152,219,0.3);
@@ -89,7 +87,6 @@ body {
     font-size: 16px;
     transition: all 0.25s ease;
 }
-
 .login-btn:hover {
     background: linear-gradient(135deg, #2e86c1, #5499c7);
     transform: translateY(-2px);
@@ -102,17 +99,12 @@ body {
 }
 
 .panel {
-    max-width: 1200px;
+    width: 100%;
+    max-width: 1400px;
     background: #ffffff;
     border-radius: 20px;
     box-shadow: 0 15px 35px rgba(0,0,0,0.08);
     padding: 40px;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.panel:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 25px 50px rgba(0,0,0,0.12);
 }
 
 .panel-title {
@@ -129,7 +121,6 @@ body {
     font-weight: 600;
     color: #34495e;
 }
-
 .usuario-info a {
     text-decoration: none;
     margin-left: 12px;
@@ -137,67 +128,80 @@ body {
     font-weight: 700;
     transition: all 0.3s ease;
 }
-
-.usuario-info a:hover {
-    color: #3498db;
-}
+.usuario-info a:hover { color: #3498db; }
 
 .panel table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 25px;
-    font-size: 15px;
+    margin-top: 20px;
+    font-size: 13px;
+    table-layout: auto;
 }
-
-.panel table th, 
+.panel table th,
 .panel table td {
-    padding: 14px;
+    padding: 10px 12px;
     border: 1px solid #e0e0e0;
     text-align: center;
-    transition: background 0.3s ease;
+    vertical-align: middle;
+    word-break: break-word;
+    max-width: 180px;
 }
-
 .panel table th {
     background: linear-gradient(135deg, #3498db, #5dade2);
     color: #fff;
     font-weight: 700;
-    border-radius: 8px;
+    font-size: 12px;
+    white-space: nowrap;
 }
+.panel table tr:nth-child(even) { background-color: #f7f9fb; }
+.panel table tr:hover { background-color: #d6eaf8; }
 
-.panel table tr:nth-child(even) {
-    background-color: #f7f9fb;
-}
-
-.panel table tr:hover {
-    background-color: #d6eaf8;
+.table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
 }
 
 .panel .btn {
-    padding: 8px 18px;
+    padding: 7px 14px;
     border: none;
-    border-radius: 10px;
+    border-radius: 8px;
     background: #2c3e50;
     color: #ffffff;
     font-weight: 600;
+    font-size: 12px;
     cursor: pointer;
     text-decoration: none;
     transition: all 0.3s ease;
+    display: inline-block;
 }
-
 .panel .btn:hover {
     background: #3498db;
     color: #fff;
     transform: scale(1.05);
 }
-
 .panel .btn-danger {
     background-color: #e74c3c;
     color: #fff;
 }
-
 .panel .btn-danger:hover {
     background-color: #c0392b;
     transform: scale(1.05);
+}
+
+.acciones {
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.panel table .bi {
+    font-size: 24px;
+    color: #E63946;
 }
 
 .panel form,
@@ -212,12 +216,7 @@ body {
     flex-direction: column;
     gap: 20px;
 }
-
-.panel form label {
-    font-weight: 600;
-    color: #2c3e50;
-}
-
+.panel form label { font-weight: 600; color: #2c3e50; }
 .panel form input,
 .panel form select,
 .panel form textarea {
@@ -229,7 +228,6 @@ body {
     background: #fff;
     transition: all 0.3s ease;
 }
-
 .panel form input:focus,
 .panel form select:focus,
 .panel form textarea:focus {
@@ -237,11 +235,7 @@ body {
     box-shadow: 0 0 8px rgba(52,152,219,0.3);
     outline: none;
 }
-
-.panel form textarea {
-    resize: vertical;
-    min-height: 100px;
-}
+.panel form textarea { resize: vertical; min-height: 100px; }
 
 .panel form .btn,
 .panel .btn-agregar,
@@ -260,7 +254,6 @@ body {
     display: block;
     margin: 20px auto;
 }
-
 .panel form .btn:hover,
 .panel .btn-agregar:hover,
 .panel .btn-editar:hover {
@@ -281,46 +274,93 @@ body {
     font-weight: 700;
     transition: all 0.3s ease;
 }
-
 .panel a.btn-danger:hover {
     background: #c0392b;
     transform: scale(1.05);
 }
 
-.panel.admin .panel-title {
-    color: #B28700;
+.destacadas-section {
+    background: linear-gradient(135deg, rgba(247,220,5,0.08), rgba(230,57,70,0.08));
+    border: 1px solid rgba(247,220,5,0.4);
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin-bottom: 30px;
+}
+.destacadas-section h3 {
+    color: #E63946;
+    margin-bottom: 8px;
+    font-size: 16px;
+}
+.contador-dest {
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 12px;
+}
+.contador-dest span { font-weight: 700; color: #E63946; }
+.destacadas-lista {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.destacada-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    border: 1px solid rgba(247,220,5,0.5);
+    border-radius: 30px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.destacada-chip button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #aaa;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0;
+    transition: 0.2s;
+}
+.destacada-chip button:hover { color: #e74c3c; }
+
+.btn-estrella {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    padding: 0;
+    transition: transform 0.2s;
+    line-height: 1;
+}
+.btn-estrella:hover { transform: scale(1.4); }
+.btn-estrella.activa { filter: drop-shadow(0 0 4px gold); }
+
+.destacada-info {
+    font-size: 12px;
+    color: #888;
+    margin-top: 4px;
+}
+.destacada-info.lleno {
+    color: #e74c3c;
+    font-weight: 600;
 }
 
-.panel.editor .panel-title {
-    color: #555;
+.panel.admin .panel-title { color: #B28700; }
+.panel.editor .panel-title { color: #555; }
+
+@media (max-width: 1024px) {
+    .panel { padding: 30px; }
+    .panel form { padding: 30px; }
 }
 
-@media(max-width:1024px) {
-    .panel {
-        padding: 30px;
-    }
-    .panel form {
-        padding: 30px;
-    }
-}
-
-@media(max-width:768px) {
-    .login-section {
-        width: 95%;
-        padding: 40px 25px;
-    }
-    .panel-container {
-        padding: 20px;
-    }
-    .panel {
-        padding: 25px;
-    }
-    .panel form {
-        padding: 20px;
-    }
+@media (max-width: 768px) {
+    .login-section { width: 95%; padding: 40px 25px; }
+    .panel-container { padding: 20px; }
+    .panel { padding: 20px; }
+    .panel form { padding: 20px; }
     .panel table th,
-    .panel table td {
-        padding: 10px;
-        font-size: 14px;
-    }
+    .panel table td { padding: 8px; font-size: 12px; }
 }

@@ -11,11 +11,16 @@
 
         <div class="categorias-modern">
             <?php
-            $resultado = $conexion->query("SELECT * FROM categorias");
-            while($fila = $resultado->fetch_assoc()):
+            $resultado = $conexion->query("SELECT * FROM categorias ORDER BY nombre ASC");
+            while ($fila = $resultado->fetch_assoc()):
+                $nombre = htmlspecialchars($fila['nombre']);
+                $icono  = htmlspecialchars($fila['icono'] ?? 'bi-briefcase');
             ?>
                 <a href="empresas.php?id_categoria=<?= $fila['id_categoria'] ?>" class="categoria-card">
-                    <?= htmlspecialchars($fila['nombre']) ?>
+                    <div class="categoria-icono-wrap">
+                        <i class="bi <?= $icono ?>"></i>
+                    </div>
+                    <span class="categoria-nombre"><?= $nombre ?></span>
                 </a>
             <?php endwhile; ?>
         </div>

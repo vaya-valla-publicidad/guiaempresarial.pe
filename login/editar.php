@@ -27,6 +27,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $ubicacion_link = trim($_POST['ubicacion_link']) ?: null;
     $link_empresa   = trim($_POST['link_empresa']) ?: null;
     $logo           = $empresa['logo'];
+    $destacada_new  = intval($_POST['destacada']);
+
+    // Validar máximo 3 destacadas
+    if ($destacada_new === 1 && $empresa['destacada'] == 0) {
+        $total_dest = $conexion->query("SELECT COUNT(*) as total FROM empresas WHERE destacada = 1")->fetch_assoc()['total'];
+        if ($total_dest >= 3) {
+            $error = "Ya hay 3 empresas destacadas. Quita una antes de destacar esta.";
+            $destacada_new = 0;
+        }
+    }
 
     if (!empty($_FILES['logo']['name'])) {
         $nombreArchivo = uniqid() . "_" . basename($_FILES['logo']['name']);
@@ -36,22 +46,25 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
     }
 
-    $stmt = $conexion->prepare(
-        "UPDATE empresas SET nombre=?,telefono=?,direccion=?,id_categoria=?,
-         descripcion=?,horario=?,ubicacion_link=?,link_empresa=?,logo=?
-         WHERE id_empresa=?"
-    );
-    $stmt->bind_param("sssisssssi", $nombre, $telefono, $direccion, $id_categoria,
-                      $descripcion, $horario, $ubicacion_link, $link_empresa, $logo, $id);
+    if (empty($error)) {
+        $stmt = $conexion->prepare(
+            "UPDATE empresas SET nombre=?,telefono=?,direccion=?,id_categoria=?,
+             descripcion=?,horario=?,ubicacion_link=?,link_empresa=?,logo=?,destacada=?
+             WHERE id_empresa=?"
+        );
+        $stmt->bind_param("sssisssssii", $nombre, $telefono, $direccion, $id_categoria,
+                          $descripcion, $horario, $ubicacion_link, $link_empresa, $logo, $destacada_new, $id);
 
-    if ($stmt->execute()) {
-        $success = "Empresa actualizada correctamente";
-        $empresa['nombre']         = $nombre;
-        $empresa['ubicacion_link'] = $ubicacion_link;
-    } else {
-        $error = "Error: " . $stmt->error;
+        if ($stmt->execute()) {
+            $success = "Empresa actualizada correctamente ✅";
+            $empresa['nombre']         = $nombre;
+            $empresa['ubicacion_link'] = $ubicacion_link;
+            $empresa['destacada']      = $destacada_new;
+        } else {
+            $error = "Error: " . $stmt->error;
+        }
+        $stmt->close();
     }
-    $stmt->close();
 
     if (!empty($_FILES['fotos']['name'][0])) {
         $carpeta      = __DIR__ . "/../assets/img/empresascarrusel/";
@@ -73,6 +86,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 $categorias = $conexion->query("SELECT id_categoria,nombre FROM categorias");
 $mapaQuery  = urlencode($empresa['nombre'] . ' ' . $empresa['direccion']);
+$total_destacadas = $conexion->query("SELECT COUNT(*) as total FROM empresas WHERE destacada = 1")->fetch_assoc()['total'];
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -82,9 +96,7 @@ $mapaQuery  = urlencode($empresa['nombre'] . ' ' . $empresa['direccion']);
     <link rel="stylesheet" href="../assets/css/login.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
     <style>
-        .fotos-grid {
-            display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px;
-        }
+        .fotos-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
         .foto-item {
             position: relative; cursor: grab; user-select: none;
             border-radius: 10px; overflow: hidden;
@@ -93,45 +105,40 @@ $mapaQuery  = urlencode($empresa['nombre'] . ' ' . $empresa['direccion']);
         .foto-item:hover { border-color: #3498db; box-shadow: 0 4px 12px rgba(52,152,219,0.25); }
         .foto-item.sortable-chosen { border-color: #3498db; box-shadow: 0 8px 20px rgba(52,152,219,0.3); opacity: 0.85; }
         .foto-item.sortable-ghost  { opacity: 0.3; }
-        .foto-item img {
-            width: 120px; height: 120px; object-fit: cover; display: block;
-        }
+        .foto-item img { width: 120px; height: 120px; object-fit: cover; display: block; }
         .foto-item .orden-badge {
             position: absolute; top: 5px; left: 5px;
             background: rgba(27,58,87,0.8); color: #fff;
-            font-size: 11px; font-weight: 700; padding: 2px 7px;
-            border-radius: 20px;
+            font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 20px;
         }
         .foto-item .btn-borrar {
             position: absolute; top: 5px; right: 5px;
             background: red; color: white; padding: 3px 7px;
-            border-radius: 4px; font-size: 12px; text-decoration: none;
-            cursor: pointer; border: none;
+            border-radius: 4px; font-size: 12px; cursor: pointer; border: none;
         }
-        .drag-hint {
-            font-size: 12px; color: #888; margin-top: 6px;
-        }
+        .drag-hint { font-size: 12px; color: #888; margin-top: 6px; }
         .btn-guardar-orden {
             margin-top: 12px; padding: 9px 22px;
-            background: #2c3e50; color: #fff;
-            border: none; border-radius: 10px;
-            font-weight: 600; cursor: pointer; font-size: 14px;
-            transition: 0.2s; display: inline-flex; align-items: center; gap: 6px;
+            background: #2c3e50; color: #fff; border: none;
+            border-radius: 10px; font-weight: 600; cursor: pointer;
+            font-size: 14px; transition: 0.2s;
         }
         .btn-guardar-orden:hover { background: #3498db; }
         .btn-guardar-orden.guardado { background: #27ae60; }
-
         .mapa-wrap { display: flex; flex-direction: column; gap: 10px; }
         .mapa-buscar-row { display: flex; gap: 8px; }
         .mapa-buscar-row input { flex: 1; }
         .mapa-buscar-row button {
             padding: 10px 18px; background: #3498db; color: #fff;
-            border: none; border-radius: 10px; cursor: pointer;
-            font-weight: 600; white-space: nowrap;
+            border: none; border-radius: 10px; cursor: pointer; font-weight: 600;
         }
         .mapa-buscar-row button:hover { background: #2e86c1; }
         .mapa-iframe { width: 100%; height: 320px; border-radius: 12px; border: 1px solid #ddd; display: block; }
         .mapa-tip { font-size: 12px; color: #888; }
+        .destacada-info {
+            font-size: 12px; color: #888; margin-top: 6px;
+        }
+        .destacada-info.lleno { color: #e74c3c; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -176,8 +183,7 @@ $mapaQuery  = urlencode($empresa['nombre'] . ' ' . $empresa['direccion']);
             <?php $pos = 1; while ($foto = $fotos->fetch_assoc()): ?>
             <div class="foto-item" data-id="<?= $foto['id_foto'] ?>">
                 <span class="orden-badge"><?= $pos++ ?></span>
-                <img src="../assets/img/empresascarrusel/<?= htmlspecialchars($foto['foto']) ?>"
-                     alt="Foto">
+                <img src="../assets/img/empresascarrusel/<?= htmlspecialchars($foto['foto']) ?>" alt="Foto">
                 <button type="button" class="btn-borrar"
                         onclick="eliminarFoto(<?= $foto['id_foto'] ?>,'galeria',this.parentElement)">X</button>
             </div>
@@ -196,10 +202,10 @@ $mapaQuery  = urlencode($empresa['nombre'] . ' ' . $empresa['direccion']);
            value="<?= htmlspecialchars($empresa['nombre']) ?>" required>
 
     <label>Teléfono</label>
-    <input type="text" name="telefono" value="<?= htmlspecialchars($empresa['telefono']) ?>">
+    <input type="text" name="telefono" value="<?= htmlspecialchars($empresa['telefono'] ?? '') ?>">
 
     <label>Dirección</label>
-    <input type="text" name="direccion" value="<?= htmlspecialchars($empresa['direccion']) ?>">
+    <input type="text" name="direccion" value="<?= htmlspecialchars($empresa['direccion'] ?? '') ?>">
 
     <label>Categoría</label>
     <select name="id_categoria" required>
@@ -212,10 +218,10 @@ $mapaQuery  = urlencode($empresa['nombre'] . ' ' . $empresa['direccion']);
     </select>
 
     <label>Descripción</label>
-    <textarea name="descripcion"><?= htmlspecialchars($empresa['descripcion']) ?></textarea>
+    <textarea name="descripcion"><?= htmlspecialchars($empresa['descripcion'] ?? '') ?></textarea>
 
     <label>Horario</label>
-    <input type="text" name="horario" value="<?= htmlspecialchars($empresa['horario']) ?>">
+    <input type="text" name="horario" value="<?= htmlspecialchars($empresa['horario'] ?? '') ?>">
 
     <label>Ubicación en Google Maps</label>
     <div class="mapa-wrap">
@@ -230,12 +236,25 @@ $mapaQuery  = urlencode($empresa['nombre'] . ' ' . $empresa['direccion']);
             allowfullscreen loading="lazy"></iframe>
         <p class="mapa-tip">1. Busca el negocio arriba &nbsp;·&nbsp; 2. En Google Maps comparte la ubicación y pega el link abajo</p>
         <input type="text" name="ubicacion_link"
-               value="<?= htmlspecialchars($empresa['ubicacion_link']) ?>"
+               value="<?= htmlspecialchars($empresa['ubicacion_link'] ?? '') ?>"
                placeholder="Pega la URL de Google Maps">
     </div>
 
     <label>Enlace externo de la empresa</label>
-    <input type="url" name="link_empresa" value="<?= htmlspecialchars($empresa['link_empresa']) ?>">
+    <input type="url" name="link_empresa" value="<?= htmlspecialchars($empresa['link_empresa'] ?? '') ?>">
+
+    <label>¿Empresa destacada? ⭐</label>
+    <select name="destacada">
+        <option value="0" <?= $empresa['destacada'] == 0 ? 'selected' : '' ?>>No</option>
+        <option value="1" <?= $empresa['destacada'] == 1 ? 'selected' : '' ?>>Sí ⭐</option>
+    </select>
+    <p class="destacada-info <?= $total_destacadas >= 3 && $empresa['destacada'] == 0 ? 'lleno' : '' ?>">
+        <?php if ($total_destacadas >= 3 && $empresa['destacada'] == 0): ?>
+            ⚠️ Ya hay 3 empresas destacadas. Debes quitar una antes de destacar esta.
+        <?php else: ?>
+            <?= $total_destacadas ?>/3 empresas destacadas actualmente.
+        <?php endif; ?>
+    </p>
 
     <br><br>
     <button type="submit" class="btn">Actualizar empresa</button>
@@ -246,30 +265,25 @@ $mapaQuery  = urlencode($empresa['nombre'] . ' ' . $empresa['direccion']);
 </section>
 
 <script>
-// Drag & drop con SortableJS
 const sortable = Sortable.create(document.getElementById('fotos-sortable'), {
     animation: 150,
     ghostClass: 'sortable-ghost',
     chosenClass: 'sortable-chosen',
     onEnd: function() {
-        // Actualizar badges de orden visualmente
         document.querySelectorAll('.foto-item').forEach((el, i) => {
             el.querySelector('.orden-badge').textContent = i + 1;
         });
-        // Resaltar botón de guardar
         document.getElementById('btn-orden').style.background = '#e67e22';
         document.getElementById('btn-orden').textContent = '💾 Guardar orden (hay cambios)';
     }
 });
 
 function guardarOrden() {
-    const items  = document.querySelectorAll('.foto-item');
-    const orden  = Array.from(items).map(el => el.dataset.id);
-    const btn    = document.getElementById('btn-orden');
-
+    const items = document.querySelectorAll('.foto-item');
+    const orden = Array.from(items).map(el => el.dataset.id);
+    const btn   = document.getElementById('btn-orden');
     btn.textContent = 'Guardando...';
     btn.disabled    = true;
-
     fetch('reordenar_fotos.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -291,13 +305,9 @@ function guardarOrden() {
             btn.disabled = false;
         }
     })
-    .catch(() => {
-        alert('Error de conexión');
-        btn.disabled = false;
-    });
+    .catch(() => { alert('Error de conexión'); btn.disabled = false; });
 }
 
-// Mapa
 function buscarMapa() {
     const q = document.getElementById('mapa-query').value.trim();
     if (!q) return;
@@ -308,7 +318,6 @@ document.getElementById('mapa-query').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') { e.preventDefault(); buscarMapa(); }
 });
 
-// Eliminar foto
 function eliminarFoto(id, tipo, elemento) {
     if (!confirm('¿Eliminar esta imagen?')) return;
     fetch('eliminar_foto.php?id=' + id + '&tipo=' + tipo)

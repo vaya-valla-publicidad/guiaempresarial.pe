@@ -20,7 +20,7 @@ if ($tipo == "galeria") {
 
     if ($foto) {
 
-        $ruta = __DIR__ . "/../assets/img/empresas/" . $foto['foto'];
+        $ruta = __DIR__ . "/../assets/img/empresascarrusel/" . $foto['foto'];
 
         if (file_exists($ruta)) {
             unlink($ruta);
