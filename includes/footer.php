@@ -56,6 +56,25 @@ toggleBtn.addEventListener('change', () => {
 
 });
 </script>
+<script>
+const links = document.querySelectorAll('.nav-link');
 
+function activarLink() {
+    const hash = window.location.hash;
+
+    links.forEach(link => {
+        link.classList.remove('active');
+
+        if (hash && link.getAttribute('href').includes(hash)) {
+            link.classList.add('active');
+        } else if (!hash && link.getAttribute('href') === 'index.php') {
+            link.classList.add('active');
+        }
+    });
+}
+
+activarLink();
+window.addEventListener('hashchange', activarLink);
+</script>
 </body>
 </html>

@@ -1,42 +1,121 @@
 <?php include 'includes/header.php'; ?>
+<?php include 'db.php'; ?>
+
+<style>
+.hero {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  min-height: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hero-slide {
+  position: absolute; inset: 0;
+  opacity: 0; transition: opacity .9s ease;
+  pointer-events: none;
+}
+.hero-slide.activo { opacity: 1; pointer-events: auto; }
+.hero-slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hero-slide::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,.3) 0%, rgba(0,0,0,.55) 100%);
+}
+.hero-content {
+  position: relative; z-index: 10;
+  text-align: center; padding: 40px 20px;
+  max-width: 800px; width: 100%;
+}
+.hero-arrow {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  z-index: 20; background: rgba(255,255,255,.15);
+  border: none; color: #fff; width: 44px; height: 44px;
+  border-radius: 50%; font-size: 26px; cursor: pointer;
+  backdrop-filter: blur(4px); transition: background .2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.hero-arrow:hover { background: rgba(255,255,255,.35); }
+.hero-arrow.prev { left: 16px; }
+.hero-arrow.next { right: 16px; }
+.hero-dots {
+  position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
+  z-index: 20; display: flex; gap: 8px;
+}
+.hero-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: rgba(255,255,255,.4); border: none; cursor: pointer;
+  transition: background .2s, transform .2s; padding: 0;
+}
+.hero-dot.activo { background: #fff; transform: scale(1.3); }
+</style>
+
+<?php
+$slides = [];
+$res_banner = $conexion->query("SELECT * FROM banner_carrusel WHERE activo = 1 ORDER BY orden ASC, id_banner ASC");
+if ($res_banner && $res_banner->num_rows > 0)
+    while ($s = $res_banner->fetch_assoc()) $slides[] = $s;
+$total_slides = count($slides);
+?>
 
 <section class="hero">
-    <div class="hero-content">
-        <h1>Impulsando Negocios Locales</h1>
-        <p class="hero-subtitle">Descubre, conecta y potencia empresas de tu región</p>
-        <p class="hero-tagline">Visibilidad real para negocios reales</p>
-        <div class="hero-actions">
-            <section class="search-section">
-                <div class="search-wrapper">
-                    <form id="formBuscar" class="search-form">
-                        <div class="search-box">
-                            <input type="text" id="buscar" name="q" placeholder="Buscar empresas, productos o servicios...">
-                            <button type="submit">Buscar</button>
-                        </div>
-                    </form>
-                    <div id="resultados" class="resultados-live"></div>
-                </div>
-            </section>
-        </div>
+
+  <?php if ($total_slides > 0): ?>
+    <?php foreach ($slides as $i => $slide): ?>
+    <div class="hero-slide <?= $i === 0 ? 'activo' : '' ?>"
+         data-tiempo="<?= intval($slide['tiempo_ms']) ?>">
+      <img src="/guiaempresarial.pe/assets/img/banner/<?= htmlspecialchars($slide['imagen']) ?>"
+           alt="Banner <?= $i + 1 ?>"
+           loading="<?= $i === 0 ? 'eager' : 'lazy' ?>">
     </div>
+    <?php endforeach; ?>
+
+    <?php if ($total_slides > 1): ?>
+    <button class="hero-arrow prev" aria-label="Anterior">&#8249;</button>
+    <button class="hero-arrow next" aria-label="Siguiente">&#8250;</button>
+    <div class="hero-dots">
+      <?php for ($i = 0; $i < $total_slides; $i++): ?>
+      <button class="hero-dot <?= $i === 0 ? 'activo' : '' ?>" data-index="<?= $i ?>"></button>
+      <?php endfor; ?>
+    </div>
+    <?php endif; ?>
+
+  <?php else: ?>
+    <div class="hero-bg"></div>
+  <?php endif; ?>
+
+  <div class="hero-content">
+    <h1>Impulsando Negocios Locales</h1>
+    <p class="hero-subtitle">Descubre, conecta y potencia empresas de tu región</p>
+    <p class="hero-tagline">Visibilidad real para negocios reales</p>
+    <div class="hero-actions">
+      <section class="search-section">
+        <div class="search-wrapper">
+          <form id="formBuscar" class="search-form">
+            <div class="search-box">
+              <input type="text" id="buscar" name="q" placeholder="Buscar empresas, productos o servicios...">
+              <button type="submit">Buscar</button>
+            </div>
+          </form>
+          <div id="resultados" class="resultados-live"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
 </section>
 
-<!-- ══════════════ EMPRESAS DESTACADAS ══════════════ -->
 <section id="empresas" class="page-section empresas-section">
   <div class="container">
     <div class="section-header">
       <h1>⭐ Empresas Destacadas</h1>
     </div>
-
     <?php
-    include 'db.php';
     $sql_destacadas = "SELECT e.*, c.nombre AS categoria
                        FROM empresas e
                        JOIN categorias c ON e.id_categoria = c.id_categoria
-                       WHERE e.destacada = 1
-                       LIMIT 3";
+                       WHERE e.destacada = 1 LIMIT 3";
     $res_destacadas = $conexion->query($sql_destacadas);
-
     if ($res_destacadas && $res_destacadas->num_rows > 0):
         echo '<div class="empresas-list">';
         while ($fila = $res_destacadas->fetch_assoc()):
@@ -103,31 +182,25 @@
                 </div>
                 <?php endif; ?>
             </div>
-        <?php
-        endwhile;
-        echo '</div>';
+        <?php endwhile; echo '</div>';
     else: ?>
         <p class="no-results">No hay empresas destacadas aún.</p>
     <?php endif; ?>
   </div>
 </section>
 
-<!-- ══════════════ MÁS VISTAS ══════════════ -->
 <section class="page-section empresas-section" style="padding-top:0;">
   <div class="container">
     <div class="section-header">
       <h1>👁 Más Vistas</h1>
       <p>Las empresas más populares de nuestra guía</p>
     </div>
-
     <?php
     $sql_vistas = "SELECT e.*, c.nombre AS categoria
                    FROM empresas e
                    JOIN categorias c ON e.id_categoria = c.id_categoria
-                   ORDER BY e.vistas DESC
-                   LIMIT 3";
+                   ORDER BY e.vistas DESC LIMIT 3";
     $res_vistas = $conexion->query($sql_vistas);
-
     if ($res_vistas && $res_vistas->num_rows > 0):
         echo '<div class="empresas-list">';
         while ($fila = $res_vistas->fetch_assoc()):
@@ -194,18 +267,14 @@
                 </div>
                 <?php endif; ?>
             </div>
-        <?php
-        endwhile;
-        echo '</div>';
+        <?php endwhile; echo '</div>';
     endif; ?>
-
     <div class="ver-mas-empresas">
         <a href="empresas.php" class="btn-ver-mas">Ver más empresas →</a>
     </div>
   </div>
 </section>
 
-<!-- ══════════════ CATEGORÍAS ══════════════ -->
 <section id="categorias" class="page-section">
     <div class="container">
         <div class="section-header">
@@ -220,23 +289,18 @@
                 $icono  = htmlspecialchars($fila['icono'] ?? 'bi-briefcase');
             ?>
                 <a href="empresas.php?id_categoria=<?= $fila['id_categoria'] ?>" class="categoria-card">
-                    <div class="categoria-icono-wrap">
-                        <i class="bi <?= $icono ?>"></i>
-                    </div>
+                    <div class="categoria-icono-wrap"><i class="bi <?= $icono ?>"></i></div>
                     <span class="categoria-nombre"><?= $nombre ?></span>
                 </a>
             <?php endwhile; ?>
             <a href="categorias.php" class="categoria-card ver-mas-card">
-                <div class="categoria-icono-wrap">
-                    <i class="bi bi-plus-circle"></i>
-                </div>
+                <div class="categoria-icono-wrap"><i class="bi bi-plus-circle"></i></div>
                 <span class="categoria-nombre">Ver más categorías</span>
             </a>
         </div>
     </div>
 </section>
 
-<!-- ══════════════ CONTACTO ══════════════ -->
 <section id="contacto" class="page-section">
     <div class="container">
         <div class="section-header">
@@ -271,6 +335,53 @@
 <?php include 'includes/footer.php'; ?>
 
 <script>
+(function () {
+  const slides = document.querySelectorAll('.hero-slide');
+  const dots   = document.querySelectorAll('.hero-dot');
+  if (!slides.length) return;
+
+  let idx = 0, timer = null;
+
+  function getTiempo(i) {
+    return parseInt(slides[i]?.dataset.tiempo || 5000);
+  }
+
+  function goTo(n) {
+    slides[idx].classList.remove('activo');
+    if (dots[idx]) dots[idx].classList.remove('activo');
+    idx = (n + slides.length) % slides.length;
+    slides[idx].classList.add('activo');
+    if (dots[idx]) dots[idx].classList.add('activo');
+  }
+
+  function startAuto() {
+    clearInterval(timer);
+    timer = setTimeout(function tick() {
+      goTo(idx + 1);
+      timer = setTimeout(tick, getTiempo(idx));
+    }, getTiempo(idx));
+  }
+
+  document.querySelector('.hero-arrow.prev')?.addEventListener('click', () => { goTo(idx - 1); startAuto(); });
+  document.querySelector('.hero-arrow.next')?.addEventListener('click', () => { goTo(idx + 1); startAuto(); });
+  dots.forEach(d => d.addEventListener('click', () => { goTo(+d.dataset.index); startAuto(); }));
+
+  const hero = document.querySelector('.hero');
+  hero?.addEventListener('mouseenter', () => clearTimeout(timer));
+  hero?.addEventListener('mouseleave', startAuto);
+
+  let tx = null;
+  hero?.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, { passive: true });
+  hero?.addEventListener('touchend',   e => {
+    if (tx === null) return;
+    const diff = tx - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 40) { goTo(diff > 0 ? idx + 1 : idx - 1); startAuto(); }
+    tx = null;
+  }, { passive: true });
+
+  startAuto();
+})();
+
 document.querySelectorAll('.empresa-slider').forEach(slider => {
     const slides = slider.querySelectorAll('.slide');
     const dots   = slider.querySelectorAll('.slider-dot');
@@ -283,20 +394,18 @@ document.querySelectorAll('.empresa-slider').forEach(slider => {
         slides[idx].classList.add('activo');
         if (dots[idx]) dots[idx].classList.add('activo');
     }
-    const autoplay = setInterval(() => goTo(idx + 1), 4000);
-    dots.forEach((dot, i) => dot.addEventListener('click', () => { clearInterval(autoplay); goTo(i); }));
+    const ap = setInterval(() => goTo(idx + 1), 4000);
+    dots.forEach((d, i) => d.addEventListener('click', () => { clearInterval(ap); goTo(i); }));
 });
 
 const inputBuscar   = document.getElementById('buscar');
 const resultadosDiv = document.getElementById('resultados');
 const formBuscar    = document.getElementById('formBuscar');
-
 inputBuscar.addEventListener('keyup', function () {
     const q = this.value.trim();
     if (q.length > 0) fetch('buscar.php?q=' + encodeURIComponent(q)).then(r => r.text()).then(d => { resultadosDiv.innerHTML = d; });
     else resultadosDiv.innerHTML = '';
 });
-
 formBuscar.addEventListener('submit', function (e) {
     e.preventDefault();
     const q = inputBuscar.value.trim();

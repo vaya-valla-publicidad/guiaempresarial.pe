@@ -15,6 +15,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $horario        = trim($_POST['horario']) ?: null;
     $ubicacion_link = trim($_POST['ubicacion_link']) ?: null;
     $link_empresa   = trim($_POST['link_empresa']) ?: null;
+    $facebook = trim($_POST['facebook']) ?: null;
     $logo           = null;
 
     if (!empty($_FILES['logo']['name'])) {
@@ -26,10 +27,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 
     $stmt = $conexion->prepare(
-        "INSERT INTO empresas (nombre,telefono,direccion,id_categoria,descripcion,horario,ubicacion_link,link_empresa,logo)
-         VALUES (?,?,?,?,?,?,?,?,?)"
-    );
-    $stmt->bind_param("sssisssss", $nombre, $telefono, $direccion, $id_categoria, $descripcion, $horario, $ubicacion_link, $link_empresa, $logo);
+    "INSERT INTO empresas (nombre,telefono,direccion,id_categoria,descripcion,horario,ubicacion_link,link_empresa,facebook,logo)
+     VALUES (?,?,?,?,?,?,?,?,?,?)"
+);
+   $stmt->bind_param("sssissssss", $nombre, $telefono, $direccion, $id_categoria, $descripcion, $horario, $ubicacion_link, $link_empresa, $facebook, $logo);
 
     if (!$stmt->execute()) {
         $error = "Error SQL: " . $stmt->error;
@@ -37,7 +38,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $id_empresa = $stmt->insert_id;
 
         if (!empty($_FILES['fotos']['name'][0])) {
-            $carpeta = __DIR__ . "/../assets/img/empresas/";
+            $carpeta = __DIR__ . "/../assets/img/empresascarrusel/";
             $total   = min(count($_FILES['fotos']['name']), 5);
             for ($i = 0; $i < $total; $i++) {
                 $tmp        = $_FILES['fotos']['tmp_name'][$i];
@@ -156,8 +157,13 @@ $categorias = $conexion->query("SELECT id_categoria,nombre FROM categorias");
             </div>
         </div>
 
-        <div class="form-group">
+        <div class="form-group"><br>
+            <div class="form-group">
+    <label>Facebook</label>
+    <input type="url" name="facebook" placeholder="https://facebook.com/tuempresa">
+</div><br>
             <label>Enlace externo de la empresa</label>
+            
             <input type="url" name="link_empresa">
         </div>
 

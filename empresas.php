@@ -39,7 +39,6 @@
             if ($fotos_q && $fotos_q->num_rows > 0)
                 while ($f = $fotos_q->fetch_assoc()) $fotos_arr[] = $f['foto'];
 
-            // Sumar vista
             $conexion->query("UPDATE empresas SET vistas = vistas + 1 WHERE id_empresa = " . intval($id_empresa));
         ?>
 
@@ -74,6 +73,11 @@
                                 <?php if (!empty($fila['ubicacion_link'])): ?>
                                 <a href="<?= htmlspecialchars($fila['ubicacion_link']) ?>" target="_blank" class="btn-accion btn-accion-maps">📍 Ver en Maps</a>
                                 <?php endif; ?>
+                                <?php if (!empty($fila['facebook'])): ?>
+    <a href="<?= htmlspecialchars($fila['facebook']) ?>" target="_blank" class="btn-accion btn-accion-facebook">
+        📘 Facebook
+    </a>
+    <?php endif; ?>
                             </div>
                         </div>
                         <?php if (!empty($fila['descripcion'])): ?>
@@ -224,6 +228,11 @@
                     </div>
                     <div class="empresa-actions">
                         <a href="empresas.php?empresa=<?= $id ?>" class="btn-ver">Ver más</a>
+                        <?php if (!empty($fila['facebook'])): ?>
+<a href="<?= htmlspecialchars($fila['facebook']) ?>" target="_blank" class="btn-accion btn-accion-facebook">
+    📘 Facebook
+</a>
+<?php endif; ?>
                         <?php if ($numero): ?>
                         <a href="https://wa.me/<?= $numero ?>" target="_blank" class="btn-whatsapp">WhatsApp</a>
                         <?php endif; ?>

@@ -24,14 +24,18 @@ $rol = $_SESSION['rol'];
     <a href="cerrar.php">Cerrar sesión</a>
 </div>
 
-<a href="/guiaempresarial.pe/index.php" class="btn" style="margin-bottom:10px; display:inline-block;">
-    Ver sitio principal
-</a>
-<a href="editar_sobre.php" class="btn" style="margin-bottom:20px; display:inline-block;">
-    Editar Sobre Nosotros
-</a>
+<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:24px;">
+    <a href="/guiaempresarial.pe/index.php" class="btn">
+        <i class="bi bi-house"></i> Ver sitio principal
+    </a>
+    <a href="editar_sobre.php" class="btn">
+        <i class="bi bi-info-circle"></i> Editar Sobre Nosotros
+    </a>
+    <a href="gestionar_banner.php" class="btn" style="background:#f5a623;color:#111;font-weight:700;">
+        <i class="bi bi-images"></i> Gestionar Banner / Carrusel
+    </a>
+</div>
 
-<!-- ══════════════ USUARIOS ══════════════ -->
 <h2>Administración de Usuarios</h2><br>
 <a href="agregar.php" class="btn">Agregar Usuario</a>
 <br><br>
@@ -66,7 +70,6 @@ while ($fila = $res->fetch_assoc()):
 </div>
 <br><br>
 
-<!-- ══════════════ DESTACADAS ══════════════ -->
 <?php
 $res_dest   = $conexion->query("SELECT id_empresa, nombre FROM empresas WHERE destacada=1");
 $total_dest = $res_dest->num_rows;
@@ -91,7 +94,6 @@ $total_dest = $res_dest->num_rows;
     <?php endif; ?>
 </div>
 
-<!-- ══════════════ EMPRESAS ══════════════ -->
 <h2>Empresas</h2><br>
 <a href="agregar_empresa.php" class="btn">Agregar Empresa</a>
 <br><br>
@@ -169,7 +171,6 @@ while ($fila = $res->fetch_assoc()):
 </div>
 <br><br>
 
-<!-- ══════════════ CATEGORÍAS ══════════════ -->
 <h2>Categorías</h2><br>
 <a href="agregar_categoria.php" class="btn">Agregar Categoría</a>
 <br><br>

@@ -25,10 +25,10 @@
 
     <div class="nav-actions">
       <nav class="nav-links">
-        <a href="index.php">Inicio</a>
-        <a href="#categorias">Categorías</a>
-        <a href="#empresas">Empresas</a>
-        <a href="#contacto">Contacto</a>
+        <a href="index.php" class="nav-link">Inicio</a>
+        <a href="index.php#empresas" class="nav-link">Empresas</a>
+        <a href="index.php#categorias" class="nav-link">Categorías</a>
+        <a href="index.php#contacto" class="nav-link">Contacto</a>
       </nav>
 
       <label class="theme-switch">

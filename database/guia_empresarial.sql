@@ -8,19 +8,29 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 
+CREATE TABLE `banner_carrusel` (
+  `id_banner` int(11) NOT NULL,
+  `imagen` varchar(255) NOT NULL,
+  `orden` int(11) NOT NULL DEFAULT 0,
+  `activo` tinyint(1) NOT NULL DEFAULT 1,
+  `tiempo_ms` int(11) NOT NULL DEFAULT 5000,
+  `creado_en` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE `categorias` (
   `id_categoria` int(11) NOT NULL,
   `nombre` varchar(100) NOT NULL,
-  `descripcion` text DEFAULT NULL
+  `descripcion` text DEFAULT NULL,
+  `icono` varchar(50) DEFAULT 'bi-briefcase'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-INSERT INTO `categorias` (`id_categoria`, `nombre`, `descripcion`) VALUES
-(1, 'Tecnología', 'Empresas relacionadas con software, hardware y servicios digitales'),
-(2, 'Gastronomía', 'Restaurantes y negocios de comida'),
-(8, 'Ferreteria', NULL),
-(9, 'Tienda', NULL),
-(10, 'Comercio', NULL),
-(11, 'Salud', NULL);
+INSERT INTO `categorias` (`id_categoria`, `nombre`, `descripcion`, `icono`) VALUES
+(1, 'Tecnología', 'Empresas relacionadas con software, hardware y servicios digitales', 'bi-cpu'),
+(2, 'Restaurante', 'Restaurantes y negocios de comida', 'bi-egg-fried'),
+(8, 'Ferreteria', NULL, 'bi-tools'),
+(9, 'Tienda', NULL, 'bi-shop'),
+(10, 'Comercio', NULL, 'bi-building'),
+(11, 'Salud', NULL, 'bi-heart-pulse');
 
 CREATE TABLE `empresas` (
   `id_empresa` int(11) NOT NULL,
@@ -34,16 +44,19 @@ CREATE TABLE `empresas` (
   `horario` varchar(100) DEFAULT NULL,
   `descripcion` text DEFAULT NULL,
   `ubicacion_link` varchar(500) DEFAULT NULL,
-  `link_empresa` varchar(255) DEFAULT NULL
+  `link_empresa` varchar(255) DEFAULT NULL,
+  `vistas` int(11) DEFAULT 0,
+  `destacada` tinyint(1) DEFAULT 0,
+  `facebook` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-INSERT INTO `empresas` (`id_empresa`, `logo`, `nombre`, `email`, `telefono`, `direccion`, `id_categoria`, `fecha_registro`, `horario`, `descripcion`, `ubicacion_link`, `link_empresa`) VALUES
-(3, NULL, 'Tech Solutions Perú', 'info@techsolutions.pe', '912345678', 'Av. Innovación 321, Huacho', 1, '2026-02-18 16:29:03', NULL, NULL, NULL, NULL),
-(6, NULL, 'Restaurante El Sabor', 'contacto@elsabor.com', '988222333', 'Jr. Central 456, Huacho', 2, '2026-02-18 16:32:21', NULL, NULL, NULL, NULL),
-(11, NULL, 'TechSoluciones Perú', NULL, '987226299', 'Av. Javier Prado Este 1234, San Isidro, Lima', 1, '2026-02-24 17:03:08', 'Lunes a Viernes 09:00 - 18:00 / Sábados 09:00 - 13:00', 'Soporte técnico empresarial, desarrollo web y mantenimiento de equipos informáticos.', NULL, 'https://techsoluciones.pe'),
-(12, '69b2e6c81a9ce_RosalRestaurant.jpg', 'El Rosal Restaurant', NULL, '977411702', 'Jr. Salaverry (8va cuadra), Huacho', 2, '2026-03-09 17:12:50', 'de 12 a 10 pm', 'Si la imagen ya te dio hambre, imagínate el primer bocado. Nuestra Malaya Punto Cuy está lista para ser la protagonista de tu mesa. 🥘✨', 'https://www.google.com/maps/place/El+Rosal/@-11.1101762,-77.6124137,17z/data=!3m1!4b1!4m6!3m5!1s0x9106df0b73d6425f:0x6e3e28e69603d472!8m2!3d-11.1101762!4d-77.6124137!16s%2Fg%2F11bwpd_yh9?entry=ttu&g_ep=EgoyMDI2MDMwOC4wIKXMDSoASAFQAw%3D%3D', NULL),
-(13, '69b2eb9d7814f_chifaespaña.jpg', 'Chifa España', NULL, '937 245 536', 'Av. 28 de Julio 544 – Huacho', 2, '2026-03-12 16:36:45', NULL, 'Tradición de buen gusto, desde 1960', 'https://www.google.com/maps/place/Chifa+Espa%C3%B1a/@-11.1075533,-77.6095983,19z/data=!4m6!3m5!1s0x9106df7536dc3f1b:0x75454f4e78f60660!8m2!3d-11.1073572!4d-77.6095098!16s%2Fg%2F1tjs5_st?entry=ttu&g_ep=EgoyMDI2MDMxMS4wIKXMDSoASAFQAw%3D%3D', NULL),
-(14, '69b82b6ce767e_lachutana.jpg', 'La Chutana-Lubricentro', NULL, '994337831', 'Av. Cruz Blanca 1890 Santa María, Huaura, Peru, 15138', 8, '2026-03-16 16:10:20', NULL, 'En La Chutana Lubricentro engreimos a tu fierro con productos de la mejor calidad y productos :)', 'https://www.google.com/maps/place/Av.+Cruz+Blanca+1890,+Huacho+15137/@-11.0985195,-77.5959335,17z/data=!3m1!4b1!4m5!3m4!1s0x9106df907e002ea1:0x3e3fe5d41e672a7e!8m2!3d-11.0985195!4d-77.5959335?entry=ttu&g_ep=EgoyMDI2MDMxMS4wIKXMDSoASAFQAw%3D%3D', NULL);
+INSERT INTO `empresas` (`id_empresa`, `logo`, `nombre`, `email`, `telefono`, `direccion`, `id_categoria`, `fecha_registro`, `horario`, `descripcion`, `ubicacion_link`, `link_empresa`, `vistas`, `destacada`, `facebook`) VALUES
+(3, NULL, 'Tech Solutions Perú', 'info@techsolutions.pe', '912345678', 'Av. Innovación 321, Huacho', 1, '2026-02-18 16:29:03', NULL, NULL, NULL, NULL, 0, 0, NULL),
+(6, NULL, 'Restaurante El Sabor', 'contacto@elsabor.com', '988222333', 'Jr. Central 456, Huacho', 2, '2026-02-18 16:32:21', NULL, NULL, NULL, NULL, 0, 0, NULL),
+(11, NULL, 'TechSoluciones Perú', NULL, '987226299', 'Av. Javier Prado Este 1234, San Isidro, Lima', 1, '2026-02-24 17:03:08', 'Lunes a Viernes 09:00 - 18:00 / Sábados 09:00 - 13:00', 'Soporte técnico empresarial, desarrollo web y mantenimiento de equipos informáticos.', NULL, 'https://techsoluciones.pe', 0, 0, NULL),
+(12, '69b2e6c81a9ce_RosalRestaurant.jpg', 'El Rosal Restaurant', NULL, '977411702', 'Jr. Salaverry (8va cuadra), Huacho', 2, '2026-03-09 17:12:50', 'de 12 a 10 pm', 'La tradición de Huacho en tu paladar desde 1960. 🥘✨', 'https://www.google.com/maps/place/El+Rosal/@-11.1101762,-77.6124137,17z/data=!3m1!4b1!4m6!3m5!1s0x9106df0b73d6425f:0x6e3e28e69603d472!8m2!3d-11.1101762!4d-77.6124137!16s%2Fg%2F11bwpd_yh9?entry=ttu&g_ep=EgoyMDI2MDMwOC4wIKXMDSoASAFQAw%3D%3D', NULL, 10, 1, NULL),
+(13, '69b2eb9d7814f_chifaespaña.jpg', 'Chifa España', NULL, '937 245 536', 'Av. 28 de Julio 544 – Huacho', 2, '2026-03-12 16:36:45', NULL, '¡EL AUTENTICO SABOR ORIENTAL TE ESPERA AQUI!', 'https://www.google.com/maps/place/Chifa+Espa%C3%B1a/@-11.1075533,-77.6095983,19z/data=!4m6!3m5!1s0x9106df7536dc3f1b:0x75454f4e78f60660!8m2!3d-11.1073572!4d-77.6095098!16s%2Fg%2F1tjs5_st?entry=ttu&g_ep=EgoyMDI2MDMxMS4wIKXMDSoASAFQAw%3D%3D', NULL, 5, 1, NULL),
+(14, '69b82b6ce767e_lachutana.jpg', 'La Chutana-Lubricentro', NULL, '994337831', 'Av. Cruz Blanca 1890 Santa María, Huaura, Peru, 15138', 8, '2026-03-16 16:10:20', NULL, 'En La Chutana Lubricentro engreimos a tu fierro con productos de la mejor calidad y productos :)', 'https://www.google.com/maps/place/Av.+Cruz+Blanca+1890,+Huacho+15137/@-11.0985195,-77.5959335,17z/data=!3m1!4b1!4m5!3m4!1s0x9106df907e002ea1:0x3e3fe5d41e672a7e!8m2!3d-11.0985195!4d-77.5959335?entry=ttu&g_ep=EgoyMDI2MDMxMS4wIKXMDSoASAFQAw%3D%3D', NULL, 18, 1, 'https://www.facebook.com/lachutana.huacho');
 
 CREATE TABLE `empresa_galeria` (
   `id_foto` int(11) NOT NULL,
@@ -68,6 +81,23 @@ INSERT INTO `empresa_galeria` (`id_foto`, `id_empresa`, `foto`, `orden`, `fecha_
 (36, 14, '69b82c5bf3fc7_L3.jpg', 2, '2026-03-16 16:14:20'),
 (37, 14, '69b82c5c03b96_L4.jpg', 3, '2026-03-16 16:14:20');
 
+CREATE TABLE `sobre_info` (
+  `id` int(11) NOT NULL,
+  `clave` varchar(50) NOT NULL,
+  `valor` text NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+INSERT INTO `sobre_info` (`id`, `clave`, `valor`) VALUES
+(1, 'quienes_somos', 'Somos una plataforma digital dedicada a impulsar negocios locales de la región. Creemos que cada empresa merece visibilidad real, sin importar su tamaño'),
+(2, 'mision', 'Conectar empresas locales con sus clientes de forma simple y efectiva, siendo el puente digital entre negocios y comunidad.'),
+(3, 'vision', 'Convertirnos en la guía empresarial más completa y confiable de la región, siendo referente para quienes buscan negocios locales.'),
+(4, 'por_que_1_titulo', '📍 Presencia Local'),
+(5, 'por_que_1_texto', 'Tu negocio aparece cuando alguien busca productos o servicios en tu zona. Visibilidad donde más importa.'),
+(6, 'por_que_2_titulo', '📱 Acceso Directo'),
+(7, 'por_que_2_texto', 'Tus clientes te encuentran con un clic — WhatsApp, ubicación en Maps y galería de fotos en un solo lugar.'),
+(8, 'por_que_3_titulo', '🚀 Fácil y Rápido'),
+(9, 'por_que_3_texto', 'Registramos tu negocio por ti. Sin complicaciones técnicas, sin costos ocultos. Solo visibilidad real.');
+
 CREATE TABLE `usuarios` (
   `id_usuario` int(11) NOT NULL,
   `nombre` varchar(100) NOT NULL,
@@ -83,6 +113,10 @@ INSERT INTO `usuarios` (`id_usuario`, `nombre`, `email`, `contraseña_hash`, `ro
 (6, 'Editor2', NULL, '$2y$10$VBGGvidqG4ce09vTU4Vkg.goi0jvi9q4BnNQ9UlKShBVZ7TXQ5Gvm', 'editor', '2026-02-20 16:18:48');
 
 
+ALTER TABLE `banner_carrusel`
+  ADD PRIMARY KEY (`id_banner`),
+  ADD KEY `idx_banner_orden` (`orden`,`activo`);
+
 ALTER TABLE `categorias`
   ADD PRIMARY KEY (`id_categoria`);
 
@@ -95,11 +129,18 @@ ALTER TABLE `empresa_galeria`
   ADD PRIMARY KEY (`id_foto`),
   ADD KEY `id_empresa` (`id_empresa`);
 
+ALTER TABLE `sobre_info`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `clave` (`clave`);
+
 ALTER TABLE `usuarios`
   ADD PRIMARY KEY (`id_usuario`),
   ADD UNIQUE KEY `email` (`email`),
   ADD UNIQUE KEY `email_2` (`email`);
 
+
+ALTER TABLE `banner_carrusel`
+  MODIFY `id_banner` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 ALTER TABLE `categorias`
   MODIFY `id_categoria` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
@@ -109,6 +150,9 @@ ALTER TABLE `empresas`
 
 ALTER TABLE `empresa_galeria`
   MODIFY `id_foto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
+
+ALTER TABLE `sobre_info`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 ALTER TABLE `usuarios`
   MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;

@@ -1,8 +1,9 @@
 <?php require_once __DIR__ . '/proteger.php'; ?>
 <?php
 include '../db.php';
+$rol = $_SESSION['rol'];
 
-if (!isset($_GET['id'])) { header("Location: admin.php"); exit; }
+if (!isset($_GET['id'])) { header("Location: panel.php"); exit; }
 
 $id      = intval($_GET['id']);
 $error   = "";
@@ -26,10 +27,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $horario        = trim($_POST['horario']) ?: null;
     $ubicacion_link = trim($_POST['ubicacion_link']) ?: null;
     $link_empresa   = trim($_POST['link_empresa']) ?: null;
+    $facebook       = trim($_POST['facebook']) ?: null;
     $logo           = $empresa['logo'];
     $destacada_new  = intval($_POST['destacada']);
 
-    // Validar máximo 3 destacadas
     if ($destacada_new === 1 && $empresa['destacada'] == 0) {
         $total_dest = $conexion->query("SELECT COUNT(*) as total FROM empresas WHERE destacada = 1")->fetch_assoc()['total'];
         if ($total_dest >= 3) {
@@ -48,17 +49,28 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     if (empty($error)) {
         $stmt = $conexion->prepare(
-            "UPDATE empresas SET nombre=?,telefono=?,direccion=?,id_categoria=?,
-             descripcion=?,horario=?,ubicacion_link=?,link_empresa=?,logo=?,destacada=?
+            "UPDATE empresas SET nombre=?, telefono=?, direccion=?, id_categoria=?,
+             descripcion=?, horario=?, ubicacion_link=?, link_empresa=?, facebook=?, logo=?, destacada=?
              WHERE id_empresa=?"
         );
-        $stmt->bind_param("sssisssssii", $nombre, $telefono, $direccion, $id_categoria,
-                          $descripcion, $horario, $ubicacion_link, $link_empresa, $logo, $destacada_new, $id);
+        $stmt->bind_param(
+            "sssissssssii",
+            $nombre, $telefono, $direccion, $id_categoria,
+            $descripcion, $horario, $ubicacion_link, $link_empresa, $facebook, $logo, $destacada_new, $id
+        );
 
         if ($stmt->execute()) {
             $success = "Empresa actualizada correctamente ✅";
             $empresa['nombre']         = $nombre;
+            $empresa['telefono']       = $telefono;
+            $empresa['direccion']      = $direccion;
+            $empresa['id_categoria']   = $id_categoria;
+            $empresa['descripcion']    = $descripcion;
+            $empresa['horario']        = $horario;
             $empresa['ubicacion_link'] = $ubicacion_link;
+            $empresa['link_empresa']   = $link_empresa;
+            $empresa['facebook']       = $facebook;
+            $empresa['logo']           = $logo;
             $empresa['destacada']      = $destacada_new;
         } else {
             $error = "Error: " . $stmt->error;
@@ -75,7 +87,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $ruta       = $carpeta . $nombreFoto;
             if (move_uploaded_file($tmp, $ruta)) {
                 $orden_actual++;
-                $stmtFoto = $conexion->prepare("INSERT INTO empresa_galeria (id_empresa,foto,orden) VALUES (?,?,?)");
+                $stmtFoto = $conexion->prepare("INSERT INTO empresa_galeria (id_empresa, foto, orden) VALUES (?, ?, ?)");
                 $stmtFoto->bind_param("isi", $id, $nombreFoto, $orden_actual);
                 $stmtFoto->execute();
                 $stmtFoto->close();
@@ -84,8 +96,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 }
 
-$categorias = $conexion->query("SELECT id_categoria,nombre FROM categorias");
-$mapaQuery  = urlencode($empresa['nombre'] . ' ' . $empresa['direccion']);
+$categorias       = $conexion->query("SELECT id_categoria, nombre FROM categorias");
+$mapaQuery        = urlencode($empresa['nombre'] . ' ' . $empresa['direccion']);
 $total_destacadas = $conexion->query("SELECT COUNT(*) as total FROM empresas WHERE destacada = 1")->fetch_assoc()['total'];
 ?>
 <!DOCTYPE html>
@@ -100,15 +112,15 @@ $total_destacadas = $conexion->query("SELECT COUNT(*) as total FROM empresas WHE
         .foto-item {
             position: relative; cursor: grab; user-select: none;
             border-radius: 10px; overflow: hidden;
-            border: 2px solid #e0e0e0; transition: border-color 0.2s, box-shadow 0.2s;
+            border: 2px solid #e0e0e0; transition: border-color .2s, box-shadow .2s;
         }
-        .foto-item:hover { border-color: #3498db; box-shadow: 0 4px 12px rgba(52,152,219,0.25); }
-        .foto-item.sortable-chosen { border-color: #3498db; box-shadow: 0 8px 20px rgba(52,152,219,0.3); opacity: 0.85; }
-        .foto-item.sortable-ghost  { opacity: 0.3; }
+        .foto-item:hover { border-color: #3498db; box-shadow: 0 4px 12px rgba(52,152,219,.25); }
+        .foto-item.sortable-chosen { border-color: #3498db; box-shadow: 0 8px 20px rgba(52,152,219,.3); opacity: .85; }
+        .foto-item.sortable-ghost  { opacity: .3; }
         .foto-item img { width: 120px; height: 120px; object-fit: cover; display: block; }
         .foto-item .orden-badge {
             position: absolute; top: 5px; left: 5px;
-            background: rgba(27,58,87,0.8); color: #fff;
+            background: rgba(27,58,87,.8); color: #fff;
             font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 20px;
         }
         .foto-item .btn-borrar {
@@ -121,9 +133,9 @@ $total_destacadas = $conexion->query("SELECT COUNT(*) as total FROM empresas WHE
             margin-top: 12px; padding: 9px 22px;
             background: #2c3e50; color: #fff; border: none;
             border-radius: 10px; font-weight: 600; cursor: pointer;
-            font-size: 14px; transition: 0.2s;
+            font-size: 14px; transition: .2s;
         }
-        .btn-guardar-orden:hover { background: #3498db; }
+        .btn-guardar-orden:hover  { background: #3498db; }
         .btn-guardar-orden.guardado { background: #27ae60; }
         .mapa-wrap { display: flex; flex-direction: column; gap: 10px; }
         .mapa-buscar-row { display: flex; gap: 8px; }
@@ -135,9 +147,7 @@ $total_destacadas = $conexion->query("SELECT COUNT(*) as total FROM empresas WHE
         .mapa-buscar-row button:hover { background: #2e86c1; }
         .mapa-iframe { width: 100%; height: 320px; border-radius: 12px; border: 1px solid #ddd; display: block; }
         .mapa-tip { font-size: 12px; color: #888; }
-        .destacada-info {
-            font-size: 12px; color: #888; margin-top: 6px;
-        }
+        .destacada-info { font-size: 12px; color: #888; margin-top: 6px; }
         .destacada-info.lleno { color: #e74c3c; font-weight: 600; }
     </style>
 </head>
@@ -145,7 +155,7 @@ $total_destacadas = $conexion->query("SELECT COUNT(*) as total FROM empresas WHE
 <section class="panel">
 <h2>Editar Empresa</h2>
 
-<?php if ($error): ?><p style="color:red"><?= htmlspecialchars($error) ?></p><?php endif; ?>
+<?php if ($error):   ?><p style="color:red"><?=   htmlspecialchars($error)   ?></p><?php endif; ?>
 <?php if ($success): ?><p style="color:green"><?= htmlspecialchars($success) ?></p><?php endif; ?>
 
 <form method="post" enctype="multipart/form-data">
@@ -155,7 +165,8 @@ $total_destacadas = $conexion->query("SELECT COUNT(*) as total FROM empresas WHE
     <div style="position:relative;display:inline-block">
         <img src="../assets/img/<?= htmlspecialchars($empresa['logo']) ?>"
              style="width:100px;height:100px;object-fit:cover;border-radius:6px;">
-        <a href="javascript:void(0)" onclick="eliminarFoto(<?= $id ?>,'logo',this)"
+        <a href="javascript:void(0)"
+           onclick="eliminarFoto(<?= $id ?>,'logo',this.parentElement)"
            style="position:absolute;top:5px;right:5px;background:red;color:white;
                   padding:4px 6px;border-radius:4px;text-decoration:none;font-size:12px;">X</a>
     </div>
@@ -198,8 +209,7 @@ $total_destacadas = $conexion->query("SELECT COUNT(*) as total FROM empresas WHE
     <hr>
 
     <label>Nombre</label>
-    <input type="text" id="nombre" name="nombre"
-           value="<?= htmlspecialchars($empresa['nombre']) ?>" required>
+    <input type="text" name="nombre" value="<?= htmlspecialchars($empresa['nombre']) ?>" required>
 
     <label>Teléfono</label>
     <input type="text" name="telefono" value="<?= htmlspecialchars($empresa['telefono'] ?? '') ?>">
@@ -240,8 +250,15 @@ $total_destacadas = $conexion->query("SELECT COUNT(*) as total FROM empresas WHE
                placeholder="Pega la URL de Google Maps">
     </div>
 
+    <label>Facebook</label>
+    <input type="url" name="facebook"
+           value="<?= htmlspecialchars($empresa['facebook'] ?? '') ?>"
+           placeholder="https://facebook.com/tuempresa">
+
     <label>Enlace externo de la empresa</label>
-    <input type="url" name="link_empresa" value="<?= htmlspecialchars($empresa['link_empresa'] ?? '') ?>">
+    <input type="url" name="link_empresa"
+           value="<?= htmlspecialchars($empresa['link_empresa'] ?? '') ?>"
+           placeholder="https://tuempresa.com">
 
     <label>¿Empresa destacada? ⭐</label>
     <select name="destacada">
@@ -261,22 +278,27 @@ $total_destacadas = $conexion->query("SELECT COUNT(*) as total FROM empresas WHE
 </form>
 
 <br>
-<a href="admin.php" class="btn btn-danger">Volver al Panel</a>
+<a href="<?= ($rol === 'admin') ? 'admin.php' : 'editor.php' ?>" class="btn btn-danger">Volver al Panel</a>
+
 </section>
 
 <script>
-const sortable = Sortable.create(document.getElementById('fotos-sortable'), {
-    animation: 150,
-    ghostClass: 'sortable-ghost',
-    chosenClass: 'sortable-chosen',
-    onEnd: function() {
-        document.querySelectorAll('.foto-item').forEach((el, i) => {
-            el.querySelector('.orden-badge').textContent = i + 1;
-        });
-        document.getElementById('btn-orden').style.background = '#e67e22';
-        document.getElementById('btn-orden').textContent = '💾 Guardar orden (hay cambios)';
-    }
-});
+const sortableEl = document.getElementById('fotos-sortable');
+if (sortableEl) {
+    Sortable.create(sortableEl, {
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        onEnd: function () {
+            document.querySelectorAll('.foto-item').forEach((el, i) => {
+                el.querySelector('.orden-badge').textContent = i + 1;
+            });
+            const btn = document.getElementById('btn-orden');
+            btn.style.background = '#e67e22';
+            btn.textContent = '💾 Guardar orden (hay cambios)';
+        }
+    });
+}
 
 function guardarOrden() {
     const items = document.querySelectorAll('.foto-item');
@@ -314,7 +336,7 @@ function buscarMapa() {
     document.getElementById('mapa-iframe').src =
         'https://maps.google.com/maps?q=' + encodeURIComponent(q) + '&output=embed';
 }
-document.getElementById('mapa-query').addEventListener('keydown', function(e) {
+document.getElementById('mapa-query').addEventListener('keydown', function (e) {
     if (e.key === 'Enter') { e.preventDefault(); buscarMapa(); }
 });
 
@@ -323,7 +345,7 @@ function eliminarFoto(id, tipo, elemento) {
     fetch('eliminar_foto.php?id=' + id + '&tipo=' + tipo)
         .then(r => r.text())
         .then(data => {
-            if (data.trim() == 'ok') elemento.remove();
+            if (data.trim() === 'ok') elemento.remove();
             else alert('No se pudo eliminar');
         });
 }
