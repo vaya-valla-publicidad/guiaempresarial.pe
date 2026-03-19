@@ -1,55 +1,6 @@
 <?php include 'includes/header.php'; ?>
 <?php include 'db.php'; ?>
 
-<style>
-.hero {
-  position: relative;
-  width: 100%;
-  overflow: hidden;
-  min-height: 480px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.hero-slide {
-  position: absolute; inset: 0;
-  opacity: 0; transition: opacity .9s ease;
-  pointer-events: none;
-}
-.hero-slide.activo { opacity: 1; pointer-events: auto; }
-.hero-slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.hero-slide::after {
-  content: ''; position: absolute; inset: 0;
-  background: linear-gradient(to bottom, rgba(0,0,0,.3) 0%, rgba(0,0,0,.55) 100%);
-}
-.hero-content {
-  position: relative; z-index: 10;
-  text-align: center; padding: 40px 20px;
-  max-width: 800px; width: 100%;
-}
-.hero-arrow {
-  position: absolute; top: 50%; transform: translateY(-50%);
-  z-index: 20; background: rgba(255,255,255,.15);
-  border: none; color: #fff; width: 44px; height: 44px;
-  border-radius: 50%; font-size: 26px; cursor: pointer;
-  backdrop-filter: blur(4px); transition: background .2s;
-  display: flex; align-items: center; justify-content: center;
-}
-.hero-arrow:hover { background: rgba(255,255,255,.35); }
-.hero-arrow.prev { left: 16px; }
-.hero-arrow.next { right: 16px; }
-.hero-dots {
-  position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
-  z-index: 20; display: flex; gap: 8px;
-}
-.hero-dot {
-  width: 10px; height: 10px; border-radius: 50%;
-  background: rgba(255,255,255,.4); border: none; cursor: pointer;
-  transition: background .2s, transform .2s; padding: 0;
-}
-.hero-dot.activo { background: #fff; transform: scale(1.3); }
-</style>
-
 <?php
 $slides = [];
 $res_banner = $conexion->query("SELECT * FROM banner_carrusel WHERE activo = 1 ORDER BY orden ASC, id_banner ASC");
@@ -88,18 +39,14 @@ $total_slides = count($slides);
     <h1>Impulsando Negocios Locales</h1>
     <p class="hero-subtitle">Descubre, conecta y potencia empresas de tu región</p>
     <p class="hero-tagline">Visibilidad real para negocios reales</p>
-    <div class="hero-actions">
-      <section class="search-section">
-        <div class="search-wrapper">
-          <form id="formBuscar" class="search-form">
-            <div class="search-box">
-              <input type="text" id="buscar" name="q" placeholder="Buscar empresas, productos o servicios...">
-              <button type="submit">Buscar</button>
-            </div>
-          </form>
-          <div id="resultados" class="resultados-live"></div>
+    <div class="search-wrapper">
+      <form id="formBuscar" class="search-form">
+        <div class="search-box">
+          <input type="text" id="buscar" name="q" placeholder="Buscar empresas, productos o servicios...">
+          <button type="submit">Buscar</button>
         </div>
-      </section>
+      </form>
+      <div id="resultados" class="resultados-live"></div>
     </div>
   </div>
 
@@ -335,15 +282,16 @@ $total_slides = count($slides);
 <?php include 'includes/footer.php'; ?>
 
 <script>
+/* ── Carrusel hero ── */
 (function () {
   const slides = document.querySelectorAll('.hero-slide');
   const dots   = document.querySelectorAll('.hero-dot');
-  if (!slides.length) return;
+  if (slides.length <= 1) return;
 
   let idx = 0, timer = null;
 
   function getTiempo(i) {
-    return parseInt(slides[i]?.dataset.tiempo || 5000);
+    return parseInt(slides[i]?.dataset.tiempo) || 5000;
   }
 
   function goTo(n) {
@@ -355,9 +303,10 @@ $total_slides = count($slides);
   }
 
   function startAuto() {
-    clearInterval(timer);
+    clearTimeout(timer);
     timer = setTimeout(function tick() {
       goTo(idx + 1);
+      clearTimeout(timer);
       timer = setTimeout(tick, getTiempo(idx));
     }, getTiempo(idx));
   }
@@ -366,13 +315,17 @@ $total_slides = count($slides);
   document.querySelector('.hero-arrow.next')?.addEventListener('click', () => { goTo(idx + 1); startAuto(); });
   dots.forEach(d => d.addEventListener('click', () => { goTo(+d.dataset.index); startAuto(); }));
 
-  const hero = document.querySelector('.hero');
-  hero?.addEventListener('mouseenter', () => clearTimeout(timer));
-  hero?.addEventListener('mouseleave', startAuto);
+  /* Solo pausa con hover en desktop */
+  if (window.matchMedia('(hover: hover)').matches) {
+    const hero = document.querySelector('.hero');
+    hero?.addEventListener('mouseenter', () => clearTimeout(timer));
+    hero?.addEventListener('mouseleave', startAuto);
+  }
 
   let tx = null;
+  const hero = document.querySelector('.hero');
   hero?.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, { passive: true });
-  hero?.addEventListener('touchend',   e => {
+  hero?.addEventListener('touchend', e => {
     if (tx === null) return;
     const diff = tx - e.changedTouches[0].clientX;
     if (Math.abs(diff) > 40) { goTo(diff > 0 ? idx + 1 : idx - 1); startAuto(); }
@@ -382,6 +335,7 @@ $total_slides = count($slides);
   startAuto();
 })();
 
+/* ── Sliders de empresas ── */
 document.querySelectorAll('.empresa-slider').forEach(slider => {
     const slides = slider.querySelectorAll('.slide');
     const dots   = slider.querySelectorAll('.slider-dot');
@@ -398,17 +352,26 @@ document.querySelectorAll('.empresa-slider').forEach(slider => {
     dots.forEach((d, i) => d.addEventListener('click', () => { clearInterval(ap); goTo(i); }));
 });
 
+/* ── Buscador ── */
 const inputBuscar   = document.getElementById('buscar');
 const resultadosDiv = document.getElementById('resultados');
 const formBuscar    = document.getElementById('formBuscar');
+
 inputBuscar.addEventListener('keyup', function () {
     const q = this.value.trim();
     if (q.length > 0) fetch('buscar.php?q=' + encodeURIComponent(q)).then(r => r.text()).then(d => { resultadosDiv.innerHTML = d; });
     else resultadosDiv.innerHTML = '';
 });
+
 formBuscar.addEventListener('submit', function (e) {
     e.preventDefault();
     const q = inputBuscar.value.trim();
     if (q.length > 0) window.location.href = 'empresas.php?buscar=' + encodeURIComponent(q);
+});
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.search-wrapper')) {
+        resultadosDiv.innerHTML = '';
+    }
 });
 </script>

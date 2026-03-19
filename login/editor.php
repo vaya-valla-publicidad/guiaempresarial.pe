@@ -31,7 +31,6 @@ $rol = $_SESSION['rol'];
     Editar Sobre Nosotros
 </a>
 
-<!-- ══════════════ DESTACADAS ══════════════ -->
 <?php
 $res_dest   = $conexion->query("SELECT id_empresa, nombre FROM empresas WHERE destacada=1");
 $total_dest = $res_dest->num_rows;
@@ -56,7 +55,6 @@ $total_dest = $res_dest->num_rows;
     <?php endif; ?>
 </div>
 
-<!-- ══════════════ EMPRESAS ══════════════ -->
 <h2>Empresas</h2><br>
 <a href="agregar_empresa.php" class="btn">Agregar Empresa</a>
 <br><br>
@@ -121,10 +119,12 @@ while ($fila = $res->fetch_assoc()):
         <a href="<?= htmlspecialchars($fila['link_empresa']) ?>" target="_blank">Ver página</a>
         <?php else: ?>—<?php endif; ?>
     </td>
-    <td class="acciones">
-        <a href="editar.php?id=<?= $fila['id_empresa'] ?>" class="btn">Editar</a>
-        <a href="eliminar.php?id=<?= $fila['id_empresa'] ?>" class="btn btn-danger"
-           onclick="return confirm('¿Eliminar esta empresa?');">Eliminar</a>
+    <td>
+        <div class="acciones">
+            <a href="editar.php?id=<?= $fila['id_empresa'] ?>" class="btn">Editar</a>
+            <a href="eliminar.php?id=<?= $fila['id_empresa'] ?>" class="btn btn-danger"
+               onclick="return confirm('¿Eliminar esta empresa?');">Eliminar</a>
+        </div>
     </td>
 </tr>
 <?php endwhile; ?>
@@ -132,7 +132,6 @@ while ($fila = $res->fetch_assoc()):
 </div>
 <br><br>
 
-<!-- ══════════════ CATEGORÍAS ══════════════ -->
 <h2>Categorías</h2><br>
 <a href="agregar_categoria.php" class="btn">Agregar Categoría</a>
 <br><br>
@@ -155,10 +154,12 @@ while ($cat = $res_cat->fetch_assoc()):
         <i class="bi <?= htmlspecialchars($cat['icono'] ?? 'bi-briefcase') ?>"></i>
     </td>
     <td><?= htmlspecialchars($cat['nombre']) ?></td>
-    <td class="acciones">
-        <a href="editar_categoria.php?id=<?= $cat['id_categoria'] ?>" class="btn">Editar</a>
-        <a href="eliminar_categoria.php?id=<?= $cat['id_categoria'] ?>" class="btn btn-danger"
-           onclick="return confirm('¿Eliminar esta categoría?');">Eliminar</a>
+    <td>
+        <div class="acciones">
+            <a href="editar_categoria.php?id=<?= $cat['id_categoria'] ?>" class="btn">Editar</a>
+            <a href="eliminar_categoria.php?id=<?= $cat['id_categoria'] ?>" class="btn btn-danger"
+               onclick="return confirm('¿Eliminar esta categoría?');">Eliminar</a>
+        </div>
     </td>
 </tr>
 <?php endwhile; ?>

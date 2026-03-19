@@ -163,6 +163,7 @@ body {
     box-shadow: 0 4px 12px rgba(0,0,0,0.06);
 }
 
+/* ── Botón base ── */
 .panel .btn {
     padding: 7px 14px;
     border: none;
@@ -173,7 +174,7 @@ body {
     font-size: 12px;
     cursor: pointer;
     text-decoration: none;
-    transition: all 0.3s ease;
+    transition: all 0.25s ease;
     display: inline-block;
 }
 .panel .btn:hover {
@@ -181,12 +182,23 @@ body {
     color: #fff;
     transform: scale(1.05);
 }
+
+/* ── Botón danger base ── */
 .panel .btn-danger {
-    background-color: #e74c3c;
-    color: #fff;
+    background-color: #e74c3c !important;
+    color: #fff !important;
+    padding: 7px 14px !important;
+    border-radius: 8px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    border: none !important;
+    text-decoration: none;
+    cursor: pointer;
+    display: inline-block;
+    transition: all 0.25s ease;
 }
 .panel .btn-danger:hover {
-    background-color: #c0392b;
+    background-color: #c0392b !important;
     transform: scale(1.05);
 }
 
@@ -204,6 +216,7 @@ body {
     color: #E63946;
 }
 
+/* ── Formularios ── */
 .panel form,
 .panel .form-container {
     background: #fdfdfd;
@@ -237,18 +250,19 @@ body {
 }
 .panel form textarea { resize: vertical; min-height: 100px; }
 
+/* Botón submit dentro de formularios — override para que sea grande */
 .panel form .btn,
 .panel .btn-agregar,
 .panel .btn-editar {
-    width: 220px;
+    width: 220px !important;
     align-self: center;
-    background: linear-gradient(135deg, #3498db, #5dade2);
-    color: #fff;
+    background: linear-gradient(135deg, #3498db, #5dade2) !important;
+    color: #fff !important;
     font-weight: 700;
-    font-size: 16px;
-    padding: 14px 0;
-    border-radius: 12px;
-    border: 2px solid #3498db;
+    font-size: 16px !important;
+    padding: 14px 0 !important;
+    border-radius: 12px !important;
+    border: 2px solid #3498db !important;
     cursor: pointer;
     transition: all 0.3s ease;
     display: block;
@@ -257,25 +271,28 @@ body {
 .panel form .btn:hover,
 .panel .btn-agregar:hover,
 .panel .btn-editar:hover {
-    background: #2c3e50;
-    color: #fff;
+    background: #2c3e50 !important;
+    color: #fff !important;
     transform: scale(1.05);
 }
 
-.panel a.btn-danger {
-    display: inline-block;
+/* Botón "Volver al Panel" dentro de form-container */
+.panel .form-container > a.btn-danger {
+    display: inline-block !important;
     text-align: center;
-    margin: 20px auto 0 auto;
-    padding: 12px 25px;
-    background: #e74c3c;
-    color: #fff;
-    border-radius: 12px;
+    margin: 10px auto 0 auto;
+    padding: 12px 25px !important;
+    background: #e74c3c !important;
+    color: #fff !important;
+    border-radius: 12px !important;
     text-decoration: none;
     font-weight: 700;
+    font-size: 15px !important;
     transition: all 0.3s ease;
+    width: auto !important;
 }
-.panel a.btn-danger:hover {
-    background: #c0392b;
+.panel .form-container > a.btn-danger:hover {
+    background: #c0392b !important;
     transform: scale(1.05);
 }
 
@@ -286,69 +303,34 @@ body {
     padding: 20px 24px;
     margin-bottom: 30px;
 }
-.destacadas-section h3 {
-    color: #E63946;
-    margin-bottom: 8px;
-    font-size: 16px;
-}
-.contador-dest {
-    font-size: 13px;
-    color: #888;
-    margin-bottom: 12px;
-}
+.destacadas-section h3 { color: #E63946; margin-bottom: 8px; font-size: 16px; }
+.contador-dest { font-size: 13px; color: #888; margin-bottom: 12px; }
 .contador-dest span { font-weight: 700; color: #E63946; }
-.destacadas-lista {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-}
+.destacadas-lista { display: flex; flex-wrap: wrap; gap: 10px; }
 .destacada-chip {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: #fff;
-    border: 1px solid rgba(247,220,5,0.5);
-    border-radius: 30px;
-    padding: 6px 14px;
-    font-size: 13px;
-    font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+    background: #fff; border: 1px solid rgba(247,220,5,0.5);
+    border-radius: 30px; padding: 6px 14px;
+    font-size: 13px; font-weight: 600;
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 .destacada-chip button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: #aaa;
-    font-size: 16px;
-    line-height: 1;
-    padding: 0;
-    transition: 0.2s;
+    background: none; border: none; cursor: pointer;
+    color: #aaa; font-size: 16px; line-height: 1; padding: 0; transition: 0.2s;
 }
 .destacada-chip button:hover { color: #e74c3c; }
 
 .btn-estrella {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 20px;
-    padding: 0;
-    transition: transform 0.2s;
-    line-height: 1;
+    background: none; border: none; cursor: pointer;
+    font-size: 20px; padding: 0; transition: transform 0.2s; line-height: 1;
 }
 .btn-estrella:hover { transform: scale(1.4); }
 .btn-estrella.activa { filter: drop-shadow(0 0 4px gold); }
 
-.destacada-info {
-    font-size: 12px;
-    color: #888;
-    margin-top: 4px;
-}
-.destacada-info.lleno {
-    color: #e74c3c;
-    font-weight: 600;
-}
+.destacada-info { font-size: 12px; color: #888; margin-top: 4px; }
+.destacada-info.lleno { color: #e74c3c; font-weight: 600; }
 
-.panel.admin .panel-title { color: #B28700; }
+.panel.admin .panel-title  { color: #B28700; }
 .panel.editor .panel-title { color: #555; }
 
 @media (max-width: 1024px) {
@@ -363,4 +345,7 @@ body {
     .panel form { padding: 20px; }
     .panel table th,
     .panel table td { padding: 8px; font-size: 12px; }
+    .acciones { flex-direction: column; align-items: stretch; }
+    .panel .btn,
+    .panel .btn-danger { width: 100% !important; }
 }

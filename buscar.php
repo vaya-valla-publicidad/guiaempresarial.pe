@@ -1,34 +1,52 @@
 <?php
 include 'db.php';
 
-$q = $_GET['q'] ?? '';
-$q = trim($q);
-
+$q = trim($_GET['q'] ?? '');
 if ($q === '') exit;
+$texto = '%' . $q . '%';
 
-$texto     = $conexion->real_escape_string($q);
-$resultado = $conexion->query(
+$stmt = $conexion->prepare(
     "SELECT e.id_empresa, e.nombre, e.logo, e.descripcion, c.nombre AS categoria
      FROM empresas e
      JOIN categorias c ON e.id_categoria = c.id_categoria
-     WHERE e.nombre      LIKE '%$texto%'
-        OR e.descripcion LIKE '%$texto%'
-        OR c.nombre      LIKE '%$texto%'
+     WHERE e.nombre      LIKE ?
+        OR e.descripcion LIKE ?
+        OR c.nombre      LIKE ?
      LIMIT 8"
 );
 
-if (!$resultado || $resultado->num_rows === 0) {
+if (!$stmt) {
+    echo '<p class="buscar-noresult">Error en la búsqueda.</p>';
+    exit;
+}
+
+$stmt->bind_param("sss", $texto, $texto, $texto);
+$stmt->execute();
+$resultado = $stmt->get_result();
+
+if ($resultado->num_rows === 0) {
     echo '<p class="buscar-noresult">😕 Sin resultados para <strong>' . htmlspecialchars($q) . '</strong></p>';
     exit;
 }
 
 while ($f = $resultado->fetch_assoc()):
-    $logo = !empty($f['logo']) ? htmlspecialchars($f['logo']) : 'default.png';
     $id   = intval($f['id_empresa']);
     $desc = !empty($f['descripcion']) ? mb_strimwidth($f['descripcion'], 0, 60, '…') : '';
 ?>
 <a href="empresas.php?empresa=<?= $id ?>" class="buscar-result-item">
-    <img src="assets/img/<?= $logo ?>" alt="<?= htmlspecialchars($f['nombre']) ?>" class="buscar-result-logo">
+    <?php if (!empty($f['logo'])): ?>
+        <img src="assets/img/<?= htmlspecialchars($f['logo']) ?>"
+             alt="<?= htmlspecialchars($f['nombre']) ?>"
+             class="buscar-result-logo"
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <div class="buscar-result-logo logo-placeholder" style="display:none;">
+            <?= mb_strtoupper(mb_substr($f['nombre'], 0, 1)) ?>
+        </div>
+    <?php else: ?>
+        <div class="buscar-result-logo logo-placeholder">
+            <?= mb_strtoupper(mb_substr($f['nombre'], 0, 1)) ?>
+        </div>
+    <?php endif; ?>
     <div class="buscar-result-info">
         <span class="buscar-result-nombre"><?= htmlspecialchars($f['nombre']) ?></span>
         <span class="buscar-result-cat"><?= htmlspecialchars($f['categoria']) ?></span>
@@ -37,4 +55,7 @@ while ($f = $resultado->fetch_assoc()):
         <?php endif; ?>
     </div>
 </a>
-<?php endwhile; ?>
+<?php endwhile;
+
+$stmt->close();
+?>
