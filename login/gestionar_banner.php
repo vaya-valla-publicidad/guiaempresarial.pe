@@ -439,8 +439,6 @@ document.getElementById('banner-grid').addEventListener('input', e => {
 });
 
 document.getElementById('banner-grid').addEventListener('click', async e => {
-
-  // Guardar tiempo
   const btnT = e.target.closest('.btn-save-time');
   if (btnT) {
     const id  = btnT.dataset.id;

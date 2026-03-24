@@ -45,13 +45,9 @@ if(localStorage.getItem("theme") === "dark") {
   document.body.classList.add("dark-mode");
   toggleBtn.checked = true;
 }
-
 toggleBtn.addEventListener('change', () => {
-
   document.body.classList.toggle('dark-mode');
-
   const dark = document.body.classList.contains('dark-mode');
-
   localStorage.setItem("theme", dark ? "dark" : "light");
 
 });
@@ -61,7 +57,6 @@ const links = document.querySelectorAll('.nav-link');
 
 function activarLink() {
     const hash = window.location.hash;
-
     links.forEach(link => {
         link.classList.remove('active');
 

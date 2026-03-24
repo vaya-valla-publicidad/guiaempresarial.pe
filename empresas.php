@@ -1,5 +1,57 @@
+<?php
+include 'db.php';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
+    $id_emp     = intval($_POST['id_empresa']);
+    $estrellas  = intval($_POST['estrellas']);
+    $comentario = trim($_POST['comentario']);
+    $nombre     = trim($_POST['nombre_autor'] ?? '');
+
+    $nombre_escaped     = $conexion->real_escape_string($nombre);
+    $comentario_escaped = $conexion->real_escape_string($comentario);
+
+    $palabras_prohibidas = [
+        'idiota','imbecil','mierda','puta','puto','pendejo','estupido','basura',
+        'asco','maldito','inutil','animal','bestia','burro','bruto','tarado',
+        'retrasado','subnormal','mongolo','hdp','hijo de puta','malparido',
+        'desgraciado','miserable','imbécil','estúpido','inútil','maldición',
+        'cabrón','cabron','hijoputa','gonorrea','marica','maricón','maricon',
+        'estafa','estafador','estafadora','ladron','ladrona','ladrón','roba',
+        'roban','robaron','mentira','mentiroso','mentirosa','falso','falsa',
+        'fraude','fraudulento','engaño','engañan','engañaron','timo','timador',
+        'corrupto','corrupta','corruptos','ilegal','ilegales','clandestino',
+        'peligroso','peligrosa','trampa','tramposo','tramposa','chanta','chantaje',
+        'amenaza','amenazaron','extorsion','extorsión','extorsionan',
+        'sexo','porno','prostituta','prostituto','prepago','escort',
+        'matar','muerte','asesino','asesina','golpear','golpean','violencia',
+        'violento','violenta','pegar','pegaron','amenazar',
+        've a','mejor vayan a','vayan mejor','no vayan','cierren','cierren este',
+    ];
+
+    $texto_check = strtolower($comentario . ' ' . $nombre);
+    $tiene_mala_palabra = false;
+    foreach ($palabras_prohibidas as $palabra) {
+        if (strpos($texto_check, $palabra) !== false) {
+            $tiene_mala_palabra = true;
+            break;
+        }
+    }
+
+    if ($nombre && $comentario && $estrellas >= 1 && $estrellas <= 5 && !$tiene_mala_palabra) {
+        $conexion->query("INSERT INTO resenas (id_empresa, nombre_autor, estrellas, comentario)
+                          VALUES ($id_emp, '$nombre_escaped', $estrellas, '$comentario_escaped')");
+        header("Location: empresas.php?empresa=$id_emp&resena=ok#resenas");
+        exit;
+    } elseif ($tiene_mala_palabra) {
+        header("Location: empresas.php?empresa=$id_emp&resena=mala#resenas");
+        exit;
+    } else {
+        header("Location: empresas.php?empresa=$id_emp&resena=error#resenas");
+        exit;
+    }
+}
+?>
 <?php include 'includes/header.php'; ?>
-<?php include 'db.php'; ?>
 
 <section class="empresas-page-section">
     <div class="container">
@@ -74,10 +126,10 @@
                                 <a href="<?= htmlspecialchars($fila['ubicacion_link']) ?>" target="_blank" class="btn-accion btn-accion-maps">📍 Ver en Maps</a>
                                 <?php endif; ?>
                                 <?php if (!empty($fila['facebook'])): ?>
-    <a href="<?= htmlspecialchars($fila['facebook']) ?>" target="_blank" class="btn-accion btn-accion-facebook">
-        📘 Facebook
-    </a>
-    <?php endif; ?>
+                                <a href="<?= htmlspecialchars($fila['facebook']) ?>" target="_blank" class="btn-accion btn-accion-facebook">
+                                    📘 Facebook
+                                </a>
+                                <?php endif; ?>
                             </div>
                         </div>
                         <?php if (!empty($fila['descripcion'])): ?>
@@ -160,6 +212,94 @@
                 <p class="perfil-descripcion-texto"><?= nl2br(htmlspecialchars($fila['descripcion'])) ?></p>
             </div>
             <?php endif; ?>
+
+            <?php
+            $resena_msg    = $_GET['resena'] ?? null;
+            $resenas_q     = $conexion->query("SELECT * FROM resenas WHERE id_empresa = $id_empresa ORDER BY fecha DESC");
+            $total_resenas = $resenas_q ? $resenas_q->num_rows : 0;
+            $promedio      = 0;
+            $resenas_arr   = [];
+            if ($total_resenas > 0) {
+                $sum_q    = $conexion->query("SELECT AVG(estrellas) as prom FROM resenas WHERE id_empresa = $id_empresa");
+                $promedio = round($sum_q->fetch_assoc()['prom'], 1);
+                while ($r = $resenas_q->fetch_assoc()) $resenas_arr[] = $r;
+            }
+            ?>
+
+            <div class="perfil-resenas" id="resenas">
+                <p class="perfil-section-label">Reseñas</p>
+
+                <?php if ($resena_msg === 'ok'): ?>
+                    <div class="resena-alerta resena-alerta-ok">✅ ¡Reseña enviada con éxito!</div>
+                <?php elseif ($resena_msg === 'mala'): ?>
+                    <div class="resena-alerta resena-alerta-error">⚠️ Tu reseña contiene palabras no permitidas.</div>
+                <?php elseif ($resena_msg === 'error'): ?>
+                    <div class="resena-alerta resena-alerta-error">❌ Por favor completa todos los campos y selecciona estrellas.</div>
+                <?php endif; ?>
+
+                <?php if ($total_resenas > 0): ?>
+                <div class="resenas-promedio">
+                    <span class="resenas-prom-numero"><?= $promedio ?></span>
+                    <div>
+                        <div class="estrellas-display">
+                            <?php for ($i = 1; $i <= 5; $i++): ?>
+                                <span class="<?= $i <= round($promedio) ? 'estrella-llena' : 'estrella-vacia' ?>">★</span>
+                            <?php endfor; ?>
+                        </div>
+                        <span class="resenas-total"><?= $total_resenas ?> reseña<?= $total_resenas > 1 ? 's' : '' ?></span>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <div class="resena-form-wrapper">
+                    <p class="resena-form-titulo">Deja tu reseña</p>
+                    <form method="POST" action="empresas.php?empresa=<?= $id_empresa ?>">
+                        <input type="hidden" name="resena_empresa" value="1">
+                        <input type="hidden" name="id_empresa" value="<?= $id_empresa ?>">
+                        <div class="form-group">
+                            <label>Tu nombre</label>
+                            <input type="text" name="nombre_autor" placeholder="Ej: Juan Pérez" required maxlength="100">
+                        </div>
+                        <div class="form-group">
+                            <label>Calificación</label>
+                            <div class="estrellas-input" id="estrellasInput">
+                                <?php for ($i = 1; $i <= 5; $i++): ?>
+                                <span class="estrella-btn" data-valor="<?= $i ?>">★</span>
+                                <?php endfor; ?>
+                            </div>
+                            <input type="hidden" name="estrellas" id="estrellasValor" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Comentario</label>
+                            <textarea name="comentario" rows="3" placeholder="Cuéntanos tu experiencia..." required maxlength="500"></textarea>
+                        </div>
+                        <button type="submit" class="btn-enviar-resena">Enviar reseña</button>
+                    </form>
+                </div>
+
+                <?php if (count($resenas_arr) > 0): ?>
+                <div class="resenas-lista">
+                    <?php foreach ($resenas_arr as $r): ?>
+                    <div class="resena-item">
+                        <div class="resena-header">
+                            <div class="resena-avatar"><?= mb_strtoupper(mb_substr($r['nombre_autor'], 0, 1)) ?></div>
+                            <div>
+                                <strong><?= htmlspecialchars($r['nombre_autor']) ?></strong>
+                                <div class="estrellas-display small">
+                                    <?php for ($i = 1; $i <= 5; $i++): ?>
+                                        <span class="<?= $i <= $r['estrellas'] ? 'estrella-llena' : 'estrella-vacia' ?>">★</span>
+                                    <?php endfor; ?>
+                                </div>
+                            </div>
+                            <span class="resena-fecha"><?= date('d/m/Y', strtotime($r['fecha'])) ?></span>
+                        </div>
+                        <p class="resena-comentario"><?= nl2br(htmlspecialchars($r['comentario'])) ?></p>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
+            </div>
+
         </div>
 
         <?php
@@ -229,10 +369,10 @@
                     <div class="empresa-actions">
                         <a href="empresas.php?empresa=<?= $id ?>" class="btn-ver">Ver más</a>
                         <?php if (!empty($fila['facebook'])): ?>
-<a href="<?= htmlspecialchars($fila['facebook']) ?>" target="_blank" class="btn-accion btn-accion-facebook">
-    📘 Facebook
-</a>
-<?php endif; ?>
+                        <a href="<?= htmlspecialchars($fila['facebook']) ?>" target="_blank" class="btn-accion btn-accion-facebook">
+                            📘 Facebook
+                        </a>
+                        <?php endif; ?>
                         <?php if ($numero): ?>
                         <a href="https://wa.me/<?= $numero ?>" target="_blank" class="btn-whatsapp">WhatsApp</a>
                         <?php endif; ?>
@@ -292,4 +432,24 @@ document.querySelectorAll('.empresa-slider').forEach(slider => {
     const autoplay = setInterval(() => goTo(idx + 1), 4000);
     dots.forEach((dot, i) => dot.addEventListener('click', () => { clearInterval(autoplay); goTo(i); }));
 });
+
+(function() {
+    const estrellasInput = document.getElementById('estrellasInput');
+    const estrellasValor = document.getElementById('estrellasValor');
+    if (!estrellasInput) return;
+    const btns = estrellasInput.querySelectorAll('.estrella-btn');
+    btns.forEach((btn, index) => {
+        btn.addEventListener('mouseover', () => {
+            btns.forEach((b, i) => b.classList.toggle('activa', i <= index));
+        });
+        btn.addEventListener('click', () => {
+            estrellasValor.value = btn.dataset.valor;
+            btns.forEach((b, i) => b.classList.toggle('activa', i <= index));
+        });
+    });
+    estrellasInput.addEventListener('mouseleave', () => {
+        const val = parseInt(estrellasValor.value || 0);
+        btns.forEach((b, i) => b.classList.toggle('activa', i < val));
+    });
+})();
 </script>

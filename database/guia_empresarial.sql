@@ -17,6 +17,11 @@ CREATE TABLE `banner_carrusel` (
   `creado_en` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+INSERT INTO `banner_carrusel` (`id_banner`, `imagen`, `orden`, `activo`, `tiempo_ms`, `creado_en`) VALUES
+(16, 'banner_1773942209_34cd198b.jpeg', 1, 1, 5000, '2026-03-19 17:43:29'),
+(17, 'banner_1773942391_99c8f743.jpg', 2, 1, 5000, '2026-03-19 17:46:31'),
+(18, 'banner_1773942664_88eca44a.jpg', 3, 1, 5000, '2026-03-19 17:51:04');
+
 CREATE TABLE `categorias` (
   `id_categoria` int(11) NOT NULL,
   `nombre` varchar(100) NOT NULL,
@@ -51,12 +56,10 @@ CREATE TABLE `empresas` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 INSERT INTO `empresas` (`id_empresa`, `logo`, `nombre`, `email`, `telefono`, `direccion`, `id_categoria`, `fecha_registro`, `horario`, `descripcion`, `ubicacion_link`, `link_empresa`, `vistas`, `destacada`, `facebook`) VALUES
-(3, NULL, 'Tech Solutions Perú', 'info@techsolutions.pe', '912345678', 'Av. Innovación 321, Huacho', 1, '2026-02-18 16:29:03', NULL, NULL, NULL, NULL, 0, 0, NULL),
-(6, NULL, 'Restaurante El Sabor', 'contacto@elsabor.com', '988222333', 'Jr. Central 456, Huacho', 2, '2026-02-18 16:32:21', NULL, NULL, NULL, NULL, 0, 0, NULL),
-(11, NULL, 'TechSoluciones Perú', NULL, '987226299', 'Av. Javier Prado Este 1234, San Isidro, Lima', 1, '2026-02-24 17:03:08', 'Lunes a Viernes 09:00 - 18:00 / Sábados 09:00 - 13:00', 'Soporte técnico empresarial, desarrollo web y mantenimiento de equipos informáticos.', NULL, 'https://techsoluciones.pe', 0, 0, NULL),
-(12, '69b2e6c81a9ce_RosalRestaurant.jpg', 'El Rosal Restaurant', NULL, '977411702', 'Jr. Salaverry (8va cuadra), Huacho', 2, '2026-03-09 17:12:50', 'de 12 a 10 pm', 'La tradición de Huacho en tu paladar desde 1960. 🥘✨', 'https://www.google.com/maps/place/El+Rosal/@-11.1101762,-77.6124137,17z/data=!3m1!4b1!4m6!3m5!1s0x9106df0b73d6425f:0x6e3e28e69603d472!8m2!3d-11.1101762!4d-77.6124137!16s%2Fg%2F11bwpd_yh9?entry=ttu&g_ep=EgoyMDI2MDMwOC4wIKXMDSoASAFQAw%3D%3D', NULL, 10, 1, NULL),
-(13, '69b2eb9d7814f_chifaespaña.jpg', 'Chifa España', NULL, '937 245 536', 'Av. 28 de Julio 544 – Huacho', 2, '2026-03-12 16:36:45', NULL, '¡EL AUTENTICO SABOR ORIENTAL TE ESPERA AQUI!', 'https://www.google.com/maps/place/Chifa+Espa%C3%B1a/@-11.1075533,-77.6095983,19z/data=!4m6!3m5!1s0x9106df7536dc3f1b:0x75454f4e78f60660!8m2!3d-11.1073572!4d-77.6095098!16s%2Fg%2F1tjs5_st?entry=ttu&g_ep=EgoyMDI2MDMxMS4wIKXMDSoASAFQAw%3D%3D', NULL, 5, 1, NULL),
-(14, '69b82b6ce767e_lachutana.jpg', 'La Chutana-Lubricentro', NULL, '994337831', 'Av. Cruz Blanca 1890 Santa María, Huaura, Peru, 15138', 8, '2026-03-16 16:10:20', NULL, 'En La Chutana Lubricentro engreimos a tu fierro con productos de la mejor calidad y productos :)', 'https://www.google.com/maps/place/Av.+Cruz+Blanca+1890,+Huacho+15137/@-11.0985195,-77.5959335,17z/data=!3m1!4b1!4m5!3m4!1s0x9106df907e002ea1:0x3e3fe5d41e672a7e!8m2!3d-11.0985195!4d-77.5959335?entry=ttu&g_ep=EgoyMDI2MDMxMS4wIKXMDSoASAFQAw%3D%3D', NULL, 18, 1, 'https://www.facebook.com/lachutana.huacho');
+(12, '69b2e6c81a9ce_RosalRestaurant.jpg', 'El Rosal Restaurant', NULL, '977411702', 'Jr. Salaverry (8va cuadra), Huacho', 2, '2026-03-09 17:12:50', 'de 12 a 10 pm', 'La tradición de Huacho en tu paladar desde 1960. 🥘✨', 'https://www.google.com/maps/place/El+Rosal/@-11.1101762,-77.6124137,17z/data=!3m1!4b1!4m6!3m5!1s0x9106df0b73d6425f:0x6e3e28e69603d472!8m2!3d-11.1101762!4d-77.6124137!16s%2Fg%2F11bwpd_yh9?entry=ttu&g_ep=EgoyMDI2MDMwOC4wIKXMDSoASAFQAw%3D%3D', NULL, 0, 1, NULL),
+(13, '69b2eb9d7814f_chifaespaña.jpg', 'Chifa España', NULL, '937 245 536', 'Av. 28 de Julio 544 – Huacho', 2, '2026-03-12 16:36:45', NULL, '¡EL AUTENTICO SABOR ORIENTAL TE ESPERA AQUI!', 'https://www.google.com/maps/place/Chifa+Espa%C3%B1a/@-11.1075533,-77.6095983,19z/data=!4m6!3m5!1s0x9106df7536dc3f1b:0x75454f4e78f60660!8m2!3d-11.1073572!4d-77.6095098!16s%2Fg%2F1tjs5_st?entry=ttu&g_ep=EgoyMDI2MDMxMS4wIKXMDSoASAFQAw%3D%3D', NULL, 0, 1, NULL),
+(14, '69b82b6ce767e_lachutana.jpg', 'La Chutana-Lubricentro', NULL, '994337831', 'Av. Cruz Blanca 1890 Santa María, Huaura, Peru, 15138', 8, '2026-03-16 16:10:20', NULL, 'En La Chutana Lubricentro engreimos a tu fierro con productos de la mejor calidad y productos :)', 'https://www.google.com/maps/place/Av.+Cruz+Blanca+1890,+Huacho+15137/@-11.0985195,-77.5959335,17z/data=!3m1!4b1!4m5!3m4!1s0x9106df907e002ea1:0x3e3fe5d41e672a7e!8m2!3d-11.0985195!4d-77.5959335?entry=ttu&g_ep=EgoyMDI2MDMxMS4wIKXMDSoASAFQAw%3D%3D', NULL, 1, 1, 'https://www.facebook.com/lachutana.huacho'),
+(15, '69c2b957bfeb7_Odontologia.jpg', 'Cruzado Odontologia Especializada', NULL, '945 651 054', 'Prologación Miguel Grau 162 - 2do piso, Huacho, Peru', 11, '2026-03-24 16:18:09', NULL, 'Instalaciones modernas, alta calidad de equipos e insumos que en combinación con la ética profesional, brinda atención óptima y segura.', 'https://www.google.com/maps/place/Cruzado+Odontolog%C3%ADa+Especializada/@-11.1080604,-77.604148,18z/data=!4m6!3m5!1s0x9106df557a2f5c59:0x5c3aa558e2691d18!8m2!3d-11.1080578!4d-77.6043518!16s%2Fg%2F11fk1b8y7c?entry=ttu&g_ep=EgoyMDI2MDMxOC4xIKXMDSoASAFQAw%3D%3D', NULL, 0, 0, 'https://www.facebook.com/cruzadoodontologia');
 
 CREATE TABLE `empresa_galeria` (
   `id_foto` int(11) NOT NULL,
@@ -79,7 +82,20 @@ INSERT INTO `empresa_galeria` (`id_foto`, `id_empresa`, `foto`, `orden`, `fecha_
 (34, 14, '69b82c5be7b8f_L1.jpg', 0, '2026-03-16 16:14:19'),
 (35, 14, '69b82c5bf22e9_L2.jpg', 1, '2026-03-16 16:14:19'),
 (36, 14, '69b82c5bf3fc7_L3.jpg', 2, '2026-03-16 16:14:20'),
-(37, 14, '69b82c5c03b96_L4.jpg', 3, '2026-03-16 16:14:20');
+(37, 14, '69b82c5c03b96_L4.jpg', 3, '2026-03-16 16:14:20'),
+(38, 15, '69c2b94139fe8_dientesblancos.jpg', 0, '2026-03-24 16:18:09'),
+(39, 15, '69c2b9413df77_alineadores.jpg', 1, '2026-03-24 16:18:09'),
+(40, 15, '69c2b9413ff1c_dolor.jpg', 2, '2026-03-24 16:18:09'),
+(41, 15, '69c2b941414b9_sonrisa.jpg', 3, '2026-03-24 16:18:09');
+
+CREATE TABLE `resenas` (
+  `id_resena` int(11) NOT NULL,
+  `id_empresa` int(11) NOT NULL,
+  `nombre_autor` varchar(100) NOT NULL,
+  `estrellas` tinyint(4) NOT NULL CHECK (`estrellas` between 1 and 5),
+  `comentario` text NOT NULL,
+  `fecha` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
 CREATE TABLE `sobre_info` (
   `id` int(11) NOT NULL,
@@ -129,6 +145,10 @@ ALTER TABLE `empresa_galeria`
   ADD PRIMARY KEY (`id_foto`),
   ADD KEY `id_empresa` (`id_empresa`);
 
+ALTER TABLE `resenas`
+  ADD PRIMARY KEY (`id_resena`),
+  ADD KEY `id_empresa` (`id_empresa`);
+
 ALTER TABLE `sobre_info`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `clave` (`clave`);
@@ -140,16 +160,19 @@ ALTER TABLE `usuarios`
 
 
 ALTER TABLE `banner_carrusel`
-  MODIFY `id_banner` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id_banner` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 ALTER TABLE `categorias`
   MODIFY `id_categoria` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 ALTER TABLE `empresas`
-  MODIFY `id_empresa` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id_empresa` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 ALTER TABLE `empresa_galeria`
-  MODIFY `id_foto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
+  MODIFY `id_foto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
+
+ALTER TABLE `resenas`
+  MODIFY `id_resena` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 ALTER TABLE `sobre_info`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
@@ -163,6 +186,9 @@ ALTER TABLE `empresas`
 
 ALTER TABLE `empresa_galeria`
   ADD CONSTRAINT `empresa_galeria_ibfk_1` FOREIGN KEY (`id_empresa`) REFERENCES `empresas` (`id_empresa`) ON DELETE CASCADE;
+
+ALTER TABLE `resenas`
+  ADD CONSTRAINT `resenas_ibfk_1` FOREIGN KEY (`id_empresa`) REFERENCES `empresas` (`id_empresa`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

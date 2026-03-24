@@ -1,5 +1,4 @@
 <?php
-// Acceso especial al login
 $clave_acceso = "admin2026";
 
 if (!isset($_GET['acceso']) || $_GET['acceso'] !== $clave_acceso) {
@@ -48,7 +47,6 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) 
             $_SESSION['intentos'] = 0;
             $_SESSION['ultimo_intento'] = 0;
 
-            // Rutas absolutas dentro del proyecto
             if ($fila['rol'] === 'admin') {
                 header("Location: /guiaempresarial.pe/login/admin.php");
             } else {

@@ -30,7 +30,13 @@ $rol = $_SESSION['rol'];
 <a href="editar_sobre.php" class="btn" style="margin-bottom:20px; display:inline-block;">
     Editar Sobre Nosotros
 </a>
-
+<a href="gestionar_banner.php" class="btn" style="background:#f5a623;color:#111;font-weight:700;">
+        
+        <i class="bi bi-images"></i> Gestionar Banner / Carrusel
+    </a>
+<a href="gestionar_resenas.php" class="btn" style="background:#e74c3c;color:#fff;font-weight:700;margin-bottom:20px;display:inline-block;">
+    <i class="bi bi-star-half"></i> Gestionar Reseñas
+</a>
 <?php
 $res_dest   = $conexion->query("SELECT id_empresa, nombre FROM empresas WHERE destacada=1");
 $total_dest = $res_dest->num_rows;

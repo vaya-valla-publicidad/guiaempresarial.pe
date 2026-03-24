@@ -282,7 +282,6 @@ $total_slides = count($slides);
 <?php include 'includes/footer.php'; ?>
 
 <script>
-/* ── Carrusel hero ── */
 (function () {
   const slides = document.querySelectorAll('.hero-slide');
   const dots   = document.querySelectorAll('.hero-dot');
@@ -315,7 +314,6 @@ $total_slides = count($slides);
   document.querySelector('.hero-arrow.next')?.addEventListener('click', () => { goTo(idx + 1); startAuto(); });
   dots.forEach(d => d.addEventListener('click', () => { goTo(+d.dataset.index); startAuto(); }));
 
-  /* Solo pausa con hover en desktop */
   if (window.matchMedia('(hover: hover)').matches) {
     const hero = document.querySelector('.hero');
     hero?.addEventListener('mouseenter', () => clearTimeout(timer));
@@ -335,7 +333,6 @@ $total_slides = count($slides);
   startAuto();
 })();
 
-/* ── Sliders de empresas ── */
 document.querySelectorAll('.empresa-slider').forEach(slider => {
     const slides = slider.querySelectorAll('.slide');
     const dots   = slider.querySelectorAll('.slider-dot');
@@ -352,7 +349,6 @@ document.querySelectorAll('.empresa-slider').forEach(slider => {
     dots.forEach((d, i) => d.addEventListener('click', () => { clearInterval(ap); goTo(i); }));
 });
 
-/* ── Buscador ── */
 const inputBuscar   = document.getElementById('buscar');
 const resultadosDiv = document.getElementById('resultados');
 const formBuscar    = document.getElementById('formBuscar');

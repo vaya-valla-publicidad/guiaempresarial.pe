@@ -32,8 +32,12 @@ $rol = $_SESSION['rol'];
         <i class="bi bi-info-circle"></i> Editar Sobre Nosotros
     </a>
     <a href="gestionar_banner.php" class="btn" style="background:#f5a623;color:#111;font-weight:700;">
+        
         <i class="bi bi-images"></i> Gestionar Banner / Carrusel
     </a>
+    <a href="gestionar_resenas.php" class="btn" style="background:#e74c3c;color:#fff;font-weight:700;">
+    <i class="bi bi-star-half"></i> Gestionar Reseñas
+</a>
 </div>
 
 <h2>Administración de Usuarios</h2><br>
