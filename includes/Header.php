@@ -29,11 +29,29 @@
     </button>
 
     <div class="nav-actions" id="nav-actions">
+      <?php
+      if (session_status() === PHP_SESSION_NONE) session_start();
+      ?>
       <nav class="nav-links">
         <a href="index.php" class="nav-link">Inicio</a>
         <a href="index.php#empresas" class="nav-link">Empresas</a>
         <a href="index.php#categorias" class="nav-link">Categorías</a>
         <a href="index.php#contacto" class="nav-link">Contacto</a>
+        <?php if (isset($_SESSION['usuario_publico_id'])): ?>
+          <a href="mi_cuenta.php" class="nav-link" style="display:flex;align-items:center;gap:8px;">
+  <?php if (!empty($_SESSION['usuario_publico_foto'])): ?>
+    <img src="assets/img/avatars/<?= htmlspecialchars($_SESSION['usuario_publico_foto']) ?>"
+         alt="Foto perfil"
+         style="width:24px;height:24px;border-radius:50%;object-fit:cover;">
+  <?php else: ?>
+    👤
+  <?php endif; ?>
+  <?= htmlspecialchars($_SESSION['usuario_publico_nombre']) ?>
+</a>
+
+        <?php else: ?>
+          <a href="login_usuario.php" class="nav-link">Ingresar</a>
+        <?php endif; ?>
       </nav>
       <label class="theme-switch">
         <input type="checkbox" id="toggle-theme">

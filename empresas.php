@@ -1,4 +1,5 @@
 <?php
+session_start();
 include 'db.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
@@ -37,9 +38,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
         }
     }
 
-    if ($nombre && $comentario && $estrellas >= 1 && $estrellas <= 5 && !$tiene_mala_palabra) {
-        $conexion->query("INSERT INTO resenas (id_empresa, nombre_autor, estrellas, comentario)
-                          VALUES ($id_emp, '$nombre_escaped', $estrellas, '$comentario_escaped')");
+    $id_u_pub = isset($_SESSION['usuario_publico_id']) ? intval($_SESSION['usuario_publico_id']) : 0;
+    if ($id_u_pub && $comentario && $estrellas >= 1 && $estrellas <= 5 && !$tiene_mala_palabra) {
+        $nombre_sesion = $conexion->real_escape_string($_SESSION['usuario_publico_nombre']);
+        $conexion->query("INSERT INTO resenas (id_empresa, nombre_autor, estrellas, comentario, id_usuario_publico)
+                          VALUES ($id_emp, '$nombre_sesion', $estrellas, '$comentario_escaped', $id_u_pub)");
+
         header("Location: empresas.php?empresa=$id_emp&resena=ok#resenas");
         exit;
     } elseif ($tiene_mala_palabra) {
@@ -252,14 +256,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
                 <?php endif; ?>
 
                 <div class="resena-form-wrapper">
-                    <p class="resena-form-titulo">Deja tu reseña</p>
+                    <?php if (isset($_SESSION['usuario_publico_id'])): ?>
+                    <p class="resena-form-titulo">Hola, <?= htmlspecialchars($_SESSION['usuario_publico_nombre']) ?> 👋 Deja tu reseña</p>
                     <form method="POST" action="empresas.php?empresa=<?= $id_empresa ?>">
                         <input type="hidden" name="resena_empresa" value="1">
                         <input type="hidden" name="id_empresa" value="<?= $id_empresa ?>">
-                        <div class="form-group">
-                            <label>Tu nombre</label>
-                            <input type="text" name="nombre_autor" placeholder="Ej: Juan Pérez" required maxlength="100">
-                        </div>
                         <div class="form-group">
                             <label>Calificación</label>
                             <div class="estrellas-input" id="estrellasInput">
@@ -275,6 +276,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
                         </div>
                         <button type="submit" class="btn-enviar-resena">Enviar reseña</button>
                     </form>
+                    <?php else: ?>
+                    <div style="text-align:center;padding:20px 0;">
+                        <p style="color:var(--muted);margin-bottom:16px;font-size:15px;">
+                            Inicia sesión para dejar tu reseña
+                        </p>
+                        <a href="login_usuario.php?redir=<?= urlencode('empresas.php?empresa=' . $id_empresa . '#resenas') ?>"
+                           class="btn-enviar-resena" style="text-decoration:none;display:inline-block;">
+                           Iniciar sesión
+                        </a>
+                        <p style="margin-top:12px;font-size:13px;color:var(--muted);">
+                            ¿No tienes cuenta? <a href="registro_usuario.php" style="color:var(--rojo);font-weight:700;">Regístrate gratis</a>
+                        </p>
+                    </div>
+                    <?php endif; ?>
                 </div>
 
                 <?php if (count($resenas_arr) > 0): ?>
