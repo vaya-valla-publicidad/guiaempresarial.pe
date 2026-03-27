@@ -18,8 +18,16 @@
   --grad-main:    linear-gradient(135deg, #F7DC05, #E63946);
   --grad-card:    linear-gradient(145deg, #ffffff, #fff9e6);
   --grad-dark:    linear-gradient(145deg, #343a45, #2a2f38);
-  --font-head:    'Inter', sans-serif;
-  --font-body:    'Inter', sans-serif;
+  --font-head:    'Plus Jakarta Sans', sans-serif;
+  --font-body:    'Plus Jakarta Sans', sans-serif;
+  --ink:          #1B3A57;
+  --ink-soft:     #2d4f6e;
+  --ink-muted:    #4a5f7a;
+  --surface:      #ffffff;
+  --off:          #f8f8fc;
+  --border:       rgba(27,58,87,0.12);
+  --border-focus: #E63946;
+  --pink:         #E63946;
 }
 
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
@@ -46,6 +54,7 @@ body::before {
   pointer-events: none;
   z-index: 0;
 }
+
 .log-card {
   position: relative; z-index: 1;
   background: var(--surface);
@@ -143,7 +152,7 @@ body::before {
 .log-field input::placeholder { color: #c4c4d0; }
 .log-field input:focus {
   border-color: var(--border-focus);
-  box-shadow: 0 0 0 4px rgba(234,76,137,0.1);
+  box-shadow: 0 0 0 4px rgba(230,57,70,0.1);
 }
 
 .log-field-pw { position: relative; }
@@ -211,7 +220,7 @@ body::before {
 .log-back {
   display: inline-flex; align-items: center; gap: 7px;
   font-size: 13px; font-weight: 600; color: var(--ink-muted);
-  text-decoration: none; margin-bottom: 28px;
+  text-decoration: none;
   transition: color 0.2s;
 }
 .log-back:hover { color: var(--pink); }
@@ -233,20 +242,32 @@ body::before {
 }
 .log-footer-link a:hover { text-decoration: underline; }
 
-.otp-group { display: flex; gap: 10px; margin-bottom: 24px; }
+/* ── OTP fix ── */
+.otp-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  justify-content: center;
+}
+
 .otp-input {
-  flex: 1; height: 62px;
+  width: 46px;
+  height: 56px;
+  flex: 0 0 46px;
   text-align: center;
   font-family: var(--font-body);
-  font-size: 24px; font-weight: 800;
-  color: var(--ink); background: var(--surface);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ink);
+  background: var(--surface);
   border: 1.5px solid var(--border);
   border-radius: var(--radius-sm);
-  outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 .otp-input:focus {
   border-color: var(--border-focus);
-  box-shadow: 0 0 0 4px rgba(234,76,137,0.1);
+  box-shadow: 0 0 0 4px rgba(230,57,70,0.1);
 }
 .otp-input.filled { border-color: var(--pink); background: #fff0f8; }
 
@@ -264,6 +285,6 @@ body::before {
 @media (max-width: 520px) {
   .log-inner { padding: 28px 24px 32px; }
   .log-title  { font-size: 26px; }
-  .otp-group  { gap: 7px; }
-  .otp-input  { height: 54px; font-size: 20px; }
+  .otp-group  { gap: 6px; }
+  .otp-input  { width: 40px; flex: 0 0 40px; height: 50px; font-size: 18px; }
 }

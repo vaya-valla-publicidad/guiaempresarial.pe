@@ -1,6 +1,7 @@
 <?php
 session_start();
 include 'db.php';
+include_once 'libs/mailer.php';
 
 if (isset($_SESSION['usuario_publico_id'])) {
     header('Location: mi_cuenta.php');
@@ -10,7 +11,7 @@ if (isset($_SESSION['usuario_publico_id'])) {
 $error = '';
 $exito = '';
 $redir = $_GET['redir'] ?? '';
-$paso  = $_GET['paso'] ?? 'email'; 
+$paso  = $_GET['paso'] ?? 'email';
 $email_param = $_GET['email'] ?? '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
@@ -92,14 +93,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
         $res = $conexion->query("SELECT id, nombre FROM usuarios_publicos WHERE email = '$email_esc'");
         if ($res && $res->num_rows === 1) {
             $u = $res->fetch_assoc();
-            $codigo = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-            $expira = time() + 600;
+            $codigo   = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+            $expira   = time() + 600;
             $conexion->query("UPDATE usuarios_publicos SET codigo_verificacion='$codigo', codigo_expira=$expira WHERE email='$email_esc'");
             $nombre_u = $u['nombre'];
             $asunto   = 'Tu código de acceso - Guía Empresarial';
             $mensaje  = "Hola $nombre_u,\n\nTu código de acceso es: $codigo\n\nVálido por 10 minutos.\n\nSi no solicitaste esto, ignora este correo.";
-            $headers  = 'From: noreply@guiaempresarial.pe';
-            mail($email, $asunto, $mensaje, $headers);
+            enviarCorreo($email, $nombre_u, $asunto, $mensaje);
         }
         header("Location: login_usuario.php?paso=codigo&email=" . urlencode($email) . ($redir ? '&redir='.urlencode($redir) : ''));
         exit;
@@ -261,8 +261,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
 
     <?php endif; ?>
 
-  </div><!-- /.log-inner -->
-</div><!-- /.log-card -->
+  </div>
+</div>
 
 <script>
 function togglePw() {
@@ -272,7 +272,6 @@ function togglePw() {
   icon.className = input.type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
 }
 
-// OTP
 const otpInputs = document.querySelectorAll('.otp-input');
 const otpHidden = document.getElementById('otp-hidden');
 

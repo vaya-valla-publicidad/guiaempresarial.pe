@@ -120,26 +120,21 @@ if (isset($_GET['eliminar_resena'])) {
       <div class="resena-alerta resena-alerta-ok">✅ <?= htmlspecialchars($exito) ?></div>
     <?php endif; ?>
 
-    <div class="auth-card" style="margin-bottom:24px;">
-      <div style="display:flex;align-items:center;gap:20px;margin-bottom:24px;flex-wrap:wrap;">
+    <div class="auth-card">
+      <div class="perfil-header">
         <?php if (!empty($u['foto_perfil'])): ?>
-          <img src="assets/img/avatars/<?= htmlspecialchars($u['foto_perfil']) ?>"
-               style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid rgba(247,220,5,0.4);">
+          <img src="assets/img/avatars/<?= htmlspecialchars($u['foto_perfil']) ?>" class="perfil-avatar" alt="Foto de perfil">
         <?php else: ?>
-          <div style="width:72px;height:72px;border-radius:50%;background:var(--grad-main);
-                      color:#fff;font-size:28px;font-weight:800;display:flex;
-                      align-items:center;justify-content:center;">
-            <?= mb_strtoupper(mb_substr($u['nombre'], 0, 1)) ?>
-          </div>
+          <div class="perfil-avatar perfil-avatar-placeholder"><?= mb_strtoupper(mb_substr($u['nombre'], 0, 1)) ?></div>
         <?php endif; ?>
-        <div>
-          <h2 style="font-size:20px;font-weight:800;color:var(--azul);"><?= htmlspecialchars($u['nombre']) ?></h2>
-          <p style="font-size:13px;color:var(--muted);"><?= htmlspecialchars($u['email']) ?></p>
+        <div class="perfil-info">
+          <h2><?= htmlspecialchars($u['nombre']) ?></h2>
+          <p><?= htmlspecialchars($u['email']) ?></p>
         </div>
-        <a href="logout_usuario.php" class="btn-ver" style="margin-left:auto;">Cerrar sesión</a>
+        <a href="logout_usuario.php" class="btn-ver btn-cerrar-sesion">Cerrar sesión</a>
       </div>
 
-      <form method="POST" enctype="multipart/form-data" style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--borde);">
+      <form method="POST" enctype="multipart/form-data" class="perfil-section">
         <input type="hidden" name="accion" value="foto">
         <p class="perfil-section-label">Foto de perfil</p>
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
@@ -147,22 +142,24 @@ if (isset($_GET['eliminar_resena'])) {
           <button type="submit" class="btn-ver">Subir foto</button>
         </div>
       </form>
-<form method="POST" style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--borde);">
-  <input type="hidden" name="accion" value="borrar_foto">
-  <button type="submit" class="btn-ver" style="background:#e63946;">Borrar foto</button>
-</form>
 
-      <!-- Cambiar nombre -->
-      <form method="POST" style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--borde);">
+      <form method="POST" class="perfil-section">
+        <input type="hidden" name="accion" value="borrar_foto">
+        <p class="perfil-section-label">Acciones de foto</p>
+        <button type="submit" class="btn-ver btn-ver-danger">Borrar foto</button>
+      </form>
+
+      <form method="POST" class="perfil-section">
         <input type="hidden" name="accion" value="datos">
         <p class="perfil-section-label">Cambiar nombre</p>
         <div class="form-group">
+          <label>Nombre</label>
           <input type="text" name="nombre" value="<?= htmlspecialchars($u['nombre']) ?>" required maxlength="100">
         </div>
         <button type="submit" class="btn-ver">Guardar nombre</button>
       </form>
 
-      <form method="POST">
+      <form method="POST" class="perfil-section">
         <input type="hidden" name="accion" value="password">
         <p class="perfil-section-label">Cambiar contraseña</p>
         <div class="form-group">
@@ -178,11 +175,12 @@ if (isset($_GET['eliminar_resena'])) {
           <input type="password" name="confirm" placeholder="••••••••" required>
         </div>
         <button type="submit" class="btn-ver">Actualizar contraseña</button>
-<form method="POST" onsubmit="return confirm('¿Seguro que deseas borrar tu cuenta? Esta acción no se puede deshacer.');">
-  <input type="hidden" name="accion" value="borrar_cuenta">
-  <button type="submit" class="btn-ver" style="background:#e63946;">Borrar cuenta</button>
-</form>
+      </form>
 
+      <form method="POST" class="perfil-section" onsubmit="return confirm('¿Seguro que deseas borrar tu cuenta? Esta acción no se puede deshacer.');">
+        <input type="hidden" name="accion" value="borrar_cuenta">
+        <p class="perfil-section-label">Acciones de cuenta</p>
+        <button type="submit" class="btn-ver btn-ver-danger">Borrar cuenta</button>
       </form>
     </div>
 
@@ -197,7 +195,7 @@ if (isset($_GET['eliminar_resena'])) {
             <div class="resena-header">
               <div class="resena-avatar"><?= mb_strtoupper(mb_substr($u['nombre'], 0, 1)) ?></div>
               <div>
-                <strong style="font-size:14px;"><?= htmlspecialchars($r['empresa_nombre']) ?></strong>
+                <strong class="resena-empresa"><?= htmlspecialchars($r['empresa_nombre']) ?></strong>
                 <div class="estrellas-display small">
                   <?php for ($i = 1; $i <= 5; $i++): ?>
                     <span class="<?= $i <= $r['estrellas'] ? 'estrella-llena' : 'estrella-vacia' ?>">★</span>
@@ -210,7 +208,7 @@ if (isset($_GET['eliminar_resena'])) {
             <div style="margin-top:10px;display:flex;gap:8px;">
               <a href="empresas.php?empresa=<?= $r['id_empresa'] ?>" class="btn-ver" style="font-size:12px;padding:5px 12px;">Ver empresa</a>
               <a href="mi_cuenta.php?eliminar_resena=<?= $r['id_resena'] ?>"
-                 class="btn-ver" style="background:#e63946;font-size:12px;padding:5px 12px;"
+                 class="btn-ver btn-ver-danger" style="font-size:12px;padding:5px 12px;"
                  onclick="return confirm('¿Eliminar esta reseña?')">Eliminar</a>
             </div>
           </div>

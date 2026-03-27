@@ -1,6 +1,7 @@
 <?php
 session_start();
 include 'db.php';
+include_once 'libs/mailer.php';
 
 if (isset($_SESSION['usuario_publico_id'])) {
     header('Location: mi_cuenta.php');
@@ -9,7 +10,7 @@ if (isset($_SESSION['usuario_publico_id'])) {
 
 $error = '';
 $exito = '';
-$paso  = $_GET['paso'] ?? 'registro'; 
+$paso  = $_GET['paso'] ?? 'registro';
 $email_param = $_GET['email'] ?? '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
@@ -40,11 +41,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
                 $expira     = time() + 600;
                 $conexion->query("INSERT INTO usuarios_publicos (nombre, email, password_hash, codigo_verificacion, codigo_expira, verificado)
                                   VALUES ('$nombre_esc', '$email_esc', '$hash', '$codigo', $expira, 0)");
-                
+
                 $asunto  = 'Confirma tu cuenta - Guía Empresarial';
                 $mensaje = "Hola $nombre,\n\nTu código de verificación es: $codigo\n\nVálido por 10 minutos.\n\nSi no solicitaste esto, ignora este correo.";
-                $headers = 'From: noreply@guiaempresarial.pe';
-                mail($email, $asunto, $mensaje, $headers);
+                enviarCorreo($email, $nombre, $asunto, $mensaje);
+
                 header("Location: registro_usuario.php?paso=verificar&email=" . urlencode($email));
                 exit;
             }
@@ -81,14 +82,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
         $res = $conexion->query("SELECT id, nombre FROM usuarios_publicos WHERE email='$email_esc' AND verificado=0");
         if ($res && $res->num_rows === 1) {
             $u = $res->fetch_assoc();
-            $codigo = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-            $expira = time() + 600;
+            $codigo   = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+            $expira   = time() + 600;
             $conexion->query("UPDATE usuarios_publicos SET codigo_verificacion='$codigo', codigo_expira=$expira WHERE email='$email_esc'");
             $nombre_u = $u['nombre'];
             $asunto   = 'Nuevo código de verificación - Guía Empresarial';
             $mensaje  = "Hola $nombre_u,\n\nTu nuevo código de verificación es: $codigo\n\nVálido por 10 minutos.\n\nSi no solicitaste esto, ignora este correo.";
-            $headers  = 'From: noreply@guiaempresarial.pe';
-            mail($email, $asunto, $mensaje, $headers);
+            enviarCorreo($email, $nombre_u, $asunto, $mensaje);
             $exito = 'Nuevo código enviado a tu correo.';
         } else {
             $exito = 'Código reenviado (si el correo es válido).';
@@ -246,8 +246,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
 
     <?php endif; ?>
 
-  </div><!-- /.reg-inner -->
-</div><!-- /.reg-card -->
+  </div>
+</div>
 
 <script>
 function togglePw(id, ico) {
@@ -267,12 +267,12 @@ function checkStrength(val) {
   if (val.length >= 10) score++;
   if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
   if (/[0-9]/.test(val) || /[^A-Za-z0-9]/.test(val)) score++;
-  const cls = score <= 1 ? 'weak' : score <= 2 ? 'medium' : score <= 3 ? 'medium' : 'strong';
+  const cls = score <= 1 ? 'weak' : score <= 3 ? 'medium' : 'strong';
   const labels = { weak:'Débil', medium:'Regular', strong:'Segura' };
   const colors = { weak:'#f43f5e', medium:'#f59e0b', strong:'#22c55e' };
   for (let i = 0; i < score; i++) segs[i].classList.add(cls);
-  hint.textContent   = 'Contraseña ' + labels[cls];
-  hint.style.color   = colors[cls];
+  hint.textContent = 'Contraseña ' + labels[cls];
+  hint.style.color = colors[cls];
 }
 
 const otpInputs = document.querySelectorAll('.otp-input');
