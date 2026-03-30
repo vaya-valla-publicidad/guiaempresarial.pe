@@ -1,9 +1,12 @@
 <?php
 include 'db.php';
+include 'includes/security.php';
 
-$q = trim($_GET['q'] ?? '');
+$q = inputLimpio($_GET['q'] ?? '');
 if ($q === '') exit;
-$texto = '%' . $q . '%';
+
+$q_escaped = escaparLike($q);
+$texto = '%' . $q_escaped . '%';
 
 $stmt = $conexion->prepare(
     "SELECT e.id_empresa, e.nombre, e.logo, e.descripcion, c.nombre AS categoria

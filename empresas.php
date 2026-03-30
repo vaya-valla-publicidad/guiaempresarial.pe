@@ -1,15 +1,26 @@
 <?php
 session_start();
 include 'db.php';
+include 'includes/security.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
+    // Validar token CSRF
+    if (!validarCSRF()) {
+        logSeguridad('csrf_invalido', 'Intento de enviar reseña sin token válido');
+        header("Location: empresas.php?empresa=" . intval($_POST['id_empresa'] ?? 0) . "&resena=error#resenas");
+        exit;
+    }
+    
+    // Rate limiting
+    if (!verificarRateLimit('enviar_resena', 3, 60)) {
+        header("Location: empresas.php?empresa=" . intval($_POST['id_empresa'] ?? 0) . "&resena=error#resenas");
+        exit;
+    }
+    
     $id_emp     = intval($_POST['id_empresa']);
     $estrellas  = intval($_POST['estrellas']);
-    $comentario = trim($_POST['comentario']);
-    $nombre     = trim($_POST['nombre_autor'] ?? '');
-
-    $nombre_escaped     = $conexion->real_escape_string($nombre);
-    $comentario_escaped = $conexion->real_escape_string($comentario);
+    $comentario = inputLimpio($_POST['comentario']);
+    $nombre     = inputLimpio($_POST['nombre_autor'] ?? '');
 
     $palabras_prohibidas = [
         'idiota','imbecil','mierda','puta','puto','pendejo','estupido','basura',
@@ -40,12 +51,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
 
     $id_u_pub = isset($_SESSION['usuario_publico_id']) ? intval($_SESSION['usuario_publico_id']) : 0;
     if ($id_u_pub && $comentario && $estrellas >= 1 && $estrellas <= 5 && !$tiene_mala_palabra) {
-        $nombre_sesion = $conexion->real_escape_string($_SESSION['usuario_publico_nombre']);
-        $conexion->query("INSERT INTO resenas (id_empresa, nombre_autor, estrellas, comentario, id_usuario_publico)
-                          VALUES ($id_emp, '$nombre_sesion', $estrellas, '$comentario_escaped', $id_u_pub)");
-
-        header("Location: empresas.php?empresa=$id_emp&resena=ok#resenas");
-        exit;
+        $stmt = $conexion->prepare("INSERT INTO resenas (id_empresa, nombre_autor, estrellas, comentario, id_usuario_publico) VALUES (?, ?, ?, ?, ?)");
+        $nombre_sesion = $_SESSION['usuario_publico_nombre'];
+        $stmt->bind_param("isiss", $id_emp, $nombre_sesion, $estrellas, $comentario, $id_u_pub);
+        
+        if ($stmt->execute()) {
+            $stmt->close();
+            header("Location: empresas.php?empresa=$id_emp&resena=ok#resenas");
+            exit;
+        } else {
+            $stmt->close();
+            logSeguridad('error_resena', 'Error al guardar reseña: ' . $conexion->error, 'error');
+            header("Location: empresas.php?empresa=$id_emp&resena=error#resenas");
+            exit;
+        }
     } elseif ($tiene_mala_palabra) {
         header("Location: empresas.php?empresa=$id_emp&resena=mala#resenas");
         exit;
@@ -75,15 +94,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
                 JOIN categorias c ON e.id_categoria = c.id_categoria";
 
         $where = [];
-        if ($id_empresa)       $where[] = "e.id_empresa = " . intval($id_empresa);
-        elseif ($id_categoria) $where[] = "e.id_categoria = " . intval($id_categoria);
-        elseif ($buscar) {
-            $texto   = $conexion->real_escape_string($buscar);
-            $where[] = "(e.nombre LIKE '%$texto%' OR e.descripcion LIKE '%$texto%' OR c.nombre LIKE '%$texto%')";
+        $params = [];
+        $types = "";
+        
+        if ($id_empresa) {
+            $where[] = "e.id_empresa = ?";
+            $params[] = intval($id_empresa);
+            $types .= "i";
+        } elseif ($id_categoria) {
+            $where[] = "e.id_categoria = ?";
+            $params[] = intval($id_categoria);
+            $types .= "i";
+        } elseif ($buscar) {
+            $texto = limpiarParaLike($buscar);
+            $where[] = "(e.nombre LIKE ? OR e.descripcion LIKE ? OR c.nombre LIKE ?)";
+            $busqueda = "%$texto%";
+            $params[] = $busqueda;
+            $params[] = $busqueda;
+            $params[] = $busqueda;
+            $types .= "sss";
         }
-        if (!empty($where)) $sql .= " WHERE " . implode(" AND ", $where);
-
-        $resultado = $conexion->query($sql);
+        
+        if (!empty($where)) {
+            $sql .= " WHERE " . implode(" AND ", $where);
+            $stmt = $conexion->prepare($sql);
+            if ($types && $stmt) {
+                $stmt->bind_param($types, ...$params);
+                $stmt->execute();
+                $resultado = $stmt->get_result();
+            } else {
+                $resultado = $conexion->query($sql);
+            }
+        } else {
+            $resultado = $conexion->query($sql);
+        }
 
         if ($id_empresa && $resultado && $resultado->num_rows === 1):
             $fila     = $resultado->fetch_assoc();
@@ -259,6 +303,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
                     <?php if (isset($_SESSION['usuario_publico_id'])): ?>
                     <p class="resena-form-titulo">Hola, <?= htmlspecialchars($_SESSION['usuario_publico_nombre']) ?> 👋 Deja tu reseña</p>
                     <form method="POST" action="empresas.php?empresa=<?= $id_empresa ?>">
+                        <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
                         <input type="hidden" name="resena_empresa" value="1">
                         <input type="hidden" name="id_empresa" value="<?= $id_empresa ?>">
                         <div class="form-group">

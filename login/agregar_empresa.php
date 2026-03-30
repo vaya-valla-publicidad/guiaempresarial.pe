@@ -1,30 +1,42 @@
 <?php
 include 'proteger.php';
 include '../db.php';
+include '../includes/security.php';
 
 $error = "";
 $success = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    // Validar token CSRF
+    if (!validarCSRF()) {
+        $error = "Token de seguridad inválido. Por favor recarga la página.";
+        logSeguridad('csrf_invalido', 'Intento de agregar empresa sin token CSRF válido');
+    } else {
+        $nombre         = inputLimpio($_POST['nombre']);
+        $telefono       = inputLimpio($_POST['telefono'] ?? '');
+        $direccion      = inputLimpio($_POST['direccion'] ?? '');
+        $id_categoria   = intval($_POST['id_categoria']);
+        $descripcion    = inputLimpio($_POST['descripcion'] ?? '') ?: null;
+        $horario        = inputLimpio($_POST['horario'] ?? '') ?: null;
+        $ubicacion_link = inputLimpio($_POST['ubicacion_link'] ?? '') ?: null;
+        $link_empresa   = inputLimpio($_POST['link_empresa'] ?? '') ?: null;
+        $facebook       = inputLimpio($_POST['facebook'] ?? '') ?: null;
+        $logo           = null;
 
-    $nombre         = trim($_POST['nombre']);
-    $telefono       = trim($_POST['telefono']);
-    $direccion      = trim($_POST['direccion']);
-    $id_categoria   = intval($_POST['id_categoria']);
-    $descripcion    = trim($_POST['descripcion']) ?: null;
-    $horario        = trim($_POST['horario']) ?: null;
-    $ubicacion_link = trim($_POST['ubicacion_link']) ?: null;
-    $link_empresa   = trim($_POST['link_empresa']) ?: null;
-    $facebook = trim($_POST['facebook']) ?: null;
-    $logo           = null;
-
-    if (!empty($_FILES['logo']['name'])) {
-        $nombreLogo = uniqid() . "_" . basename($_FILES['logo']['name']);
-        $rutaLogo   = __DIR__ . "/../assets/img/" . $nombreLogo;
-        if (move_uploaded_file($_FILES['logo']['tmp_name'], $rutaLogo)) {
-            $logo = $nombreLogo;
+        if (!empty($_FILES['logo']['name'])) {
+            $resultado = subirImagenSegura($_FILES['logo'], __DIR__ . '/../assets/img/', [
+                'tamano_max' => 2 * 1024 * 1024, // 2MB
+                'redimensionar' => true,
+                'ancho_max' => 800,
+                'alto_max' => 600
+            ]);
+            
+            if ($resultado['success']) {
+                $logo = $resultado['nombre'];
+            } else {
+                $error = "Error con el logo: " . $resultado['error'];
+            }
         }
-    }
 
     $stmt = $conexion->prepare(
     "INSERT INTO empresas (nombre,telefono,direccion,id_categoria,descripcion,horario,ubicacion_link,link_empresa,facebook,logo)
@@ -55,6 +67,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $success = "Empresa agregada correctamente";
     }
     $stmt->close();
+}
 }
 
 $categorias = $conexion->query("SELECT id_categoria,nombre FROM categorias");
@@ -96,6 +109,7 @@ $categorias = $conexion->query("SELECT id_categoria,nombre FROM categorias");
     <?php endif; ?>
 
     <form method="post" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
 
         <div class="form-group">
             <label>Logo o imagen principal</label>

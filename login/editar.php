@@ -7,7 +7,23 @@ if (!isset($_GET['id'])) { header("Location: panel.php"); exit; }
 
 $id      = intval($_GET['id']);
 $error   = "";
-$success = "";
+$success = isset($_GET['ok']) ? "Empresa actualizada correctamente ✅" : "";
+
+// ─── Validación de imágenes ────────────────────────────────────────────────
+function validarImagen($tmpPath, $nombreOriginal): bool {
+    $extensionesPermitidas = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+    $ext = strtolower(pathinfo($nombreOriginal, PATHINFO_EXTENSION));
+    if (!in_array($ext, $extensionesPermitidas)) return false;
+
+    // Verifica el contenido real del archivo (no solo el nombre/extensión)
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mime  = finfo_file($finfo, $tmpPath);
+    finfo_close($finfo);
+
+    $mimesPermitidos = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    return in_array($mime, $mimesPermitidos);
+}
+// ──────────────────────────────────────────────────────────────────────────
 
 $stmt = $conexion->prepare("SELECT * FROM empresas WHERE id_empresa=?");
 $stmt->bind_param("i", $id);
@@ -39,13 +55,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
     }
 
+    // ─── Logo: validar antes de mover ─────────────────────────────────────
     if (!empty($_FILES['logo']['name'])) {
-        $nombreArchivo = uniqid() . "_" . basename($_FILES['logo']['name']);
-        $rutaDestino   = __DIR__ . "/../assets/img/" . $nombreArchivo;
-        if (move_uploaded_file($_FILES['logo']['tmp_name'], $rutaDestino)) {
-            $logo = $nombreArchivo;
+        if (!validarImagen($_FILES['logo']['tmp_name'], $_FILES['logo']['name'])) {
+            $error = "El logo debe ser una imagen válida (jpg, jpeg, png, webp, gif).";
+        } else {
+            $nombreArchivo = uniqid() . "_" . basename($_FILES['logo']['name']);
+            $rutaDestino   = __DIR__ . "/../assets/img/" . $nombreArchivo;
+            if (move_uploaded_file($_FILES['logo']['tmp_name'], $rutaDestino)) {
+                $logo = $nombreArchivo;
+            }
         }
     }
+    // ──────────────────────────────────────────────────────────────────────
 
     if (empty($error)) {
         $stmt = $conexion->prepare(
@@ -60,38 +82,35 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         );
 
         if ($stmt->execute()) {
-            $success = "Empresa actualizada correctamente ✅";
-            $empresa['nombre']         = $nombre;
-            $empresa['telefono']       = $telefono;
-            $empresa['direccion']      = $direccion;
-            $empresa['id_categoria']   = $id_categoria;
-            $empresa['descripcion']    = $descripcion;
-            $empresa['horario']        = $horario;
-            $empresa['ubicacion_link'] = $ubicacion_link;
-            $empresa['link_empresa']   = $link_empresa;
-            $empresa['facebook']       = $facebook;
-            $empresa['logo']           = $logo;
-            $empresa['destacada']      = $destacada_new;
+            $stmt->close();
+
+            // ─── Carrusel: validar cada foto antes de mover ───────────────
+            if (!empty($_FILES['fotos']['name'][0])) {
+                $carpeta      = __DIR__ . "/../assets/img/empresascarrusel/";
+                $orden_actual = $conexion->query("SELECT MAX(orden) as max FROM empresa_galeria WHERE id_empresa=$id")->fetch_assoc()['max'] ?? 0;
+                foreach ($_FILES['fotos']['tmp_name'] as $key => $tmp) {
+                    if (empty($_FILES['fotos']['name'][$key])) continue;
+                    if (!validarImagen($tmp, $_FILES['fotos']['name'][$key])) continue;
+                    $nombreFoto = uniqid() . "_" . basename($_FILES['fotos']['name'][$key]);
+                    $ruta       = $carpeta . $nombreFoto;
+                    if (move_uploaded_file($tmp, $ruta)) {
+                        $orden_actual++;
+                        $stmtFoto = $conexion->prepare("INSERT INTO empresa_galeria (id_empresa, foto, orden) VALUES (?, ?, ?)");
+                        $stmtFoto->bind_param("isi", $id, $nombreFoto, $orden_actual);
+                        $stmtFoto->execute();
+                        $stmtFoto->close();
+                    }
+                }
+            }
+            // ─────────────────────────────────────────────────────────────
+
+            // PRG: redirigir para evitar duplicados al recargar la página
+            header("Location: editar.php?id=" . $id . "&ok=1");
+            exit;
+
         } else {
             $error = "Error: " . $stmt->error;
-        }
-        $stmt->close();
-    }
-
-    if (!empty($_FILES['fotos']['name'][0])) {
-        $carpeta      = __DIR__ . "/../assets/img/empresascarrusel/";
-        $orden_actual = $conexion->query("SELECT MAX(orden) as max FROM empresa_galeria WHERE id_empresa=$id")->fetch_assoc()['max'] ?? 0;
-        foreach ($_FILES['fotos']['tmp_name'] as $key => $tmp) {
-            if (empty($_FILES['fotos']['name'][$key])) continue;
-            $nombreFoto = uniqid() . "_" . basename($_FILES['fotos']['name'][$key]);
-            $ruta       = $carpeta . $nombreFoto;
-            if (move_uploaded_file($tmp, $ruta)) {
-                $orden_actual++;
-                $stmtFoto = $conexion->prepare("INSERT INTO empresa_galeria (id_empresa, foto, orden) VALUES (?, ?, ?)");
-                $stmtFoto->bind_param("isi", $id, $nombreFoto, $orden_actual);
-                $stmtFoto->execute();
-                $stmtFoto->close();
-            }
+            $stmt->close();
         }
     }
 }
@@ -342,12 +361,14 @@ document.getElementById('mapa-query').addEventListener('keydown', function (e) {
 
 function eliminarFoto(id, tipo, elemento) {
     if (!confirm('¿Eliminar esta imagen?')) return;
-    fetch('eliminar_foto.php?id=' + id + '&tipo=' + tipo)
-        .then(r => r.text())
-        .then(data => {
-            if (data.trim() === 'ok') elemento.remove();
-            else alert('No se pudo eliminar');
-        });
+    fetch('eliminar_foto.php?id=' + id + '&tipo=' + tipo, {
+        headers: { 'X-CSRF-TOKEN': '<?= htmlspecialchars($_SESSION['csrf_token']) ?>' }
+    })
+    .then(r => r.text())
+    .then(data => {
+        if (data.trim() === 'ok') elemento.remove();
+        else alert('No se pudo eliminar: ' + data);
+    });
 }
 </script>
 </body>
