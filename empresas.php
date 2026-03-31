@@ -263,7 +263,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
 
             <?php
             $resena_msg    = $_GET['resena'] ?? null;
-            $resenas_q     = $conexion->query("SELECT * FROM resenas WHERE id_empresa = $id_empresa ORDER BY fecha DESC");
+            $resenas_q     = $conexion->query("SELECT r.*, u.visibilidad_resenas FROM resenas r LEFT JOIN usuarios_publicos u ON r.id_usuario_publico = u.id WHERE r.id_empresa = $id_empresa ORDER BY r.fecha DESC");
             $total_resenas = $resenas_q ? $resenas_q->num_rows : 0;
             $promedio      = 0;
             $resenas_arr   = [];
@@ -339,12 +339,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
 
                 <?php if (count($resenas_arr) > 0): ?>
                 <div class="resenas-lista">
-                    <?php foreach ($resenas_arr as $r): ?>
+                    <?php foreach ($resenas_arr as $r): 
+                        $es_anonimo = ($r['visibilidad_resenas'] ?? 'publico') === 'anonimo';
+                        $nombre_mostrar = $es_anonimo ? 'Usuario Anónimo' : htmlspecialchars($r['nombre_autor']);
+                        $letra_avatar = $es_anonimo ? '👤' : mb_strtoupper(mb_substr($r['nombre_autor'], 0, 1));
+                    ?>
                     <div class="resena-item">
                         <div class="resena-header">
-                            <div class="resena-avatar"><?= mb_strtoupper(mb_substr($r['nombre_autor'], 0, 1)) ?></div>
+                            <div class="resena-avatar"><?= $letra_avatar ?></div>
                             <div>
-                                <strong><?= htmlspecialchars($r['nombre_autor']) ?></strong>
+                                <strong><?= $nombre_mostrar ?></strong>
                                 <div class="estrellas-display small">
                                     <?php for ($i = 1; $i <= 5; $i++): ?>
                                         <span class="<?= $i <= $r['estrellas'] ? 'estrella-llena' : 'estrella-vacia' ?>">★</span>

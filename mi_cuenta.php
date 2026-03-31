@@ -3,221 +3,479 @@ session_start();
 include 'db.php';
 
 if (!isset($_SESSION['usuario_publico_id'])) {
-    header('Location: login_usuario.php');
-    exit;
+  header('Location: login_usuario.php');
+  exit;
 }
 
-$id_u   = intval($_SESSION['usuario_publico_id']);
-$u      = $conexion->query("SELECT * FROM usuarios_publicos WHERE id = $id_u")->fetch_assoc();
-$error  = '';
-$exito  = '';
+$id_u = intval($_SESSION['usuario_publico_id']);
+$u = $conexion->query("SELECT * FROM usuarios_publicos WHERE id = $id_u")->fetch_assoc();
+$error = '';
+$exito = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
-        // Borrar cuenta
-    if ($_POST['accion'] === 'borrar_cuenta') {
-        $conexion->query("DELETE FROM resenas WHERE id_usuario_publico = $id_u");
-        if (!empty($u['foto_perfil']) && file_exists('assets/img/avatars/' . $u['foto_perfil'])) {
-            unlink('assets/img/avatars/' . $u['foto_perfil']);
-        }
-        $conexion->query("DELETE FROM usuarios_publicos WHERE id = $id_u");
-        session_destroy();
-        header('Location: index.php');
-        exit;
+  if ($_POST['accion'] === 'borrar_cuenta') {
+    $conexion->query("DELETE FROM resenas WHERE id_usuario_publico = $id_u");
+    if (!empty($u['foto_perfil']) && file_exists('assets/img/avatars/' . $u['foto_perfil'])) {
+      unlink('assets/img/avatars/' . $u['foto_perfil']);
     }
+    $conexion->query("DELETE FROM usuarios_publicos WHERE id = $id_u");
+    session_destroy();
+    header('Location: index.php');
+    exit;
+  }
 
-    if ($_POST['accion'] === 'borrar_foto') {
-        if (!empty($u['foto_perfil']) && file_exists('assets/img/avatars/' . $u['foto_perfil'])) {
-            unlink('assets/img/avatars/' . $u['foto_perfil']); // elimina archivo físico
-        }
-        $conexion->query("UPDATE usuarios_publicos SET foto_perfil = NULL WHERE id = $id_u");
-        $_SESSION['usuario_publico_foto'] = null;
-        $u['foto_perfil'] = null;
-        $exito = 'Foto de perfil eliminada.';
+  if ($_POST['accion'] === 'borrar_foto') {
+    if (!empty($u['foto_perfil']) && file_exists('assets/img/avatars/' . $u['foto_perfil'])) {
+      unlink('assets/img/avatars/' . $u['foto_perfil']);
     }
+    $conexion->query("UPDATE usuarios_publicos SET foto_perfil = NULL WHERE id = $id_u");
+    $_SESSION['usuario_publico_foto'] = null;
+    $u['foto_perfil'] = null;
+    $exito = 'Foto de perfil eliminada.';
+  }
 
-    if ($_POST['accion'] === 'datos') {
-        $nombre_nuevo = trim($_POST['nombre'] ?? '');
-        if ($nombre_nuevo && $nombre_nuevo !== $u['nombre']) {
-            $n = $conexion->real_escape_string($nombre_nuevo);
-            $conexion->query("UPDATE usuarios_publicos SET nombre = '$n' WHERE id = $id_u");
-            $_SESSION['usuario_publico_nombre'] = $nombre_nuevo;
-            $exito = 'Nombre actualizado.';
-            $u['nombre'] = $nombre_nuevo;
-        }
+  if ($_POST['accion'] === 'datos') {
+    $nombre_nuevo = trim($_POST['nombre'] ?? '');
+    if ($nombre_nuevo && $nombre_nuevo !== $u['nombre']) {
+      $n = $conexion->real_escape_string($nombre_nuevo);
+      $conexion->query("UPDATE usuarios_publicos SET nombre = '$n' WHERE id = $id_u");
+      $_SESSION['usuario_publico_nombre'] = $nombre_nuevo;
+      $exito = 'Nombre actualizado.';
+      $u['nombre'] = $nombre_nuevo;
     }
+  }
 
-    if ($_POST['accion'] === 'password') {
-        $actual  = $_POST['actual'] ?? '';
-        $nueva   = $_POST['nueva'] ?? '';
-        $confirm = $_POST['confirm'] ?? '';
-        if (!password_verify($actual, $u['password_hash'])) {
-            $error = 'La contraseña actual no es correcta.';
-        } elseif (strlen($nueva) < 6) {
-            $error = 'La nueva contraseña debe tener al menos 6 caracteres.';
-        } elseif ($nueva !== $confirm) {
-            $error = 'Las contraseñas nuevas no coinciden.';
-        } else {
-            $hash = password_hash($nueva, PASSWORD_DEFAULT);
-            $conexion->query("UPDATE usuarios_publicos SET password_hash = '$hash' WHERE id = $id_u");
-            $exito = 'Contraseña actualizada.';
-        }
+  if ($_POST['accion'] === 'password') {
+    $actual = $_POST['actual'] ?? '';
+    $nueva = $_POST['nueva'] ?? '';
+    $confirm = $_POST['confirm'] ?? '';
+    if (!password_verify($actual, $u['password_hash'])) {
+      $error = 'La contraseña actual no es correcta.';
+    } elseif (strlen($nueva) < 6) {
+      $error = 'La nueva contraseña debe tener al menos 6 caracteres.';
+    } elseif ($nueva !== $confirm) {
+      $error = 'Las contraseñas nuevas no coinciden.';
+    } else {
+      $hash = password_hash($nueva, PASSWORD_DEFAULT);
+      $conexion->query("UPDATE usuarios_publicos SET password_hash = '$hash' WHERE id = $id_u");
+      $exito = 'Contraseña actualizada.';
     }
+  }
 
-    if ($_POST['accion'] === 'foto' && isset($_FILES['foto_perfil'])) {
-        $file = $_FILES['foto_perfil'];
-        $ext  = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        $permitidos = ['jpg','jpeg','png','webp'];
-        if (!in_array($ext, $permitidos)) {
-            $error = 'Solo se permiten imágenes JPG, PNG o WEBP.';
-        } elseif ($file['size'] > 2 * 1024 * 1024) {
-            $error = 'La imagen no puede superar 2MB.';
-        } else {
-            $nombre_archivo = 'avatar_' . $id_u . '_' . time() . '.' . $ext;
-            $destino = 'assets/img/avatars/' . $nombre_archivo;
-            if (!is_dir('assets/img/avatars')) mkdir('assets/img/avatars', 0755, true);
-            if (move_uploaded_file($file['tmp_name'], $destino)) {
-                if ($u['foto_perfil'] && file_exists('assets/img/avatars/' . $u['foto_perfil'])) {
-                    unlink('assets/img/avatars/' . $u['foto_perfil']);
-                }
-                $fn = $conexion->real_escape_string($nombre_archivo);
-                $conexion->query("UPDATE usuarios_publicos SET foto_perfil = '$fn' WHERE id = $id_u");
-                $_SESSION['usuario_publico_foto'] = $nombre_archivo;
-                $u['foto_perfil'] = $nombre_archivo;
-                $exito = 'Foto de perfil actualizada.';
-            } else {
-                $error = 'No se pudo guardar la imagen.';
-            }
+  if ($_POST['accion'] === 'foto' && isset($_FILES['foto_perfil'])) {
+    $file = $_FILES['foto_perfil'];
+    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    $permitidos = ['jpg', 'jpeg', 'png', 'webp'];
+    if (!in_array($ext, $permitidos)) {
+      $error = 'Solo se permiten imágenes JPG, PNG o WEBP.';
+    } elseif ($file['size'] > 2 * 1024 * 1024) {
+      $error = 'La imagen no puede superar 2MB.';
+    } else {
+      $nombre_archivo = 'avatar_' . $id_u . '_' . time() . '.' . $ext;
+      $destino = 'assets/img/avatars/' . $nombre_archivo;
+      if (!is_dir('assets/img/avatars'))
+        mkdir('assets/img/avatars', 0755, true);
+      if (move_uploaded_file($file['tmp_name'], $destino)) {
+        if ($u['foto_perfil'] && file_exists('assets/img/avatars/' . $u['foto_perfil'])) {
+          unlink('assets/img/avatars/' . $u['foto_perfil']);
         }
+        $fn = $conexion->real_escape_string($nombre_archivo);
+        $conexion->query("UPDATE usuarios_publicos SET foto_perfil = '$fn' WHERE id = $id_u");
+        $_SESSION['usuario_publico_foto'] = $nombre_archivo;
+        $u['foto_perfil'] = $nombre_archivo;
+        $exito = 'Foto de perfil actualizada.';
+      } else {
+        $error = 'No se pudo guardar la imagen.';
+      }
     }
+  }
+
+  if ($_POST['accion'] === 'privacidad') {
+    $visi = $_POST['visibilidad_resenas'] ?? 'publico';
+    if ($visi === 'publico' || $visi === 'anonimo') {
+      $conexion->query("UPDATE usuarios_publicos SET visibilidad_resenas = '$visi' WHERE id = $id_u");
+      $u['visibilidad_resenas'] = $visi;
+      $exito = 'Opciones de privacidad guardadas.';
+    }
+  }
 }
 
 $resenas_q = $conexion->query(
-    "SELECT r.*, e.nombre AS empresa_nombre
+  "SELECT r.*, e.nombre AS empresa_nombre
      FROM resenas r
      JOIN empresas e ON r.id_empresa = e.id_empresa
      WHERE r.id_usuario_publico = $id_u
      ORDER BY r.fecha DESC"
 );
 $mis_resenas = [];
-if ($resenas_q) while ($r = $resenas_q->fetch_assoc()) $mis_resenas[] = $r;
+if ($resenas_q)
+  while ($r = $resenas_q->fetch_assoc())
+    $mis_resenas[] = $r;
 
-if (isset($_GET['eliminar_resena'])) {
-    $id_r = intval($_GET['eliminar_resena']);
-    $conexion->query("DELETE FROM resenas WHERE id_resena = $id_r AND id_usuario_publico = $id_u");
-    header('Location: mi_cuenta.php');
-    exit;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_eliminar_resena'])) {
+  header('Content-Type: application/json');
+  $id_r = intval($_POST['ajax_eliminar_resena']);
+  $res = $conexion->query("DELETE FROM resenas WHERE id_resena = $id_r AND id_usuario_publico = $id_u");
+  echo json_encode(['success' => (bool)$res]);
+  exit;
 }
+
+$panel_activo = $_GET['tab'] ?? 'perfil';
 ?>
 <?php include 'includes/header.php'; ?>
 
-<section class="page-section">
-  <div class="container" style="max-width:700px;">
+<link rel="stylesheet" href="assets/css/mi_cuenta.css">
 
-    <?php if ($error): ?>
-      <div class="resena-alerta resena-alerta-error"><?= htmlspecialchars($error) ?></div>
-    <?php endif; ?>
-    <?php if ($exito): ?>
-      <div class="resena-alerta resena-alerta-ok">✅ <?= htmlspecialchars($exito) ?></div>
-    <?php endif; ?>
+<div class="mc-page">
 
-    <div class="auth-card">
-      <div class="perfil-header">
-        <?php if (!empty($u['foto_perfil'])): ?>
-          <img src="assets/img/avatars/<?= htmlspecialchars($u['foto_perfil']) ?>" class="perfil-avatar" alt="Foto de perfil">
-        <?php else: ?>
-          <div class="perfil-avatar perfil-avatar-placeholder"><?= mb_strtoupper(mb_substr($u['nombre'], 0, 1)) ?></div>
-        <?php endif; ?>
-        <div class="perfil-info">
-          <h2><?= htmlspecialchars($u['nombre']) ?></h2>
-          <p><?= htmlspecialchars($u['email']) ?></p>
-        </div>
-        <a href="logout_usuario.php" class="btn-ver btn-cerrar-sesion">Cerrar sesión</a>
-      </div>
-
-      <form method="POST" enctype="multipart/form-data" class="perfil-section">
-        <input type="hidden" name="accion" value="foto">
-        <p class="perfil-section-label">Foto de perfil</p>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-          <input type="file" name="foto_perfil" accept="image/*" style="font-size:13px;">
-          <button type="submit" class="btn-ver">Subir foto</button>
-        </div>
-      </form>
-
-      <form method="POST" class="perfil-section">
-        <input type="hidden" name="accion" value="borrar_foto">
-        <p class="perfil-section-label">Acciones de foto</p>
-        <button type="submit" class="btn-ver btn-ver-danger">Borrar foto</button>
-      </form>
-
-      <form method="POST" class="perfil-section">
-        <input type="hidden" name="accion" value="datos">
-        <p class="perfil-section-label">Cambiar nombre</p>
-        <div class="form-group">
-          <label>Nombre</label>
-          <input type="text" name="nombre" value="<?= htmlspecialchars($u['nombre']) ?>" required maxlength="100">
-        </div>
-        <button type="submit" class="btn-ver">Guardar nombre</button>
-      </form>
-
-      <form method="POST" class="perfil-section">
-        <input type="hidden" name="accion" value="password">
-        <p class="perfil-section-label">Cambiar contraseña</p>
-        <div class="form-group">
-          <label>Contraseña actual</label>
-          <input type="password" name="actual" placeholder="••••••••" required>
-        </div>
-        <div class="form-group">
-          <label>Nueva contraseña</label>
-          <input type="password" name="nueva" placeholder="••••••••" required>
-        </div>
-        <div class="form-group">
-          <label>Confirmar nueva</label>
-          <input type="password" name="confirm" placeholder="••••••••" required>
-        </div>
-        <button type="submit" class="btn-ver">Actualizar contraseña</button>
-      </form>
-
-      <form method="POST" class="perfil-section" onsubmit="return confirm('¿Seguro que deseas borrar tu cuenta? Esta acción no se puede deshacer.');">
-        <input type="hidden" name="accion" value="borrar_cuenta">
-        <p class="perfil-section-label">Acciones de cuenta</p>
-        <button type="submit" class="btn-ver btn-ver-danger">Borrar cuenta</button>
-      </form>
+  <?php if ($error): ?>
+    <div class="mc-alerta mc-alerta-error">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+      <?= htmlspecialchars($error) ?>
     </div>
+  <?php endif; ?>
+  <?php if ($exito): ?>
+    <div class="mc-alerta mc-alerta-ok">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="20 6 9 17 4 12" />
+      </svg>
+      <?= htmlspecialchars($exito) ?>
+    </div>
+  <?php endif; ?>
 
-    <div class="auth-card">
-      <p class="perfil-section-label">Mis reseñas (<?= count($mis_resenas) ?>)</p>
-      <?php if (empty($mis_resenas)): ?>
-        <p style="color:var(--muted);font-size:14px;">Aún no has dejado ninguna reseña.</p>
+  <header class="mc-header">
+    <div class="mc-header-avatar">
+      <?php if (!empty($u['foto_perfil'])): ?>
+        <img src="assets/img/avatars/<?= htmlspecialchars($u['foto_perfil']) ?>" alt="Avatar">
       <?php else: ?>
-        <div class="resenas-lista">
-          <?php foreach ($mis_resenas as $r): ?>
-          <div class="resena-item">
-            <div class="resena-header">
-              <div class="resena-avatar"><?= mb_strtoupper(mb_substr($u['nombre'], 0, 1)) ?></div>
-              <div>
-                <strong class="resena-empresa"><?= htmlspecialchars($r['empresa_nombre']) ?></strong>
-                <div class="estrellas-display small">
-                  <?php for ($i = 1; $i <= 5; $i++): ?>
-                    <span class="<?= $i <= $r['estrellas'] ? 'estrella-llena' : 'estrella-vacia' ?>">★</span>
-                  <?php endfor; ?>
-                </div>
-              </div>
-              <span class="resena-fecha"><?= date('d/m/Y', strtotime($r['fecha'])) ?></span>
-            </div>
-            <p class="resena-comentario"><?= nl2br(htmlspecialchars($r['comentario'])) ?></p>
-            <div style="margin-top:10px;display:flex;gap:8px;">
-              <a href="empresas.php?empresa=<?= $r['id_empresa'] ?>" class="btn-ver" style="font-size:12px;padding:5px 12px;">Ver empresa</a>
-              <a href="mi_cuenta.php?eliminar_resena=<?= $r['id_resena'] ?>"
-                 class="btn-ver btn-ver-danger" style="font-size:12px;padding:5px 12px;"
-                 onclick="return confirm('¿Eliminar esta reseña?')">Eliminar</a>
-            </div>
-          </div>
-          <?php endforeach; ?>
-        </div>
+        <span><?= mb_strtoupper(mb_substr($u['nombre'], 0, 1)) ?></span>
       <?php endif; ?>
     </div>
+    <div class="mc-header-text">
+      <div class="mc-header-title">
+        <?= htmlspecialchars($u['nombre']) ?>
+        <span class="mc-sep">/</span>
+        <span class="mc-section-label" id="mc-header-section">Editar perfil</span>
+      </div>
+      <div class="mc-header-sub" id="mc-header-sub">Configure su presencia y datos de cuenta</div>
+    </div>
+    <a href="logout_usuario.php" class="mc-logout">Cerrar sesión</a>
+  </header>
 
+  <div class="mc-mobile-nav">
+    <select class="mc-mobile-select" onchange="mcSwitch(this.value)">
+      <option value="perfil">Editar perfil</option>
+      <option value="password">Contraseña</option>
+      <option value="resenas">Mis reseñas</option>
+      <option value="privacidad">Privacidad y seguridad</option>
+    </select>
   </div>
-</section>
+
+  <div class="mc-layout">
+
+    <aside class="mc-sidebar">
+      <nav>
+        <a class="mc-nav-link active" onclick="mcSwitch('perfil')" id="mcnav-perfil">Editar perfil</a>
+        <a class="mc-nav-link" onclick="mcSwitch('password')" id="mcnav-password">Contraseña</a>
+        <a class="mc-nav-link" onclick="mcSwitch('resenas')" id="mcnav-resenas">
+          Mis reseñas
+          <span class="mc-badge" id="badge-resenas"><?= count($mis_resenas) ?></span>
+        </a>
+        <a class="mc-nav-link" onclick="mcSwitch('privacidad')" id="mcnav-privacidad">Privacidad y seguridad</a>
+      </nav>
+    </aside>
+
+    <main class="mc-content">
+
+      <div class="mc-panel active" id="mc-panel-perfil">
+
+        <div class="mc-avatar-row">
+          <div class="mc-avatar-preview" id="mc-avatar-preview">
+            <?php if (!empty($u['foto_perfil'])): ?>
+              <img src="assets/img/avatars/<?= htmlspecialchars($u['foto_perfil']) ?>" alt="Avatar">
+            <?php else: ?>
+              <span><?= mb_strtoupper(mb_substr($u['nombre'], 0, 1)) ?></span>
+            <?php endif; ?>
+          </div>
+          <div class="mc-avatar-actions">
+            <form method="POST" enctype="multipart/form-data" id="form-foto">
+              <input type="hidden" name="accion" value="foto">
+              <label class="mc-btn-upload" for="foto_input">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                Subir foto
+              </label>
+              <input type="file" id="foto_input" name="foto_perfil" accept="image/*" style="display:none"
+                onchange="previewFoto(event); this.form.submit();">
+            </form>
+            <?php if (!empty($u['foto_perfil'])): ?>
+              <form method="POST" style="display:inline">
+                <input type="hidden" name="accion" value="borrar_foto">
+                <button type="submit" class="mc-btn-ghost mc-btn-sm">Eliminar foto</button>
+              </form>
+            <?php endif; ?>
+            <span class="mc-upload-hint">JPG, PNG o WEBP · máx. 2MB</span>
+          </div>
+        </div>
+
+        <form method="POST" class="mc-form">
+          <input type="hidden" name="accion" value="datos">
+          <div class="mc-field">
+            <label>Nombre <span class="mc-req">*</span></label>
+            <input type="text" name="nombre" value="<?= htmlspecialchars($u['nombre']) ?>" required maxlength="100">
+          </div>
+          <div class="mc-field">
+            <label>Correo electrónico</label>
+            <input type="text" value="<?= htmlspecialchars($u['email']) ?>" disabled class="mc-disabled">
+            <span class="mc-hint">El correo no se puede cambiar desde aquí.</span>
+          </div>
+          <div class="mc-form-footer">
+            <button type="submit" class="mc-btn-primary">Guardar cambios</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="mc-panel" id="mc-panel-password">
+        <form method="POST" class="mc-form">
+          <input type="hidden" name="accion" value="password">
+          <div class="mc-field">
+            <label>Contraseña actual</label>
+            <input type="password" name="actual" placeholder="••••••••" required>
+          </div>
+          <div class="mc-field">
+            <label>Nueva contraseña</label>
+            <input type="password" name="nueva" placeholder="••••••••" required>
+            <span class="mc-hint">Mínimo 6 caracteres.</span>
+          </div>
+          <div class="mc-field">
+            <label>Confirmar nueva contraseña</label>
+            <input type="password" name="confirm" placeholder="••••••••" required>
+          </div>
+          <div class="mc-form-footer">
+            <button type="submit" class="mc-btn-dark">Cambiar contraseña</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="mc-panel" id="mc-panel-resenas">
+        <?php if (empty($mis_resenas)): ?>
+          <div class="mc-empty">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            <p>Aún no has dejado ninguna reseña.</p>
+          </div>
+        <?php else: ?>
+          <div class="mc-resenas-lista">
+            <?php foreach ($mis_resenas as $r): ?>
+              <div class="mc-resena">
+                <div class="mc-resena-top">
+                  <div class="mc-resena-avatar">
+                    <?php if (!empty($u['foto_perfil'])): ?>
+                      <img src="assets/img/avatars/<?= htmlspecialchars($u['foto_perfil']) ?>" alt="">
+                    <?php else: ?>
+                      <span><?= mb_strtoupper(mb_substr($u['nombre'], 0, 1)) ?></span>
+                    <?php endif; ?>
+                  </div>
+                  <div class="mc-resena-meta">
+                    <strong><?= htmlspecialchars($r['empresa_nombre']) ?></strong>
+                    <div class="mc-estrellas">
+                      <?php for ($i = 1; $i <= 5; $i++): ?>
+                        <span class="<?= $i <= $r['estrellas'] ? 'mc-star-on' : 'mc-star-off' ?>">★</span>
+                      <?php endfor; ?>
+                    </div>
+                  </div>
+                  <span class="mc-resena-fecha"><?= date('d/m/Y', strtotime($r['fecha'])) ?></span>
+                </div>
+                <p class="mc-resena-texto"><?= nl2br(htmlspecialchars($r['comentario'])) ?></p>
+                <div class="mc-resena-acciones">
+                  <a href="empresas.php?empresa=<?= $r['id_empresa'] ?>" class="mc-btn-ghost mc-btn-sm">Ver empresa</a>
+                  <button type="button" class="mc-btn-ghost mc-btn-sm mc-btn-danger mc-btn-eliminar"
+                    onclick="eliminarResenaAjax(this, <?= $r['id_resena'] ?>)">Eliminar</button>
+                </div>
+              </div>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
+      </div>
+
+      <div class="mc-panel" id="mc-panel-privacidad">
+
+        <p class="mc-section-title">Privacidad de la actividad</p>
+
+        <form method="POST" class="mc-form">
+          <input type="hidden" name="accion" value="privacidad">
+
+          <div class="mc-field">
+            <label>Visibilidad de reseñas</label>
+            <select name="visibilidad_resenas" class="mc-mobile-select"
+              style="background-image: none; padding-right: 14px;">
+              <option value="publico" <?= ($u['visibilidad_resenas'] ?? 'publico') === 'publico' ? 'selected' : '' ?>>
+                Público (Todos pueden ver mis reseñas)</option>
+              <option value="anonimo" <?= ($u['visibilidad_resenas'] ?? '') === 'anonimo' ? 'selected' : '' ?>>Anónimo
+                (Ocultar mi nombre en la reseña)</option>
+            </select>
+            <span class="mc-hint">Elige cómo se mostrarán tus reseñas a los demás usuarios.</span>
+          </div>
+
+          <div class="mc-form-footer" style="margin-top: 10px; margin-bottom: 24px;">
+            <button type="submit" class="mc-btn-primary mc-btn-sm">Guardar preferencias</button>
+          </div>
+        </form>
+
+        <p class="mc-section-title" style="margin-top: 32px;">Historial de sesiones</p>
+        <div class="mc-export-card" style="margin-top: 10px;">
+          <p>Aquí puedes ver el registro de tus recientes inicios de sesión en distintos dispositivos.</p>
+          <div class="mc-resenas-lista" style="gap: 8px;">
+            <?php
+            $sesiones_q = $conexion->query("SELECT * FROM sesiones_usuario WHERE id_usuario_publico = $id_u ORDER BY fecha_acceso DESC LIMIT 5");
+            if ($sesiones_q && $sesiones_q->num_rows > 0):
+              while ($sesion = $sesiones_q->fetch_assoc()):
+                ?>
+                <div class="mc-resena" style="padding: 12px 14px; box-shadow: none;">
+                  <div class="mc-resena-meta">
+                    <strong>Dispositivo: <?= htmlspecialchars($sesion['dispositivo'] ?? 'Desconocido') ?></strong>
+                  </div>
+                  <span class="mc-resena-fecha" style="margin-left: 0;">IP:
+                    <?= htmlspecialchars($sesion['ip'] ?? 'Desconocida') ?> -
+                    <?= date('d/m/Y H:i', strtotime($sesion['fecha_acceso'])) ?></span>
+                </div>
+              <?php
+              endwhile;
+            else:
+              ?>
+              <div class="mc-empty" style="padding: 20px 0;">
+                <p>No hay registro de sesiones recientes.</p>
+              </div>
+            <?php endif; ?>
+          </div>
+        </div>
+
+        <div class="mc-danger-zone">
+          <h3>Eliminar cuenta</h3>
+          <p>Eliminar tu cuenta eliminará permanentemente tu perfil y todo el contenido asociado. Esta acción no se
+            puede revertir.</p>
+          <form method="POST"
+            onsubmit="return confirm('¿Seguro que deseas borrar tu cuenta? Esta acción no se puede deshacer.');">
+            <input type="hidden" name="accion" value="borrar_cuenta">
+            <button type="submit" class="mc-btn-delete">Eliminar cuenta</button>
+          </form>
+        </div>
+
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+  const mcPanels = {
+    perfil: { label: 'Editar perfil', sub: 'Configure su presencia y datos de cuenta' },
+    password: { label: 'Contraseña', sub: 'Administre su contraseña de acceso' },
+    resenas: { label: 'Mis reseñas', sub: 'Gestiona las reseñas que has publicado' },
+    privacidad: { label: 'Privacidad y seguridad', sub: 'Administre su configuración de privacidad' },
+  };
+
+  function mcSwitch(id) {
+    document.querySelectorAll('.mc-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.mc-nav-link').forEach(a => a.classList.remove('active'));
+    document.getElementById('mc-panel-' + id).classList.add('active');
+    document.getElementById('mcnav-' + id).classList.add('active');
+    document.getElementById('mc-header-section').textContent = mcPanels[id].label;
+    document.getElementById('mc-header-sub').textContent = mcPanels[id].sub;
+    document.querySelector('.mc-mobile-select').value = id;
+  }
+
+  function previewFoto(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const preview = document.getElementById('mc-avatar-preview');
+      preview.innerHTML = `<img src="${ev.target.result}" alt="Avatar">`;
+      const headerAvatar = document.querySelector('.mc-header-avatar');
+      headerAvatar.innerHTML = `<img src="${ev.target.result}" alt="Avatar">`;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function eliminarResenaAjax(btn, id_resena) {
+    if (!confirm('¿Seguro que deseas eliminar esta reseña permanentemente?')) return;
+    
+    const resenaDiv = btn.closest('.mc-resena');
+    btn.innerText = 'Eliminando...';
+    btn.disabled = true;
+    btn.style.opacity = '0.7';
+    btn.style.cursor = 'not-allowed';
+
+    fetch('mi_cuenta.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'ajax_eliminar_resena=' + id_resena
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        // Animación de salida (fade out y encogimiento)
+        resenaDiv.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+        resenaDiv.style.opacity = '0';
+        resenaDiv.style.transform = 'scale(0.9) translateY(-10px)';
+        
+        setTimeout(() => {
+          const contenedor = resenaDiv.parentElement;
+          resenaDiv.remove();
+          
+          // Actualizar el número del badge "Mis reseñas" en la barra lateral
+          const badge = document.getElementById('badge-resenas');
+          if (badge) {
+            let count = parseInt(badge.textContent);
+            if (count > 0) badge.textContent = count - 1;
+          }
+
+          // Si el contenedor se quedó sin reseñas, mostrar pantalla vacía
+          if (contenedor.children.length === 0) {
+            contenedor.innerHTML = `
+              <div class="mc-empty" style="animation: fadeIn 0.5s ease-in;">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                <p>Aún no has dejado ninguna reseña.</p>
+              </div>
+            `;
+          }
+        }, 400); // 400ms tras la animación
+      } else {
+        alert('Hubo un error al eliminar la reseña.');
+        resetBtn();
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      alert('Error de conexión con el servidor.');
+      resetBtn();
+    });
+
+    function resetBtn() {
+      btn.innerText = 'Eliminar';
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+    }
+  }
+</script>
+
+<style>
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
 
 <?php include 'includes/footer.php'; ?>

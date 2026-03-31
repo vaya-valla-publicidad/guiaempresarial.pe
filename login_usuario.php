@@ -50,6 +50,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
                 $_SESSION['usuario_publico_id']     = $u['id'];
                 $_SESSION['usuario_publico_nombre'] = $u['nombre'];
                 $_SESSION['usuario_publico_foto']   = $u['foto_perfil'];
+                $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+                $disp = $_SERVER['HTTP_USER_AGENT'] ?? '';
+                $conexion->query("INSERT INTO sesiones_usuario (id_usuario_publico, ip, dispositivo) VALUES (".$u['id'].", '".$conexion->real_escape_string($ip)."', '".$conexion->real_escape_string($disp)."')");
                 $destino = $redir ? urldecode($redir) : 'mi_cuenta.php';
                 header("Location: $destino");
                 exit;
@@ -76,6 +79,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
                 $_SESSION['usuario_publico_id']     = $u['id'];
                 $_SESSION['usuario_publico_nombre'] = $u['nombre'];
                 $_SESSION['usuario_publico_foto']   = $u['foto_perfil'];
+                $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+                $disp = $_SERVER['HTTP_USER_AGENT'] ?? '';
+                $conexion->query("INSERT INTO sesiones_usuario (id_usuario_publico, ip, dispositivo) VALUES (".$u['id'].", '".$conexion->real_escape_string($ip)."', '".$conexion->real_escape_string($disp)."')");
                 $destino = $redir ? urldecode($redir) : 'mi_cuenta.php';
                 header("Location: $destino");
                 exit;
