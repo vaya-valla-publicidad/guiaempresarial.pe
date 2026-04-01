@@ -1,7 +1,16 @@
 <?php
-session_start();
-unset($_SESSION['usuario_publico_id']);
-unset($_SESSION['usuario_publico_nombre']);
-unset($_SESSION['usuario_publico_foto']);
+require_once __DIR__ . '/includes/security_headers.php';
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+$_SESSION = array();
+if (ini_get("session.use_cookies")) {
+    $params = session_get_cookie_params();
+    setcookie(session_name(), '', time() - 42000,
+        $params["path"], $params["domain"],
+        $params["secure"], $params["httponly"]
+    );
+}
+session_destroy();
 header('Location: index.php');
 exit;

@@ -1,19 +1,36 @@
 <?php
-$clave_acceso = "admin2026";
+$config_file = __DIR__ . '/../includes/admin_config.php';
+define('ACCESO_PERMITIDO', true);
 
-if (!isset($_GET['acceso']) || $_GET['acceso'] !== $clave_acceso) {
-    header("Location: /guiaempresarial.pe/index.php");
-    exit();
+if (isset($_GET['token'])) {
+    if (file_exists($config_file)) {
+        $config = include $config_file;
+        if (password_verify($_GET['token'], $config['token_hash'])) {
+            if (session_status() === PHP_SESSION_NONE)
+                session_start();
+            $_SESSION['admin_access_granted'] = true;
+            header("Location: /guiaempresarial.pe/login/login.php");
+            exit();
+        } else {
+            error_log("Intento de acceso con token inválido desde IP: " . $_SERVER['REMOTE_ADDR']);
+        }
+    }
 }
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-include '../db.php'; 
+
+if (empty($_SESSION['admin_access_granted']) || $_SESSION['admin_access_granted'] !== true) {
+    http_response_code(403);
+    die("Acceso Denegado. La puerta secreta requiere una llave válida.");
+}
+
+include '../db.php';
 
 $error = "";
-$max_intentos = 3;        
-$bloqueo_minutos = 5;     
+$max_intentos = 3;
+$bloqueo_minutos = 5;
 
 if (!isset($_SESSION['intentos'])) {
     $_SESSION['intentos'] = 0;
@@ -41,6 +58,7 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) 
         $fila = $resultado->fetch_assoc();
 
         if (password_verify($pass, $fila['contraseña_hash'])) {
+            session_regenerate_id(true);
             $_SESSION['usuario'] = $fila['nombre'];
             $_SESSION['rol'] = $fila['rol'];
 
@@ -56,48 +74,51 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) 
         } else {
             $_SESSION['intentos']++;
             $_SESSION['ultimo_intento'] = time();
-            $error = "Contraseña incorrecta.";
+            $error = "Credenciales incorrectas.";
         }
     } else {
         $_SESSION['intentos']++;
         $_SESSION['ultimo_intento'] = time();
-        $error = "Usuario no encontrado.";
+        $error = "Credenciales incorrectas.";
     }
 }
 ?>
 
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <title>Inicio de sesión</title>
     <link rel="stylesheet" href="/guiaempresarial.pe/assets/css/login.css">
 </head>
+
 <body>
-<div class="login-container">
-    <section class="login-section">
-        <h1 class="login-title">Inicio de sesión</h1>
+    <div class="login-container">
+        <section class="login-section">
+            <h1 class="login-title">Inicio de sesión</h1>
 
-        <?php if($error): ?>
-            <p class="login-error"><?= htmlspecialchars($error) ?></p>
-        <?php endif; ?>
+            <?php if ($error): ?>
+                <p class="login-error"><?= htmlspecialchars($error) ?></p>
+            <?php endif; ?>
 
-        <?php if (!($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo)): ?>
-        <form action="" method="post" class="login-form">
-            <div class="form-group">
-                <label for="usu">Usuario</label>
-                <input type="text" name="usu" id="usu" required>
-            </div>
+            <?php if (!($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo)): ?>
+                <form action="" method="post" class="login-form">
+                    <div class="form-group">
+                        <label for="usu">Usuario</label>
+                        <input type="text" name="usu" id="usu" required>
+                    </div>
 
-            <div class="form-group">
-                <label for="pass">Contraseña</label>
-                <input type="password" name="pass" id="pass" required>
-            </div>
+                    <div class="form-group">
+                        <label for="pass">Contraseña</label>
+                        <input type="password" name="pass" id="pass" required>
+                    </div>
 
-            <button type="submit" class="login-btn">Ingresar</button>
-        </form>
-        <?php endif; ?>
-    </section>
-</div>
+                    <button type="submit" class="login-btn">Ingresar</button>
+                </form>
+            <?php endif; ?>
+        </section>
+    </div>
 </body>
+
 </html>

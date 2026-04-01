@@ -8,17 +8,24 @@ if (!isset($_SESSION['usuario_publico_id'])) {
 }
 
 $id_u = intval($_SESSION['usuario_publico_id']);
-$u = $conexion->query("SELECT * FROM usuarios_publicos WHERE id = $id_u")->fetch_assoc();
+$stmt_u = $conexion->prepare("SELECT * FROM usuarios_publicos WHERE id = ?");
+$stmt_u->bind_param("i", $id_u);
+$stmt_u->execute();
+$u = $stmt_u->get_result()->fetch_assoc();
 $error = '';
 $exito = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
   if ($_POST['accion'] === 'borrar_cuenta') {
-    $conexion->query("DELETE FROM resenas WHERE id_usuario_publico = $id_u");
+    $stmt_del_r = $conexion->prepare("DELETE FROM resenas WHERE id_usuario_publico = ?");
+    $stmt_del_r->bind_param("i", $id_u);
+    $stmt_del_r->execute();
     if (!empty($u['foto_perfil']) && file_exists('assets/img/avatars/' . $u['foto_perfil'])) {
       unlink('assets/img/avatars/' . $u['foto_perfil']);
     }
-    $conexion->query("DELETE FROM usuarios_publicos WHERE id = $id_u");
+    $stmt_del_u = $conexion->prepare("DELETE FROM usuarios_publicos WHERE id = ?");
+    $stmt_del_u->bind_param("i", $id_u);
+    $stmt_del_u->execute();
     session_destroy();
     header('Location: index.php');
     exit;
@@ -28,7 +35,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
     if (!empty($u['foto_perfil']) && file_exists('assets/img/avatars/' . $u['foto_perfil'])) {
       unlink('assets/img/avatars/' . $u['foto_perfil']);
     }
-    $conexion->query("UPDATE usuarios_publicos SET foto_perfil = NULL WHERE id = $id_u");
+    $stmt_bf = $conexion->prepare("UPDATE usuarios_publicos SET foto_perfil = NULL WHERE id = ?");
+    $stmt_bf->bind_param("i", $id_u);
+    $stmt_bf->execute();
     $_SESSION['usuario_publico_foto'] = null;
     $u['foto_perfil'] = null;
     $exito = 'Foto de perfil eliminada.';
@@ -37,8 +46,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
   if ($_POST['accion'] === 'datos') {
     $nombre_nuevo = trim($_POST['nombre'] ?? '');
     if ($nombre_nuevo && $nombre_nuevo !== $u['nombre']) {
-      $n = $conexion->real_escape_string($nombre_nuevo);
-      $conexion->query("UPDATE usuarios_publicos SET nombre = '$n' WHERE id = $id_u");
+      $stmt_dn = $conexion->prepare("UPDATE usuarios_publicos SET nombre = ? WHERE id = ?");
+      $stmt_dn->bind_param("si", $nombre_nuevo, $id_u);
+      $stmt_dn->execute();
       $_SESSION['usuario_publico_nombre'] = $nombre_nuevo;
       $exito = 'Nombre actualizado.';
       $u['nombre'] = $nombre_nuevo;
@@ -46,10 +56,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
   }
 
   if ($_POST['accion'] === 'password') {
+    $bypass = isset($_SESSION['login_bypass_pw']) && $_SESSION['login_bypass_pw'] === true;
     $actual = $_POST['actual'] ?? '';
     $nueva = $_POST['nueva'] ?? '';
     $confirm = $_POST['confirm'] ?? '';
-    if (!password_verify($actual, $u['password_hash'])) {
+    if (!$bypass && !password_verify($actual, $u['password_hash'])) {
       $error = 'La contraseña actual no es correcta.';
     } elseif (strlen($nueva) < 6) {
       $error = 'La nueva contraseña debe tener al menos 6 caracteres.';
@@ -57,8 +68,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
       $error = 'Las contraseñas nuevas no coinciden.';
     } else {
       $hash = password_hash($nueva, PASSWORD_DEFAULT);
-      $conexion->query("UPDATE usuarios_publicos SET password_hash = '$hash' WHERE id = $id_u");
+      $stmt_pw = $conexion->prepare("UPDATE usuarios_publicos SET password_hash = ? WHERE id = ?");
+      $stmt_pw->bind_param("si", $hash, $id_u);
+      $stmt_pw->execute();
       $exito = 'Contraseña actualizada.';
+      if ($bypass)
+        unset($_SESSION['login_bypass_pw']);
     }
   }
 
@@ -79,8 +94,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
         if ($u['foto_perfil'] && file_exists('assets/img/avatars/' . $u['foto_perfil'])) {
           unlink('assets/img/avatars/' . $u['foto_perfil']);
         }
-        $fn = $conexion->real_escape_string($nombre_archivo);
-        $conexion->query("UPDATE usuarios_publicos SET foto_perfil = '$fn' WHERE id = $id_u");
+        $stmt_fot = $conexion->prepare("UPDATE usuarios_publicos SET foto_perfil = ? WHERE id = ?");
+        $stmt_fot->bind_param("si", $nombre_archivo, $id_u);
+        $stmt_fot->execute();
         $_SESSION['usuario_publico_foto'] = $nombre_archivo;
         $u['foto_perfil'] = $nombre_archivo;
         $exito = 'Foto de perfil actualizada.';
@@ -93,20 +109,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
   if ($_POST['accion'] === 'privacidad') {
     $visi = $_POST['visibilidad_resenas'] ?? 'publico';
     if ($visi === 'publico' || $visi === 'anonimo') {
-      $conexion->query("UPDATE usuarios_publicos SET visibilidad_resenas = '$visi' WHERE id = $id_u");
+      $stmt_pri = $conexion->prepare("UPDATE usuarios_publicos SET visibilidad_resenas = ? WHERE id = ?");
+      $stmt_pri->bind_param("si", $visi, $id_u);
+      $stmt_pri->execute();
       $u['visibilidad_resenas'] = $visi;
       $exito = 'Opciones de privacidad guardadas.';
     }
   }
 }
 
-$resenas_q = $conexion->query(
+$stmt_res = $conexion->prepare(
   "SELECT r.*, e.nombre AS empresa_nombre
      FROM resenas r
      JOIN empresas e ON r.id_empresa = e.id_empresa
-     WHERE r.id_usuario_publico = $id_u
+     WHERE r.id_usuario_publico = ?
      ORDER BY r.fecha DESC"
 );
+$stmt_res->bind_param("i", $id_u);
+$stmt_res->execute();
+$resenas_q = $stmt_res->get_result();
 $mis_resenas = [];
 if ($resenas_q)
   while ($r = $resenas_q->fetch_assoc())
@@ -115,8 +136,10 @@ if ($resenas_q)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_eliminar_resena'])) {
   header('Content-Type: application/json');
   $id_r = intval($_POST['ajax_eliminar_resena']);
-  $res = $conexion->query("DELETE FROM resenas WHERE id_resena = $id_r AND id_usuario_publico = $id_u");
-  echo json_encode(['success' => (bool)$res]);
+  $stmt_del = $conexion->prepare("DELETE FROM resenas WHERE id_resena = ? AND id_usuario_publico = ?");
+  $stmt_del->bind_param("ii", $id_r, $id_u);
+  $res = $stmt_del->execute();
+  echo json_encode(['success' => (bool) $res]);
   exit;
 }
 
@@ -243,12 +266,24 @@ $panel_activo = $_GET['tab'] ?? 'perfil';
       </div>
 
       <div class="mc-panel" id="mc-panel-password">
+        <?php $bypass_active = isset($_SESSION['login_bypass_pw']) && $_SESSION['login_bypass_pw'] === true; ?>
+        <?php if ($bypass_active): ?>
+          <div class="mc-alerta mc-alerta-ok" style="margin-bottom: 20px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            Has ingresado con un código de recuperación. Puedes crear una nueva contraseña ahora mismo sin conocer la
+            anterior.
+          </div>
+        <?php endif; ?>
         <form method="POST" class="mc-form">
           <input type="hidden" name="accion" value="password">
-          <div class="mc-field">
-            <label>Contraseña actual</label>
-            <input type="password" name="actual" placeholder="••••••••" required>
-          </div>
+          <?php if (!$bypass_active): ?>
+            <div class="mc-field">
+              <label>Contraseña actual</label>
+              <input type="password" name="actual" placeholder="••••••••" required>
+            </div>
+          <?php endif; ?>
           <div class="mc-field">
             <label>Nueva contraseña</label>
             <input type="password" name="nueva" placeholder="••••••••" required>
@@ -335,7 +370,10 @@ $panel_activo = $_GET['tab'] ?? 'perfil';
           <p>Aquí puedes ver el registro de tus recientes inicios de sesión en distintos dispositivos.</p>
           <div class="mc-resenas-lista" style="gap: 8px;">
             <?php
-            $sesiones_q = $conexion->query("SELECT * FROM sesiones_usuario WHERE id_usuario_publico = $id_u ORDER BY fecha_acceso DESC LIMIT 5");
+            $stmt_ses = $conexion->prepare("SELECT * FROM sesiones_usuario WHERE id_usuario_publico = ? ORDER BY fecha_acceso DESC LIMIT 5");
+            $stmt_ses->bind_param("i", $id_u);
+            $stmt_ses->execute();
+            $sesiones_q = $stmt_ses->get_result();
             if ($sesiones_q && $sesiones_q->num_rows > 0):
               while ($sesion = $sesiones_q->fetch_assoc()):
                 ?>
@@ -347,7 +385,7 @@ $panel_activo = $_GET['tab'] ?? 'perfil';
                     <?= htmlspecialchars($sesion['ip'] ?? 'Desconocida') ?> -
                     <?= date('d/m/Y H:i', strtotime($sesion['fecha_acceso'])) ?></span>
                 </div>
-              <?php
+                <?php
               endwhile;
             else:
               ?>
@@ -408,7 +446,7 @@ $panel_activo = $_GET['tab'] ?? 'perfil';
 
   function eliminarResenaAjax(btn, id_resena) {
     if (!confirm('¿Seguro que deseas eliminar esta reseña permanentemente?')) return;
-    
+
     const resenaDiv = btn.closest('.mc-resena');
     btn.innerText = 'Eliminando...';
     btn.disabled = true;
@@ -420,28 +458,28 @@ $panel_activo = $_GET['tab'] ?? 'perfil';
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: 'ajax_eliminar_resena=' + id_resena
     })
-    .then(r => r.json())
-    .then(data => {
-      if (data.success) {
-        // Animación de salida (fade out y encogimiento)
-        resenaDiv.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-        resenaDiv.style.opacity = '0';
-        resenaDiv.style.transform = 'scale(0.9) translateY(-10px)';
-        
-        setTimeout(() => {
-          const contenedor = resenaDiv.parentElement;
-          resenaDiv.remove();
-          
-          // Actualizar el número del badge "Mis reseñas" en la barra lateral
-          const badge = document.getElementById('badge-resenas');
-          if (badge) {
-            let count = parseInt(badge.textContent);
-            if (count > 0) badge.textContent = count - 1;
-          }
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          // Animación de salida (fade out y encogimiento)
+          resenaDiv.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+          resenaDiv.style.opacity = '0';
+          resenaDiv.style.transform = 'scale(0.9) translateY(-10px)';
 
-          // Si el contenedor se quedó sin reseñas, mostrar pantalla vacía
-          if (contenedor.children.length === 0) {
-            contenedor.innerHTML = `
+          setTimeout(() => {
+            const contenedor = resenaDiv.parentElement;
+            resenaDiv.remove();
+
+            // Actualizar el número del badge "Mis reseñas" en la barra lateral
+            const badge = document.getElementById('badge-resenas');
+            if (badge) {
+              let count = parseInt(badge.textContent);
+              if (count > 0) badge.textContent = count - 1;
+            }
+
+            // Si el contenedor se quedó sin reseñas, mostrar pantalla vacía
+            if (contenedor.children.length === 0) {
+              contenedor.innerHTML = `
               <div class="mc-empty" style="animation: fadeIn 0.5s ease-in;">
                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -449,18 +487,18 @@ $panel_activo = $_GET['tab'] ?? 'perfil';
                 <p>Aún no has dejado ninguna reseña.</p>
               </div>
             `;
-          }
-        }, 400); // 400ms tras la animación
-      } else {
-        alert('Hubo un error al eliminar la reseña.');
+            }
+          }, 400); // 400ms tras la animación
+        } else {
+          alert('Hubo un error al eliminar la reseña.');
+          resetBtn();
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert('Error de conexión con el servidor.');
         resetBtn();
-      }
-    })
-    .catch(err => {
-      console.error(err);
-      alert('Error de conexión con el servidor.');
-      resetBtn();
-    });
+      });
 
     function resetBtn() {
       btn.innerText = 'Eliminar';
@@ -472,10 +510,17 @@ $panel_activo = $_GET['tab'] ?? 'perfil';
 </script>
 
 <style>
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 </style>
 
 <?php include 'includes/footer.php'; ?>

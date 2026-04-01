@@ -4,40 +4,35 @@ include 'db.php';
 include 'includes/security.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
-    // Validar token CSRF
     if (!validarCSRF()) {
         logSeguridad('csrf_invalido', 'Intento de enviar reseña sin token válido');
         header("Location: empresas.php?empresa=" . intval($_POST['id_empresa'] ?? 0) . "&resena=error#resenas");
         exit;
     }
-    
-    // Rate limiting
+
     if (!verificarRateLimit('enviar_resena', 3, 60)) {
         header("Location: empresas.php?empresa=" . intval($_POST['id_empresa'] ?? 0) . "&resena=error#resenas");
         exit;
     }
-    
-    $id_emp     = intval($_POST['id_empresa']);
-    $estrellas  = intval($_POST['estrellas']);
+
+    $id_emp = intval($_POST['id_empresa']);
+    $estrellas = intval($_POST['estrellas']);
     $comentario = inputLimpio($_POST['comentario']);
-    $nombre     = inputLimpio($_POST['nombre_autor'] ?? '');
+    $nombre = inputLimpio($_POST['nombre_autor'] ?? '');
 
     $palabras_prohibidas = [
-        'idiota','imbecil','mierda','puta','puto','pendejo','estupido','basura',
-        'asco','maldito','inutil','animal','bestia','burro','bruto','tarado',
-        'retrasado','subnormal','mongolo','hdp','hijo de puta','malparido',
-        'desgraciado','miserable','imbécil','estúpido','inútil','maldición',
-        'cabrón','cabron','hijoputa','gonorrea','marica','maricón','maricon',
-        'estafa','estafador','estafadora','ladron','ladrona','ladrón','roba',
-        'roban','robaron','mentira','mentiroso','mentirosa','falso','falsa',
-        'fraude','fraudulento','engaño','engañan','engañaron','timo','timador',
-        'corrupto','corrupta','corruptos','ilegal','ilegales','clandestino',
-        'peligroso','peligrosa','trampa','tramposo','tramposa','chanta','chantaje',
-        'amenaza','amenazaron','extorsion','extorsión','extorsionan',
-        'sexo','porno','prostituta','prostituto','prepago','escort',
-        'matar','muerte','asesino','asesina','golpear','golpean','violencia',
-        'violento','violenta','pegar','pegaron','amenazar',
-        've a','mejor vayan a','vayan mejor','no vayan','cierren','cierren este',
+        'idiota','imbecil','mierda','puta','puto','pendejo','estupido','basura','asco','maldito',
+        'inutil','animal','bestia','burro','bruto','tarado','retrasado','subnormal','mongolo',
+        'hdp','hijo de puta','malparido','desgraciado','miserable','imbécil','estúpido','inútil',
+        'maldición','cabrón','cabron','hijoputa','gonorrea','marica','maricón','maricon',
+        'estafa','estafador','estafadora','ladron','ladrona','ladrón','roba','roban','robaron',
+        'mentira','mentiroso','mentirosa','falso','falsa','fraude','fraudulento','engaño',
+        'engañan','engañaron','timo','timador','corrupto','corrupta','corruptos','ilegal',
+        'ilegales','clandestino','peligroso','peligrosa','trampa','tramposo','tramposa',
+        'chanta','chantaje','amenaza','amenazaron','extorsion','extorsión','extorsionan',
+        'sexo','porno','prostituta','prostituto','prepago','escort','matar','muerte','asesino',
+        'asesina','golpear','golpean','violencia','violento','violenta','pegar','pegaron',
+        'amenazar','ve a','mejor vayan a','vayan mejor','no vayan','cierren','cierren este',
     ];
 
     $texto_check = strtolower($comentario . ' ' . $nombre);
@@ -54,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
         $stmt = $conexion->prepare("INSERT INTO resenas (id_empresa, nombre_autor, estrellas, comentario, id_usuario_publico) VALUES (?, ?, ?, ?, ?)");
         $nombre_sesion = $_SESSION['usuario_publico_nombre'];
         $stmt->bind_param("isiss", $id_emp, $nombre_sesion, $estrellas, $comentario, $id_u_pub);
-        
+
         if ($stmt->execute()) {
             $stmt->close();
             header("Location: empresas.php?empresa=$id_emp&resena=ok#resenas");
@@ -86,8 +81,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
 
         <?php
         $id_categoria = $_GET['id_categoria'] ?? null;
-        $id_empresa   = $_GET['empresa']      ?? null;
-        $buscar       = $_GET['buscar']        ?? null;
+        $id_empresa = $_GET['empresa'] ?? null;
+        $buscar = $_GET['buscar'] ?? null;
 
         $sql = "SELECT e.*, c.nombre AS categoria
                 FROM empresas e
@@ -96,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
         $where = [];
         $params = [];
         $types = "";
-        
+
         if ($id_empresa) {
             $where[] = "e.id_empresa = ?";
             $params[] = intval($id_empresa);
@@ -114,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
             $params[] = $busqueda;
             $types .= "sss";
         }
-        
+
         if (!empty($where)) {
             $sql .= " WHERE " . implode(" AND ", $where);
             $stmt = $conexion->prepare($sql);
@@ -130,349 +125,388 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
         }
 
         if ($id_empresa && $resultado && $resultado->num_rows === 1):
-            $fila     = $resultado->fetch_assoc();
-            $logo     = !empty($fila['logo']) ? htmlspecialchars($fila['logo']) : null;
+            $fila = $resultado->fetch_assoc();
+            $logo = !empty($fila['logo']) ? htmlspecialchars($fila['logo']) : null;
             $telefono = $fila['telefono'] ?? null;
-            $numero   = $telefono ? preg_replace('/[^0-9]/', '', $telefono) : null;
-            $fotos_q  = $conexion->query("SELECT foto FROM empresa_galeria WHERE id_empresa = " . intval($id_empresa) . " ORDER BY orden ASC, id_foto ASC");
+            $numero = $telefono ? preg_replace('/[^0-9]/', '', $telefono) : null;
+
+            $stmt_fotos = $conexion->prepare("SELECT foto FROM empresa_galeria WHERE id_empresa = ? ORDER BY orden ASC, id_foto ASC");
+            $id_empresa_int = intval($id_empresa);
+            $stmt_fotos->bind_param("i", $id_empresa_int);
+            $stmt_fotos->execute();
+            $fotos_q = $stmt_fotos->get_result();
             $fotos_arr = [];
             if ($fotos_q && $fotos_q->num_rows > 0)
-                while ($f = $fotos_q->fetch_assoc()) $fotos_arr[] = $f['foto'];
+                while ($f = $fotos_q->fetch_assoc())
+                    $fotos_arr[] = $f['foto'];
 
-            $conexion->query("UPDATE empresas SET vistas = vistas + 1 WHERE id_empresa = " . intval($id_empresa));
-        ?>
-
-        <a href="empresas.php" class="btn-volver">← Volver a empresas</a>
-
-        <div class="perfil-wrapper">
-            <div class="perfil-hero">
-                <div class="perfil-banner"></div>
-                <div class="perfil-hero-body">
-                    <?php if ($logo): ?>
-                        <img class="perfil-logo" src="assets/img/<?= $logo ?>" alt="<?= htmlspecialchars($fila['nombre']) ?>">
-                    <?php else: ?>
-                        <div class="perfil-logo logo-placeholder" style="width:90px;height:90px;font-size:32px;">
-                            <?= mb_strtoupper(mb_substr($fila['nombre'], 0, 1)) ?>
-                        </div>
-                    <?php endif; ?>
-                    <div class="perfil-hero-info">
-                        <div class="perfil-hero-top">
-                            <div>
-                                <h2 class="perfil-nombre">
-                                    <?= htmlspecialchars($fila['nombre']) ?>
-                                    <?php if ($fila['destacada']): ?>
-                                        <span class="badge-destacada">⭐ Destacada</span>
-                                    <?php endif; ?>
-                                </h2>
-                                <span class="empresa-card-badge"><?= htmlspecialchars($fila['categoria']) ?></span>
-                            </div>
-                            <div class="perfil-acciones">
-                                <?php if ($numero): ?>
-                                <a href="https://wa.me/<?= $numero ?>" target="_blank" class="btn-accion btn-accion-whatsapp">WhatsApp</a>
-                                <?php endif; ?>
-                                <?php if (!empty($fila['ubicacion_link'])): ?>
-                                <a href="<?= htmlspecialchars($fila['ubicacion_link']) ?>" target="_blank" class="btn-accion btn-accion-maps">📍 Ver en Maps</a>
-                                <?php endif; ?>
-                                <?php if (!empty($fila['facebook'])): ?>
-                                <a href="<?= htmlspecialchars($fila['facebook']) ?>" target="_blank" class="btn-accion btn-accion-facebook">
-                                    📘 Facebook
-                                </a>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                        <?php if (!empty($fila['descripcion'])): ?>
-                        <p class="perfil-slogan">✨ <?= htmlspecialchars(mb_strimwidth($fila['descripcion'], 0, 100, '…')) ?></p>
-                        <?php endif; ?>
-                        <p style="font-size:12px;color:var(--muted);margin-top:8px;">👁 <?= number_format($fila['vistas']) ?> vistas</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="perfil-body">
-                <div class="perfil-info-card">
-                    <p class="perfil-section-label">Información</p>
-                    <div class="perfil-datos">
-                        <?php if (!empty($fila['direccion'])): ?>
-                        <div class="perfil-dato-item">
-                            <span class="perfil-dato-icon">📍</span>
-                            <div>
-                                <span class="perfil-dato-label">Dirección</span>
-                                <span class="perfil-dato-valor"><?= htmlspecialchars($fila['direccion']) ?></span>
-                            </div>
-                        </div>
-                        <?php endif; ?>
-                        <?php if (!empty($fila['horario'])): ?>
-                        <div class="perfil-dato-item">
-                            <span class="perfil-dato-icon">🕒</span>
-                            <div>
-                                <span class="perfil-dato-label">Horario</span>
-                                <span class="perfil-dato-valor"><?= htmlspecialchars($fila['horario']) ?></span>
-                            </div>
-                        </div>
-                        <?php endif; ?>
-                        <?php if ($numero): ?>
-                        <div class="perfil-dato-item">
-                            <span class="perfil-dato-icon">📞</span>
-                            <div>
-                                <span class="perfil-dato-label">Teléfono</span>
-                                <span class="perfil-dato-valor"><?= $numero ?></span>
-                            </div>
-                        </div>
-                        <?php endif; ?>
-                        <?php if (!empty($fila['email'])): ?>
-                        <div class="perfil-dato-item">
-                            <span class="perfil-dato-icon">✉</span>
-                            <div>
-                                <span class="perfil-dato-label">Correo</span>
-                                <span class="perfil-dato-valor"><?= htmlspecialchars($fila['email']) ?></span>
-                            </div>
-                        </div>
-                        <?php endif; ?>
-                        <?php if (!empty($fila['link_empresa'])): ?>
-                        <div class="perfil-dato-item">
-                            <span class="perfil-dato-icon">🌐</span>
-                            <div>
-                                <span class="perfil-dato-label">Sitio web</span>
-                                <a class="perfil-dato-valor perfil-link" href="<?= htmlspecialchars($fila['link_empresa']) ?>" target="_blank"><?= htmlspecialchars($fila['link_empresa']) ?></a>
-                            </div>
-                        </div>
-                        <?php endif; ?>
-                    </div>
-                </div>
-
-                <?php if (count($fotos_arr) > 0): ?>
-                <div class="perfil-galeria-card">
-                    <p class="perfil-section-label">Galería</p>
-                    <div class="perfil-galeria-grid">
-                        <?php foreach ($fotos_arr as $foto): ?>
-                        <img src="assets/img/empresascarrusel/<?= htmlspecialchars($foto) ?>"
-                             alt="Foto de <?= htmlspecialchars($fila['nombre']) ?>"
-                             class="perfil-galeria-foto">
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-                <?php endif; ?>
-            </div>
-
-            <?php if (!empty($fila['descripcion'])): ?>
-            <div class="perfil-descripcion">
-                <p class="perfil-section-label">Descripción</p>
-                <p class="perfil-descripcion-texto"><?= nl2br(htmlspecialchars($fila['descripcion'])) ?></p>
-            </div>
-            <?php endif; ?>
-
-            <?php
-            $resena_msg    = $_GET['resena'] ?? null;
-            $resenas_q     = $conexion->query("SELECT r.*, u.visibilidad_resenas FROM resenas r LEFT JOIN usuarios_publicos u ON r.id_usuario_publico = u.id WHERE r.id_empresa = $id_empresa ORDER BY r.fecha DESC");
-            $total_resenas = $resenas_q ? $resenas_q->num_rows : 0;
-            $promedio      = 0;
-            $resenas_arr   = [];
-            if ($total_resenas > 0) {
-                $sum_q    = $conexion->query("SELECT AVG(estrellas) as prom FROM resenas WHERE id_empresa = $id_empresa");
-                $promedio = round($sum_q->fetch_assoc()['prom'], 1);
-                while ($r = $resenas_q->fetch_assoc()) $resenas_arr[] = $r;
-            }
+            $stmt_vistas = $conexion->prepare("UPDATE empresas SET vistas = vistas + 1 WHERE id_empresa = ?");
+            $stmt_vistas->bind_param("i", $id_empresa_int);
+            $stmt_vistas->execute();
             ?>
 
-            <div class="perfil-resenas" id="resenas">
-                <p class="perfil-section-label">Reseñas</p>
+            <a href="empresas.php" class="btn-volver">← Volver a empresas</a>
 
-                <?php if ($resena_msg === 'ok'): ?>
-                    <div class="resena-alerta resena-alerta-ok">✅ ¡Reseña enviada con éxito!</div>
-                <?php elseif ($resena_msg === 'mala'): ?>
-                    <div class="resena-alerta resena-alerta-error">⚠️ Tu reseña contiene palabras no permitidas.</div>
-                <?php elseif ($resena_msg === 'error'): ?>
-                    <div class="resena-alerta resena-alerta-error">❌ Por favor completa todos los campos y selecciona estrellas.</div>
-                <?php endif; ?>
-
-                <?php if ($total_resenas > 0): ?>
-                <div class="resenas-promedio">
-                    <span class="resenas-prom-numero"><?= $promedio ?></span>
-                    <div>
-                        <div class="estrellas-display">
-                            <?php for ($i = 1; $i <= 5; $i++): ?>
-                                <span class="<?= $i <= round($promedio) ? 'estrella-llena' : 'estrella-vacia' ?>">★</span>
-                            <?php endfor; ?>
-                        </div>
-                        <span class="resenas-total"><?= $total_resenas ?> reseña<?= $total_resenas > 1 ? 's' : '' ?></span>
-                    </div>
-                </div>
-                <?php endif; ?>
-
-                <div class="resena-form-wrapper">
-                    <?php if (isset($_SESSION['usuario_publico_id'])): ?>
-                    <p class="resena-form-titulo">Hola, <?= htmlspecialchars($_SESSION['usuario_publico_nombre']) ?> 👋 Deja tu reseña</p>
-                    <form method="POST" action="empresas.php?empresa=<?= $id_empresa ?>">
-                        <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
-                        <input type="hidden" name="resena_empresa" value="1">
-                        <input type="hidden" name="id_empresa" value="<?= $id_empresa ?>">
-                        <div class="form-group">
-                            <label>Calificación</label>
-                            <div class="estrellas-input" id="estrellasInput">
-                                <?php for ($i = 1; $i <= 5; $i++): ?>
-                                <span class="estrella-btn" data-valor="<?= $i ?>">★</span>
-                                <?php endfor; ?>
+            <div class="perfil-wrapper">
+                <div class="perfil-hero">
+                    <div class="perfil-banner"></div>
+                    <div class="perfil-hero-body">
+                        <?php if ($logo): ?>
+                            <img class="perfil-logo" src="assets/img/<?= $logo ?>"
+                                alt="<?= htmlspecialchars($fila['nombre']) ?>">
+                        <?php else: ?>
+                            <div class="perfil-logo logo-placeholder" style="width:90px;height:90px;font-size:32px;">
+                                <?= mb_strtoupper(mb_substr($fila['nombre'], 0, 1)) ?>
                             </div>
-                            <input type="hidden" name="estrellas" id="estrellasValor" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Comentario</label>
-                            <textarea name="comentario" rows="3" placeholder="Cuéntanos tu experiencia..." required maxlength="500"></textarea>
-                        </div>
-                        <button type="submit" class="btn-enviar-resena">Enviar reseña</button>
-                    </form>
-                    <?php else: ?>
-                    <div style="text-align:center;padding:20px 0;">
-                        <p style="color:var(--muted);margin-bottom:16px;font-size:15px;">
-                            Inicia sesión para dejar tu reseña
-                        </p>
-                        <a href="login_usuario.php?redir=<?= urlencode('empresas.php?empresa=' . $id_empresa . '#resenas') ?>"
-                           class="btn-enviar-resena" style="text-decoration:none;display:inline-block;">
-                           Iniciar sesión
-                        </a>
-                        <p style="margin-top:12px;font-size:13px;color:var(--muted);">
-                            ¿No tienes cuenta? <a href="registro_usuario.php" style="color:var(--rojo);font-weight:700;">Regístrate gratis</a>
-                        </p>
-                    </div>
-                    <?php endif; ?>
-                </div>
-
-                <?php if (count($resenas_arr) > 0): ?>
-                <div class="resenas-lista">
-                    <?php foreach ($resenas_arr as $r): 
-                        $es_anonimo = ($r['visibilidad_resenas'] ?? 'publico') === 'anonimo';
-                        $nombre_mostrar = $es_anonimo ? 'Usuario Anónimo' : htmlspecialchars($r['nombre_autor']);
-                        $letra_avatar = $es_anonimo ? '👤' : mb_strtoupper(mb_substr($r['nombre_autor'], 0, 1));
-                    ?>
-                    <div class="resena-item">
-                        <div class="resena-header">
-                            <div class="resena-avatar"><?= $letra_avatar ?></div>
-                            <div>
-                                <strong><?= $nombre_mostrar ?></strong>
-                                <div class="estrellas-display small">
-                                    <?php for ($i = 1; $i <= 5; $i++): ?>
-                                        <span class="<?= $i <= $r['estrellas'] ? 'estrella-llena' : 'estrella-vacia' ?>">★</span>
-                                    <?php endfor; ?>
+                        <?php endif; ?>
+                        <div class="perfil-hero-info">
+                            <div class="perfil-hero-top">
+                                <div>
+                                    <h2 class="perfil-nombre">
+                                        <?= htmlspecialchars($fila['nombre']) ?>
+                                        <?php if ($fila['destacada']): ?>
+                                            <span class="badge-destacada">⭐ Destacada</span>
+                                        <?php endif; ?>
+                                    </h2>
+                                    <span class="empresa-card-badge"><?= htmlspecialchars($fila['categoria']) ?></span>
+                                </div>
+                                <div class="perfil-acciones">
+                                    <?php if ($numero): ?>
+                                        <a href="https://wa.me/<?= $numero ?>" target="_blank"
+                                            class="btn-accion btn-accion-whatsapp">WhatsApp</a>
+                                    <?php endif; ?>
+                                    <?php if (!empty($fila['ubicacion_link'])): ?>
+                                        <a href="<?= htmlspecialchars($fila['ubicacion_link']) ?>" target="_blank"
+                                            class="btn-accion btn-accion-maps">📍 Ver en Maps</a>
+                                    <?php endif; ?>
+                                    <?php if (!empty($fila['facebook'])): ?>
+                                        <a href="<?= htmlspecialchars($fila['facebook']) ?>" target="_blank"
+                                            class="btn-accion btn-accion-facebook">
+                                            📘 Facebook
+                                        </a>
+                                    <?php endif; ?>
                                 </div>
                             </div>
-                            <span class="resena-fecha"><?= date('d/m/Y', strtotime($r['fecha'])) ?></span>
+                            <?php if (!empty($fila['descripcion'])): ?>
+                                <p class="perfil-slogan">✨
+                                    <?= htmlspecialchars(mb_strimwidth($fila['descripcion'], 0, 100, '…')) ?></p>
+                            <?php endif; ?>
+                            <p style="font-size:12px;color:var(--muted);margin-top:8px;">👁
+                                <?= number_format($fila['vistas']) ?> vistas</p>
                         </div>
-                        <p class="resena-comentario"><?= nl2br(htmlspecialchars($r['comentario'])) ?></p>
                     </div>
-                    <?php endforeach; ?>
                 </div>
-                <?php endif; ?>
-            </div>
 
-        </div>
-
-        <?php
-        elseif ($resultado && $resultado->num_rows > 0):
-            if ($buscar): ?>
-            <div class="filtro-activo">
-                🔍 Resultados para: "<?= htmlspecialchars($buscar) ?>"
-                <a href="empresas.php" title="Limpiar">✕</a>
-            </div>
-            <?php elseif ($id_categoria):
-                $cat_res    = $conexion->query("SELECT nombre FROM categorias WHERE id_categoria=" . intval($id_categoria));
-                $cat_nombre = $cat_res ? $cat_res->fetch_assoc()['nombre'] : 'Categoría';
-            ?>
-            <div class="filtro-activo">
-                🏷 Categoría: <?= htmlspecialchars($cat_nombre) ?>
-                <a href="empresas.php" title="Ver todas">✕</a>
-            </div>
-            <?php endif; ?>
-
-        <div class="empresas-list">
-        <?php
-            while ($fila = $resultado->fetch_assoc()):
-                $logo      = !empty($fila['logo']) ? htmlspecialchars($fila['logo']) : null;
-                $telefono  = $fila['telefono'] ?? null;
-                $numero    = $telefono ? preg_replace('/[^0-9]/', '', $telefono) : null;
-                $id        = intval($fila['id_empresa']);
-                $fotos     = $conexion->query("SELECT foto FROM empresa_galeria WHERE id_empresa = $id ORDER BY orden ASC, id_foto ASC");
-                $fotos_arr = [];
-                if ($fotos && $fotos->num_rows > 0)
-                    while ($f = $fotos->fetch_assoc()) $fotos_arr[] = $f['foto'];
-        ?>
-            <div class="empresa-item <?= $fila['destacada'] ? 'empresa-destacada' : '' ?>">
-                <div class="empresa-info-logo">
-                    <div class="empresa-top-row">
-                        <div class="empresa-logo">
-                            <?php if ($logo): ?>
-                                <img src="assets/img/<?= $logo ?>" alt="<?= htmlspecialchars($fila['nombre']) ?>">
-                            <?php else: ?>
-                                <div class="logo-placeholder"><?= mb_strtoupper(mb_substr($fila['nombre'], 0, 1)) ?></div>
+                <div class="perfil-body">
+                    <div class="perfil-info-card">
+                        <p class="perfil-section-label">Información</p>
+                        <div class="perfil-datos">
+                            <?php if (!empty($fila['direccion'])): ?>
+                                <div class="perfil-dato-item">
+                                    <span class="perfil-dato-icon">📍</span>
+                                    <div>
+                                        <span class="perfil-dato-label">Dirección</span>
+                                        <span class="perfil-dato-valor"><?= htmlspecialchars($fila['direccion']) ?></span>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                            <?php if (!empty($fila['horario'])): ?>
+                                <div class="perfil-dato-item">
+                                    <span class="perfil-dato-icon">🕒</span>
+                                    <div>
+                                        <span class="perfil-dato-label">Horario</span>
+                                        <span class="perfil-dato-valor"><?= htmlspecialchars($fila['horario']) ?></span>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                            <?php if ($numero): ?>
+                                <div class="perfil-dato-item">
+                                    <span class="perfil-dato-icon">📞</span>
+                                    <div>
+                                        <span class="perfil-dato-label">Teléfono</span>
+                                        <span class="perfil-dato-valor"><?= $numero ?></span>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                            <?php if (!empty($fila['email'])): ?>
+                                <div class="perfil-dato-item">
+                                    <span class="perfil-dato-icon">✉</span>
+                                    <div>
+                                        <span class="perfil-dato-label">Correo</span>
+                                        <span class="perfil-dato-valor"><?= htmlspecialchars($fila['email']) ?></span>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                            <?php if (!empty($fila['link_empresa'])): ?>
+                                <div class="perfil-dato-item">
+                                    <span class="perfil-dato-icon">🌐</span>
+                                    <div>
+                                        <span class="perfil-dato-label">Sitio web</span>
+                                        <a class="perfil-dato-valor perfil-link"
+                                            href="<?= htmlspecialchars($fila['link_empresa']) ?>"
+                                            target="_blank"><?= htmlspecialchars($fila['link_empresa']) ?></a>
+                                    </div>
+                                </div>
                             <?php endif; ?>
                         </div>
-                        <div class="empresa-titles">
-                            <h3>
-                                <?= htmlspecialchars($fila['nombre']) ?>
-                                <?php if ($fila['destacada']): ?>
-                                    <span class="badge-destacada">⭐ Destacada</span>
-                                <?php endif; ?>
-                            </h3>
-                            <span class="empresa-categoria"><?= htmlspecialchars($fila['categoria']) ?></span>
+                    </div>
+
+                    <?php if (count($fotos_arr) > 0): ?>
+                        <div class="perfil-galeria-card">
+                            <p class="perfil-section-label">Galería</p>
+                            <div class="perfil-galeria-grid">
+                                <?php foreach ($fotos_arr as $foto): ?>
+                                    <img src="assets/img/empresascarrusel/<?= htmlspecialchars($foto) ?>"
+                                        alt="Foto de <?= htmlspecialchars($fila['nombre']) ?>" class="perfil-galeria-foto">
+                                <?php endforeach; ?>
+                            </div>
                         </div>
-                    </div>
-                    <p class="empresa-slogan">
-                        <?= !empty($fila['descripcion']) ? htmlspecialchars(mb_strimwidth($fila['descripcion'], 0, 80, '…')) : 'Tu mejor opción local' ?>
-                    </p>
-                    <?php if (!empty($fila['direccion'])): ?>
-                    <p class="empresa-direccion">📍 <?= htmlspecialchars($fila['direccion']) ?></p>
-                    <?php endif; ?>
-                    <div class="empresa-datos">
-                        <?php if (!empty($fila['horario'])): ?>
-                        <span>🕒 <?= htmlspecialchars($fila['horario']) ?></span>
-                        <?php endif; ?>
-                        <?php if ($numero): ?>
-                        <span>📞 <?= $numero ?></span>
-                        <?php endif; ?>
-                        <span>👁 <?= number_format($fila['vistas']) ?> vistas</span>
-                    </div>
-                    <div class="empresa-actions">
-                        <a href="empresas.php?empresa=<?= $id ?>" class="btn-ver">Ver más</a>
-                        <?php if (!empty($fila['facebook'])): ?>
-                        <a href="<?= htmlspecialchars($fila['facebook']) ?>" target="_blank" class="btn-accion btn-accion-facebook">
-                            📘 Facebook
-                        </a>
-                        <?php endif; ?>
-                        <?php if ($numero): ?>
-                        <a href="https://wa.me/<?= $numero ?>" target="_blank" class="btn-whatsapp">WhatsApp</a>
-                        <?php endif; ?>
-                        <?php if (!empty($fila['ubicacion_link'])): ?>
-                        <a href="<?= htmlspecialchars($fila['ubicacion_link']) ?>" target="_blank" class="btn-maps">Ubicación</a>
-                        <?php endif; ?>
-                    </div>
-                </div>
-                <?php if (count($fotos_arr) > 0): ?>
-                <div class="empresa-slider">
-                    <?php foreach ($fotos_arr as $i => $foto): ?>
-                    <div class="slide <?= $i === 0 ? 'activo' : '' ?>">
-                        <img src="assets/img/empresascarrusel/<?= htmlspecialchars($foto) ?>"
-                             alt="Imagen de <?= htmlspecialchars($fila['nombre']) ?>"
-                             loading="lazy">
-                    </div>
-                    <?php endforeach; ?>
-                    <?php if (count($fotos_arr) > 1): ?>
-                    <div class="slider-dots">
-                        <?php foreach ($fotos_arr as $i => $_): ?>
-                        <button class="slider-dot <?= $i === 0 ? 'activo' : '' ?>" data-index="<?= $i ?>"></button>
-                        <?php endforeach; ?>
-                    </div>
                     <?php endif; ?>
                 </div>
+
+                <?php if (!empty($fila['descripcion'])): ?>
+                    <div class="perfil-descripcion">
+                        <p class="perfil-section-label">Descripción</p>
+                        <p class="perfil-descripcion-texto"><?= nl2br(htmlspecialchars($fila['descripcion'])) ?></p>
+                    </div>
                 <?php endif; ?>
+
+                <?php
+                $resena_msg = $_GET['resena'] ?? null;
+                $id_empresa_int = intval($id_empresa);
+                $stmt_res = $conexion->prepare("SELECT r.*, u.visibilidad_resenas FROM resenas r LEFT JOIN usuarios_publicos u ON r.id_usuario_publico = u.id WHERE r.id_empresa = ? ORDER BY r.fecha DESC");
+                $stmt_res->bind_param("i", $id_empresa_int);
+                $stmt_res->execute();
+                $resenas_q = $stmt_res->get_result();
+                $total_resenas = $resenas_q ? $resenas_q->num_rows : 0;
+                $promedio = 0;
+                $resenas_arr = [];
+                if ($total_resenas > 0) {
+                    $stmt_prom = $conexion->prepare("SELECT AVG(estrellas) as prom FROM resenas WHERE id_empresa = ?");
+                    $stmt_prom->bind_param("i", $id_empresa_int);
+                    $stmt_prom->execute();
+                    $sum_q = $stmt_prom->get_result();
+                    $promedio = round($sum_q->fetch_assoc()['prom'], 1);
+                    while ($r = $resenas_q->fetch_assoc())
+                        $resenas_arr[] = $r;
+                }
+                ?>
+
+                <div class="perfil-resenas" id="resenas">
+                    <p class="perfil-section-label">Reseñas</p>
+
+                    <?php if ($resena_msg === 'ok'): ?>
+                        <div class="resena-alerta resena-alerta-ok">✅ ¡Reseña enviada con éxito!</div>
+                    <?php elseif ($resena_msg === 'mala'): ?>
+                        <div class="resena-alerta resena-alerta-error">⚠️ Tu reseña contiene palabras no permitidas.</div>
+                    <?php elseif ($resena_msg === 'error'): ?>
+                        <div class="resena-alerta resena-alerta-error">❌ Por favor completa todos los campos y selecciona
+                            estrellas.</div>
+                    <?php endif; ?>
+
+                    <?php if ($total_resenas > 0): ?>
+                        <div class="resenas-promedio">
+                            <span class="resenas-prom-numero"><?= $promedio ?></span>
+                            <div>
+                                <div class="estrellas-display">
+                                    <?php for ($i = 1; $i <= 5; $i++): ?>
+                                        <span class="<?= $i <= round($promedio) ? 'estrella-llena' : 'estrella-vacia' ?>">★</span>
+                                    <?php endfor; ?>
+                                </div>
+                                <span class="resenas-total"><?= $total_resenas ?>
+                                    reseña<?= $total_resenas > 1 ? 's' : '' ?></span>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="resena-form-wrapper">
+                        <?php if (isset($_SESSION['usuario_publico_id'])): ?>
+                            <p class="resena-form-titulo">Hola, <?= htmlspecialchars($_SESSION['usuario_publico_nombre']) ?> 👋
+                                Deja tu reseña</p>
+                            <form method="POST" action="empresas.php?empresa=<?= $id_empresa ?>">
+                                <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
+                                <input type="hidden" name="resena_empresa" value="1">
+                                <input type="hidden" name="id_empresa" value="<?= $id_empresa ?>">
+                                <div class="form-group">
+                                    <label>Calificación</label>
+                                    <div class="estrellas-input" id="estrellasInput">
+                                        <?php for ($i = 1; $i <= 5; $i++): ?>
+                                            <span class="estrella-btn" data-valor="<?= $i ?>">★</span>
+                                        <?php endfor; ?>
+                                    </div>
+                                    <input type="hidden" name="estrellas" id="estrellasValor" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Comentario</label>
+                                    <textarea name="comentario" rows="3" placeholder="Cuéntanos tu experiencia..." required
+                                        maxlength="500"></textarea>
+                                </div>
+                                <button type="submit" class="btn-enviar-resena">Enviar reseña</button>
+                            </form>
+                        <?php else: ?>
+                            <div style="text-align:center;padding:20px 0;">
+                                <p style="color:var(--muted);margin-bottom:16px;font-size:15px;">
+                                    Inicia sesión para dejar tu reseña
+                                </p>
+                                <a href="login_usuario.php?redir=<?= urlencode('empresas.php?empresa=' . $id_empresa . '#resenas') ?>"
+                                    class="btn-enviar-resena" style="text-decoration:none;display:inline-block;">
+                                    Iniciar sesión
+                                </a>
+                                <p style="margin-top:12px;font-size:13px;color:var(--muted);">
+                                    ¿No tienes cuenta? <a href="registro_usuario.php"
+                                        style="color:var(--rojo);font-weight:700;">Regístrate gratis</a>
+                                </p>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <?php if (count($resenas_arr) > 0): ?>
+                        <div class="resenas-lista">
+                            <?php foreach ($resenas_arr as $r):
+                                $es_anonimo = ($r['visibilidad_resenas'] ?? 'publico') === 'anonimo';
+                                $nombre_mostrar = $es_anonimo ? 'Usuario Anónimo' : htmlspecialchars($r['nombre_autor']);
+                                $letra_avatar = $es_anonimo ? '👤' : mb_strtoupper(mb_substr($r['nombre_autor'], 0, 1));
+                                ?>
+                                <div class="resena-item">
+                                    <div class="resena-header">
+                                        <div class="resena-avatar"><?= $letra_avatar ?></div>
+                                        <div>
+                                            <strong><?= $nombre_mostrar ?></strong>
+                                            <div class="estrellas-display small">
+                                                <?php for ($i = 1; $i <= 5; $i++): ?>
+                                                    <span
+                                                        class="<?= $i <= $r['estrellas'] ? 'estrella-llena' : 'estrella-vacia' ?>">★</span>
+                                                <?php endfor; ?>
+                                            </div>
+                                        </div>
+                                        <span class="resena-fecha"><?= date('d/m/Y', strtotime($r['fecha'])) ?></span>
+                                    </div>
+                                    <p class="resena-comentario"><?= nl2br(htmlspecialchars($r['comentario'])) ?></p>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
             </div>
-        <?php endwhile; ?>
-        </div>
+
+            <?php
+        elseif ($resultado && $resultado->num_rows > 0):
+            if ($buscar): ?>
+                <div class="filtro-activo">
+                    🔍 Resultados para: "<?= htmlspecialchars($buscar) ?>"
+                    <a href="empresas.php" title="Limpiar">✕</a>
+                </div>
+            <?php elseif ($id_categoria):
+                $id_cat_int = intval($id_categoria);
+                $stmt_cat = $conexion->prepare("SELECT nombre FROM categorias WHERE id_categoria=?");
+                $stmt_cat->bind_param("i", $id_cat_int);
+                $stmt_cat->execute();
+                $cat_res = $stmt_cat->get_result();
+                $cat_nombre = $cat_res ? $cat_res->fetch_assoc()['nombre'] : 'Categoría';
+                ?>
+                <div class="filtro-activo">
+                    🏷 Categoría: <?= htmlspecialchars($cat_nombre) ?>
+                    <a href="empresas.php" title="Ver todas">✕</a>
+                </div>
+            <?php endif; ?>
+
+            <div class="empresas-list">
+                <?php
+                while ($fila = $resultado->fetch_assoc()):
+                    $logo = !empty($fila['logo']) ? htmlspecialchars($fila['logo']) : null;
+                    $telefono = $fila['telefono'] ?? null;
+                    $numero = $telefono ? preg_replace('/[^0-9]/', '', $telefono) : null;
+                    $id = intval($fila['id_empresa']);
+                    $stmt_f = $conexion->prepare("SELECT foto FROM empresa_galeria WHERE id_empresa = ? ORDER BY orden ASC, id_foto ASC");
+                    $stmt_f->bind_param("i", $id);
+                    $stmt_f->execute();
+                    $fotos = $stmt_f->get_result();
+                    $fotos_arr = [];
+                    if ($fotos && $fotos->num_rows > 0)
+                        while ($f = $fotos->fetch_assoc())
+                            $fotos_arr[] = $f['foto'];
+                    ?>
+                    <div class="empresa-item <?= $fila['destacada'] ? 'empresa-destacada' : '' ?>">
+                        <div class="empresa-info-logo">
+                            <div class="empresa-top-row">
+                                <div class="empresa-logo">
+                                    <?php if ($logo): ?>
+                                        <img src="assets/img/<?= $logo ?>" alt="<?= htmlspecialchars($fila['nombre']) ?>">
+                                    <?php else: ?>
+                                        <div class="logo-placeholder"><?= mb_strtoupper(mb_substr($fila['nombre'], 0, 1)) ?></div>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="empresa-titles">
+                                    <h3>
+                                        <?= htmlspecialchars($fila['nombre']) ?>
+                                        <?php if ($fila['destacada']): ?>
+                                            <span class="badge-destacada">⭐ Destacada</span>
+                                        <?php endif; ?>
+                                    </h3>
+                                    <span class="empresa-categoria"><?= htmlspecialchars($fila['categoria']) ?></span>
+                                </div>
+                            </div>
+                            <p class="empresa-slogan">
+                                <?= !empty($fila['descripcion']) ? htmlspecialchars(mb_strimwidth($fila['descripcion'], 0, 80, '…')) : 'Tu mejor opción local' ?>
+                            </p>
+                            <?php if (!empty($fila['direccion'])): ?>
+                                <p class="empresa-direccion">📍 <?= htmlspecialchars($fila['direccion']) ?></p>
+                            <?php endif; ?>
+                            <div class="empresa-datos">
+                                <?php if (!empty($fila['horario'])): ?>
+                                    <span>🕒 <?= htmlspecialchars($fila['horario']) ?></span>
+                                <?php endif; ?>
+                                <?php if ($numero): ?>
+                                    <span>📞 <?= $numero ?></span>
+                                <?php endif; ?>
+                                <span>👁 <?= number_format($fila['vistas']) ?> vistas</span>
+                            </div>
+                            <div class="empresa-actions">
+                                <a href="empresas.php?empresa=<?= $id ?>" class="btn-ver">Ver más</a>
+                                <?php if (!empty($fila['facebook'])): ?>
+                                    <a href="<?= htmlspecialchars($fila['facebook']) ?>" target="_blank"
+                                        class="btn-accion btn-accion-facebook">
+                                        📘 Facebook
+                                    </a>
+                                <?php endif; ?>
+                                <?php if ($numero): ?>
+                                    <a href="https://wa.me/<?= $numero ?>" target="_blank" class="btn-whatsapp">WhatsApp</a>
+                                <?php endif; ?>
+                                <?php if (!empty($fila['ubicacion_link'])): ?>
+                                    <a href="<?= htmlspecialchars($fila['ubicacion_link']) ?>" target="_blank"
+                                        class="btn-maps">Ubicación</a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <?php if (count($fotos_arr) > 0): ?>
+                            <div class="empresa-slider">
+                                <?php foreach ($fotos_arr as $i => $foto): ?>
+                                    <div class="slide <?= $i === 0 ? 'activo' : '' ?>">
+                                        <img src="assets/img/empresascarrusel/<?= htmlspecialchars($foto) ?>"
+                                            alt="Imagen de <?= htmlspecialchars($fila['nombre']) ?>" loading="lazy">
+                                    </div>
+                                <?php endforeach; ?>
+                                <?php if (count($fotos_arr) > 1): ?>
+                                    <div class="slider-dots">
+                                        <?php foreach ($fotos_arr as $i => $_): ?>
+                                            <button class="slider-dot <?= $i === 0 ? 'activo' : '' ?>" data-index="<?= $i ?>"></button>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                <?php endwhile; ?>
+            </div>
 
         <?php else: ?>
-        <div class="no-results">
-            <p>😕 No se encontraron empresas<?= $buscar ? ' para "<strong>' . htmlspecialchars($buscar) . '</strong>"' : '' ?>.</p>
-            <br><br>
-            <a href="empresas.php">Ver todas las empresas</a>
-        </div>
+            <div class="no-results">
+                <p>😕 No se encontraron
+                    empresas<?= $buscar ? ' para "<strong>' . htmlspecialchars($buscar) . '</strong>"' : '' ?>.</p>
+                <br><br>
+                <a href="empresas.php">Ver todas las empresas</a>
+            </div>
         <?php endif; ?>
 
     </div>
@@ -481,39 +515,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
 <?php include 'includes/footer.php'; ?>
 
 <script>
-document.querySelectorAll('.empresa-slider').forEach(slider => {
-    const slides = slider.querySelectorAll('.slide');
-    const dots   = slider.querySelectorAll('.slider-dot');
-    if (slides.length <= 1) return;
-    let idx = 0;
-    function goTo(n) {
-        slides[idx].classList.remove('activo');
-        if (dots[idx]) dots[idx].classList.remove('activo');
-        idx = (n + slides.length) % slides.length;
-        slides[idx].classList.add('activo');
-        if (dots[idx]) dots[idx].classList.add('activo');
-    }
-    const autoplay = setInterval(() => goTo(idx + 1), 4000);
-    dots.forEach((dot, i) => dot.addEventListener('click', () => { clearInterval(autoplay); goTo(i); }));
-});
+    document.querySelectorAll('.empresa-slider').forEach(slider => {
+        const slides = slider.querySelectorAll('.slide');
+        const dots = slider.querySelectorAll('.slider-dot');
+        if (slides.length <= 1) return;
+        let idx = 0;
+        function goTo(n) {
+            slides[idx].classList.remove('activo');
+            if (dots[idx]) dots[idx].classList.remove('activo');
+            idx = (n + slides.length) % slides.length;
+            slides[idx].classList.add('activo');
+            if (dots[idx]) dots[idx].classList.add('activo');
+        }
+        const autoplay = setInterval(() => goTo(idx + 1), 4000);
+        dots.forEach((dot, i) => dot.addEventListener('click', () => { clearInterval(autoplay); goTo(i); }));
+    });
 
-(function() {
-    const estrellasInput = document.getElementById('estrellasInput');
-    const estrellasValor = document.getElementById('estrellasValor');
-    if (!estrellasInput) return;
-    const btns = estrellasInput.querySelectorAll('.estrella-btn');
-    btns.forEach((btn, index) => {
-        btn.addEventListener('mouseover', () => {
-            btns.forEach((b, i) => b.classList.toggle('activa', i <= index));
+    (function () {
+        const estrellasInput = document.getElementById('estrellasInput');
+        const estrellasValor = document.getElementById('estrellasValor');
+        if (!estrellasInput) return;
+        const btns = estrellasInput.querySelectorAll('.estrella-btn');
+        btns.forEach((btn, index) => {
+            btn.addEventListener('mouseover', () => {
+                btns.forEach((b, i) => b.classList.toggle('activa', i <= index));
+            });
+            btn.addEventListener('click', () => {
+                estrellasValor.value = btn.dataset.valor;
+                btns.forEach((b, i) => b.classList.toggle('activa', i <= index));
+            });
         });
-        btn.addEventListener('click', () => {
-            estrellasValor.value = btn.dataset.valor;
-            btns.forEach((b, i) => b.classList.toggle('activa', i <= index));
+        estrellasInput.addEventListener('mouseleave', () => {
+            const val = parseInt(estrellasValor.value || 0);
+            btns.forEach((b, i) => b.classList.toggle('activa', i < val));
         });
-    });
-    estrellasInput.addEventListener('mouseleave', () => {
-        const val = parseInt(estrellasValor.value || 0);
-        btns.forEach((b, i) => b.classList.toggle('activa', i < val));
-    });
-})();
+    })();
 </script>

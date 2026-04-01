@@ -14,6 +14,20 @@ $redir = $_GET['redir'] ?? '';
 $paso  = $_GET['paso'] ?? 'email';
 $email_param = $_GET['email'] ?? '';
 
+$conexion->query("DELETE FROM usuarios_publicos WHERE verificado = 0 AND codigo_expira < " . time());
+
+$max_intentos_pw = 3;
+$bloqueo_minutos = 5;
+
+if (!isset($_SESSION['pub_intentos_pw'])) {
+    $_SESSION['pub_intentos_pw'] = 0;
+    $_SESSION['pub_ultimo_intento_pw'] = 0;
+}
+
+$tiempo_actual = time();
+$tiempo_bloqueo_pw = $_SESSION['pub_ultimo_intento_pw'] + ($bloqueo_minutos * 60);
+$bloqueado_pw = ($_SESSION['pub_intentos_pw'] >= $max_intentos_pw && $tiempo_actual < $tiempo_bloqueo_pw);
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
 
     if ($_POST['accion'] === 'check_email') {
@@ -22,16 +36,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
             $error = 'Ingresa un correo válido.';
             $paso  = 'email';
         } else {
-            $email_esc = $conexion->real_escape_string($email);
-            $res = $conexion->query("SELECT id, password_hash FROM usuarios_publicos WHERE email = '$email_esc'");
+            $stmt = $conexion->prepare("SELECT id, password_hash, verificado FROM usuarios_publicos WHERE email = ?");
+            $stmt->bind_param("s", $email);
+            $stmt->execute();
+            $res = $stmt->get_result();
             if ($res && $res->num_rows === 1) {
                 $u = $res->fetch_assoc();
-                if ($u['password_hash']) {
+                if ($u['verificado'] == 0) {
+                    header("Location: registro_usuario.php?email=" . urlencode($email));
+                    exit;
+                } elseif ($u['password_hash']) {
                     header("Location: login_usuario.php?paso=password&email=" . urlencode($email) . ($redir ? '&redir='.urlencode($redir) : ''));
+                    exit;
                 } else {
                     header("Location: login_usuario.php?paso=codigo&email=" . urlencode($email) . ($redir ? '&redir='.urlencode($redir) : ''));
+                    exit;
                 }
-                exit;
             } else {
                 header("Location: registro_usuario.php?email=" . urlencode($email));
                 exit;
@@ -40,75 +60,165 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
     }
 
     if ($_POST['accion'] === 'login_password') {
-        $email    = trim($_POST['email'] ?? '');
-        $password = $_POST['password'] ?? '';
-        $email_esc = $conexion->real_escape_string($email);
-        $res = $conexion->query("SELECT * FROM usuarios_publicos WHERE email = '$email_esc'");
-        if ($res && $res->num_rows === 1) {
-            $u = $res->fetch_assoc();
-            if (password_verify($password, $u['password_hash'])) {
-                $_SESSION['usuario_publico_id']     = $u['id'];
-                $_SESSION['usuario_publico_nombre'] = $u['nombre'];
-                $_SESSION['usuario_publico_foto']   = $u['foto_perfil'];
-                $ip = $_SERVER['REMOTE_ADDR'] ?? '';
-                $disp = $_SERVER['HTTP_USER_AGENT'] ?? '';
-                $conexion->query("INSERT INTO sesiones_usuario (id_usuario_publico, ip, dispositivo) VALUES (".$u['id'].", '".$conexion->real_escape_string($ip)."', '".$conexion->real_escape_string($disp)."')");
-                $destino = $redir ? urldecode($redir) : 'mi_cuenta.php';
-                header("Location: $destino");
-                exit;
-            } else {
-                $error = 'Contraseña incorrecta.';
-                $paso  = 'password';
-                $email_param = $email;
-            }
+        if ($bloqueado_pw) {
+            $restante = $tiempo_bloqueo_pw - $tiempo_actual;
+            $m = floor($restante / 60);
+            $s = $restante % 60;
+            $error = "Demasiados intentos. Intenta de nuevo en {$m}m {$s}s.";
+            $paso = 'password';
+            $email_param = trim($_POST['email'] ?? '');
         } else {
-            $error = 'No existe una cuenta con ese correo.';
-            $paso  = 'email';
+            $email    = trim($_POST['email'] ?? '');
+            $password = $_POST['password'] ?? '';
+            $stmt_check = $conexion->prepare("SELECT * FROM usuarios_publicos WHERE email = ?");
+            $stmt_check->bind_param("s", $email);
+            $stmt_check->execute();
+            $res = $stmt_check->get_result();
+            if ($res && $res->num_rows === 1) {
+                $u = $res->fetch_assoc();
+                if ($u['verificado'] == 0) {
+                    $_SESSION['pub_intentos_pw']++;
+                    $_SESSION['pub_ultimo_intento_pw'] = time();
+                    $error = 'Contraseña o cuenta incorrecta.';
+                    $paso  = 'email';
+                } elseif (password_verify($password, $u['password_hash'])) {
+                    session_regenerate_id(true);
+                    $_SESSION['usuario_publico_id']     = $u['id'];
+                    $_SESSION['usuario_publico_nombre'] = $u['nombre'];
+                    $_SESSION['usuario_publico_foto']   = $u['foto_perfil'];
+                    $_SESSION['pub_intentos_pw'] = 0;
+                    $_SESSION['pub_ultimo_intento_pw'] = 0;
+                    $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+                    $disp = $_SERVER['HTTP_USER_AGENT'] ?? '';
+                    $stmt_insert = $conexion->prepare("INSERT INTO sesiones_usuario (id_usuario_publico, ip, dispositivo) VALUES (?, ?, ?)");
+                    $stmt_insert->bind_param("iss", $u['id'], $ip, $disp);
+                    $stmt_insert->execute();
+                    $destino = $redir ? urldecode($redir) : 'mi_cuenta.php';
+                    header("Location: $destino");
+                    exit;
+                } else {
+                    $_SESSION['pub_intentos_pw']++;
+                    $_SESSION['pub_ultimo_intento_pw'] = time();
+                    $error = 'Contraseña incorrecta.';
+                    $paso  = 'password';
+                    $email_param = $email;
+                }
+            } else {
+                $_SESSION['pub_intentos_pw']++;
+                $_SESSION['pub_ultimo_intento_pw'] = time();
+                $error = 'Contraseña o cuenta incorrecta.';
+                $paso  = 'email';
+            }
         }
     }
 
     if ($_POST['accion'] === 'verificar_codigo') {
+        if (!isset($_SESSION['pub_intentos_otp'])) $_SESSION['pub_intentos_otp'] = 0;
         $email   = trim($_POST['email'] ?? '');
         $codigo  = trim($_POST['codigo'] ?? '');
-        $email_esc = $conexion->real_escape_string($email);
-        $res = $conexion->query("SELECT * FROM usuarios_publicos WHERE email = '$email_esc'");
+        $stmt_check = $conexion->prepare("SELECT * FROM usuarios_publicos WHERE email = ?");
+        $stmt_check->bind_param("s", $email);
+        $stmt_check->execute();
+        $res = $stmt_check->get_result();
         if ($res && $res->num_rows === 1) {
             $u = $res->fetch_assoc();
-            if ($codigo === ($u['codigo_verificacion'] ?? '') && time() < ($u['codigo_expira'] ?? 0)) {
-                $conexion->query("UPDATE usuarios_publicos SET codigo_verificacion=NULL, codigo_expira=NULL WHERE email='$email_esc'");
-                $_SESSION['usuario_publico_id']     = $u['id'];
-                $_SESSION['usuario_publico_nombre'] = $u['nombre'];
-                $_SESSION['usuario_publico_foto']   = $u['foto_perfil'];
-                $ip = $_SERVER['REMOTE_ADDR'] ?? '';
-                $disp = $_SERVER['HTTP_USER_AGENT'] ?? '';
-                $conexion->query("INSERT INTO sesiones_usuario (id_usuario_publico, ip, dispositivo) VALUES (".$u['id'].", '".$conexion->real_escape_string($ip)."', '".$conexion->real_escape_string($disp)."')");
-                $destino = $redir ? urldecode($redir) : 'mi_cuenta.php';
-                header("Location: $destino");
-                exit;
-            } else {
-                $error = 'Código incorrecto o expirado. Puedes solicitar uno nuevo.';
-                $paso  = 'codigo';
+            if ($_SESSION['pub_intentos_otp'] >= 5) {
+                $stmt_upd = $conexion->prepare("UPDATE usuarios_publicos SET codigo_verificacion=NULL, codigo_expira=NULL WHERE email=?");
+                $stmt_upd->bind_param("s", $email);
+                $stmt_upd->execute();
+                $_SESSION['pub_intentos_otp'] = 0;
+                $error = 'Demasiados intentos. El código actual ha sido invalidado de forma automática por seguridad. Solicita uno nuevo.';
+                $paso = 'codigo';
                 $email_param = $email;
+            } else {
+                if ($codigo === ($u['codigo_verificacion'] ?? '') && time() < ($u['codigo_expira'] ?? 0)) {
+                    $stmt_upd = $conexion->prepare("UPDATE usuarios_publicos SET verificado=1, codigo_verificacion=NULL, codigo_expira=NULL WHERE email=?");
+                    $stmt_upd->bind_param("s", $email);
+                    $stmt_upd->execute();
+                    session_regenerate_id(true);
+                    $_SESSION['usuario_publico_id']     = $u['id'];
+                    $_SESSION['usuario_publico_nombre'] = $u['nombre'];
+                    $_SESSION['usuario_publico_foto']   = $u['foto_perfil'];
+                    $_SESSION['login_bypass_pw']        = true;
+                    $_SESSION['pub_intentos_otp']       = 0;
+                    $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+                    $disp = $_SERVER['HTTP_USER_AGENT'] ?? '';
+                    $stmt_insert = $conexion->prepare("INSERT INTO sesiones_usuario (id_usuario_publico, ip, dispositivo) VALUES (?, ?, ?)");
+                    $stmt_insert->bind_param("iss", $u['id'], $ip, $disp);
+                    $stmt_insert->execute();
+                    $destino = $redir ? urldecode($redir) : 'mi_cuenta.php';
+                    header("Location: $destino");
+                    exit;
+                } else {
+                    $_SESSION['pub_intentos_otp']++;
+                    $error = 'Código incorrecto o expirado. Te quedan ' . (5 - $_SESSION['pub_intentos_otp']) . ' intentos.';
+                    $paso  = 'codigo';
+                    $email_param = $email;
+                }
             }
         }
     }
 
     if ($_POST['accion'] === 'enviar_codigo') {
         $email = trim($_POST['email'] ?? '');
-        $email_esc = $conexion->real_escape_string($email);
-        $res = $conexion->query("SELECT id, nombre FROM usuarios_publicos WHERE email = '$email_esc'");
-        if ($res && $res->num_rows === 1) {
-            $u = $res->fetch_assoc();
-            $codigo   = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-            $expira   = time() + 600;
-            $conexion->query("UPDATE usuarios_publicos SET codigo_verificacion='$codigo', codigo_expira=$expira WHERE email='$email_esc'");
-            $nombre_u = $u['nombre'];
-            $asunto   = 'Tu código de acceso - Guía Empresarial';
-            $mensaje  = "Hola $nombre_u,\n\nTu código de acceso es: $codigo\n\nVálido por 10 minutos.\n\nSi no solicitaste esto, ignora este correo.";
-            enviarCorreo($email, $nombre_u, $asunto, $mensaje);
+        
+        if (!isset($_SESSION['envios_codigo'])) {
+            $_SESSION['envios_codigo'] = [
+                'count_30min' => 0,
+                'inicio_30min' => time(),
+                'count_24h' => 0,
+                'inicio_24h' => time()
+            ];
         }
-        header("Location: login_usuario.php?paso=codigo&email=" . urlencode($email) . ($redir ? '&redir='.urlencode($redir) : ''));
-        exit;
+        
+        $envios = &$_SESSION['envios_codigo'];
+        $tiempo_actual = time();
+        
+        if ($tiempo_actual - $envios['inicio_30min'] > 1800) {
+            $envios['count_30min'] = 0;
+            $envios['inicio_30min'] = $tiempo_actual;
+        }
+        
+        if ($tiempo_actual - $envios['inicio_24h'] > 86400) {
+            $envios['count_24h'] = 0;
+            $envios['inicio_24h'] = $tiempo_actual;
+        }
+        
+        if ($envios['count_24h'] >= 6) {
+            $error = "Has solicitado demasiados códigos. Por seguridad, inténtalo más tarde.";
+            $paso = 'codigo';
+            $email_param = $email;
+        } 
+        elseif ($envios['count_30min'] >= 3) {
+            $error = "Has solicitado demasiados códigos. Por seguridad, inténtalo más tarde.";
+            $paso = 'codigo';
+            $email_param = $email;
+        } 
+        else {
+            $envios['count_30min']++;
+            $envios['count_24h']++;
+            
+            $stmt_check = $conexion->prepare("SELECT id, nombre FROM usuarios_publicos WHERE email = ?");
+            $stmt_check->bind_param("s", $email);
+            $stmt_check->execute();
+            $res = $stmt_check->get_result();
+            
+            if ($res && $res->num_rows === 1) {
+                $u = $res->fetch_assoc();
+                $codigo = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+                $expira = time() + 600;
+                $stmt_upd = $conexion->prepare("UPDATE usuarios_publicos SET codigo_verificacion=?, codigo_expira=? WHERE email=?");
+                $stmt_upd->bind_param("sis", $codigo, $expira, $email);
+                $stmt_upd->execute();
+                $nombre_u = $u['nombre'];
+                $asunto = 'Tu código de acceso - Guía Empresarial';
+                $mensaje = "Hola $nombre_u,\n\nTu código de acceso es: $codigo\n\nVálido por 10 minutos.\n\nSi no solicitaste esto, ignora este correo.";
+                enviarCorreo($email, $nombre_u, $asunto, $mensaje);
+            }
+            
+            header("Location: login_usuario.php?paso=codigo&email=" . urlencode($email) . ($redir ? '&redir='.urlencode($redir) : ''));
+            exit;
+        }
     }
 }
 ?>
