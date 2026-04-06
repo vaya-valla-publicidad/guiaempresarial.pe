@@ -818,7 +818,8 @@ main {
 }
 
 .search-wrapper {
-  max-width: 900px;
+  max-width: 800px;
+  width: 85%;
   margin: 0 auto;
   position: relative;
   z-index: 9999;
@@ -864,10 +865,10 @@ main {
   background: transparent;
   border: none;
   outline: none;
-  padding: 18px 25px;
+  padding: 18px 160px
   color: var(--azul);
   font-size: 16px;
-  border-radius: 50px;
+  border
 }
 
 .search-box button {

@@ -42,7 +42,7 @@ $total_slides = count($slides);
     <div class="search-wrapper">
       <form id="formBuscar" class="search-form">
         <div class="search-box">
-          <input type="text" id="buscar" name="q" placeholder="Buscar empresas, productos o servicios...">
+          <input type="text" id="buscar" name="q" placeholder="Buscar empresas, productos o servicios..." autocomplete="off" spellcheck="false" style="text-align: left; padding-left: 18px;">
           <button type="submit">Buscar</button>
         </div>
       </form>

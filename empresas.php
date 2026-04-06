@@ -21,18 +21,104 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
     $nombre = inputLimpio($_POST['nombre_autor'] ?? '');
 
     $palabras_prohibidas = [
-        'idiota','imbecil','mierda','puta','puto','pendejo','estupido','basura','asco','maldito',
-        'inutil','animal','bestia','burro','bruto','tarado','retrasado','subnormal','mongolo',
-        'hdp','hijo de puta','malparido','desgraciado','miserable','imbécil','estúpido','inútil',
-        'maldición','cabrón','cabron','hijoputa','gonorrea','marica','maricón','maricon',
-        'estafa','estafador','estafadora','ladron','ladrona','ladrón','roba','roban','robaron',
-        'mentira','mentiroso','mentirosa','falso','falsa','fraude','fraudulento','engaño',
-        'engañan','engañaron','timo','timador','corrupto','corrupta','corruptos','ilegal',
-        'ilegales','clandestino','peligroso','peligrosa','trampa','tramposo','tramposa',
-        'chanta','chantaje','amenaza','amenazaron','extorsion','extorsión','extorsionan',
-        'sexo','porno','prostituta','prostituto','prepago','escort','matar','muerte','asesino',
-        'asesina','golpear','golpean','violencia','violento','violenta','pegar','pegaron',
-        'amenazar','ve a','mejor vayan a','vayan mejor','no vayan','cierren','cierren este',
+        'idiota',
+        'imbecil',
+        'mierda',
+        'puta',
+        'puto',
+        'pendejo',
+        'estupido',
+        'basura',
+        'asco',
+        'maldito',
+        'inutil',
+        'animal',
+        'bestia',
+        'burro',
+        'bruto',
+        'tarado',
+        'retrasado',
+        'subnormal',
+        'mongolo',
+        'hdp',
+        'hijo de puta',
+        'malparido',
+        'desgraciado',
+        'miserable',
+        'imbécil',
+        'estúpido',
+        'inútil',
+        'maldición',
+        'cabrón',
+        'cabron',
+        'hijoputa',
+        'gonorrea',
+        'marica',
+        'maricón',
+        'maricon',
+        'estafa',
+        'estafador',
+        'estafadora',
+        'ladron',
+        'ladrona',
+        'ladrón',
+        'roba',
+        'roban',
+        'robaron',
+        'mentira',
+        'mentiroso',
+        'mentirosa',
+        'falso',
+        'falsa',
+        'fraude',
+        'fraudulento',
+        'engaño',
+        'engañan',
+        'engañaron',
+        'timo',
+        'timador',
+        'corrupto',
+        'corrupta',
+        'corruptos',
+        'ilegal',
+        'ilegales',
+        'clandestino',
+        'peligroso',
+        'peligrosa',
+        'trampa',
+        'tramposo',
+        'tramposa',
+        'chanta',
+        'chantaje',
+        'amenaza',
+        'amenazaron',
+        'extorsion',
+        'extorsión',
+        'extorsionan',
+        'sexo',
+        'porno',
+        'prostituta',
+        'prostituto',
+        'prepago',
+        'escort',
+        'matar',
+        'muerte',
+        'asesino',
+        'asesina',
+        'golpear',
+        'golpean',
+        'violencia',
+        'violento',
+        'violenta',
+        'pegar',
+        'pegaron',
+        'amenazar',
+        've a',
+        'mejor vayan a',
+        'vayan mejor',
+        'no vayan',
+        'cierren',
+        'cierren este',
     ];
 
     $texto_check = strtolower($comentario . ' ' . $nombre);
@@ -84,9 +170,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
         $id_empresa = $_GET['empresa'] ?? null;
         $buscar = $_GET['buscar'] ?? null;
 
-        $sql = "SELECT e.*, c.nombre AS categoria
-                FROM empresas e
-                JOIN categorias c ON e.id_categoria = c.id_categoria";
+        $pagina_actual = isset($_GET['pagina']) ? max(1, intval($_GET['pagina'])) : 1;
+        $empresas_por_pagina = 20;
+        $offset = ($pagina_actual - 1) * $empresas_por_pagina;
+
+        $sql_select = "SELECT e.*, c.nombre AS categoria FROM empresas e JOIN categorias c ON e.id_categoria = c.id_categoria";
+        $sql_count = "SELECT COUNT(*) as total FROM empresas e JOIN categorias c ON e.id_categoria = c.id_categoria";
 
         $where = [];
         $params = [];
@@ -110,8 +199,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
             $types .= "sss";
         }
 
+        $clausula_where = !empty($where) ? " WHERE " . implode(" AND ", $where) : "";
+
+        $total_paginas = 1;
+        if (!$id_empresa) {
+            $sql_c = $sql_count . $clausula_where;
+            if (!empty($where)) {
+                $stmt_c = $conexion->prepare($sql_c);
+                if ($types && $stmt_c) {
+                    $stmt_c->bind_param($types, ...$params);
+                    $stmt_c->execute();
+                    $res_c = $stmt_c->get_result();
+                    $total_filas = $res_c->fetch_assoc()['total'] ?? 0;
+                } else {
+                    $total_filas = $conexion->query($sql_c)->fetch_assoc()['total'] ?? 0;
+                }
+            } else {
+                $total_filas = $conexion->query($sql_c)->fetch_assoc()['total'] ?? 0;
+            }
+            $total_paginas = ceil($total_filas / $empresas_por_pagina);
+        }
+
+        $sql = $sql_select . $clausula_where;
+        if (!$id_empresa) {
+            $sql .= " LIMIT $empresas_por_pagina OFFSET $offset";
+        }
+
         if (!empty($where)) {
-            $sql .= " WHERE " . implode(" AND ", $where);
             $stmt = $conexion->prepare($sql);
             if ($types && $stmt) {
                 $stmt->bind_param($types, ...$params);
@@ -122,6 +236,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
             }
         } else {
             $resultado = $conexion->query($sql);
+        }
+
+        if ($id_empresa && (!$resultado || $resultado->num_rows === 0)) {
+            echo "<script>window.location.href='404.php';</script>";
+            exit;
         }
 
         if ($id_empresa && $resultado && $resultado->num_rows === 1):
@@ -171,6 +290,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
                                     <span class="empresa-card-badge"><?= htmlspecialchars($fila['categoria']) ?></span>
                                 </div>
                                 <div class="perfil-acciones">
+                                    <?php if (!empty($fila['link_empresa'])): ?>
+                                        <a href="<?= htmlspecialchars($fila['link_empresa']) ?>" target="_blank"
+                                            class="btn-accion" style="background-color: #3b82f6; color: white;">
+                                            🌐 Sitio Web
+                                        </a>
+                                    <?php endif; ?>
                                     <?php if ($numero): ?>
                                         <a href="https://wa.me/<?= $numero ?>" target="_blank"
                                             class="btn-accion btn-accion-whatsapp">WhatsApp</a>
@@ -189,10 +314,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
                             </div>
                             <?php if (!empty($fila['descripcion'])): ?>
                                 <p class="perfil-slogan">✨
-                                    <?= htmlspecialchars(mb_strimwidth($fila['descripcion'], 0, 100, '…')) ?></p>
+                                    <?= htmlspecialchars(mb_strimwidth($fila['descripcion'], 0, 100, '…')) ?>
+                                </p>
                             <?php endif; ?>
                             <p style="font-size:12px;color:var(--muted);margin-top:8px;">👁
-                                <?= number_format($fila['vistas']) ?> vistas</p>
+                                <?= number_format($fila['vistas']) ?> vistas
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -242,9 +369,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
                                     <span class="perfil-dato-icon">🌐</span>
                                     <div>
                                         <span class="perfil-dato-label">Sitio web</span>
+                                        <?php
+                                        $url_limpia = preg_replace('/^https?:\/\/(www\.)?|www\./i', '', $fila['link_empresa']);
+                                        $url_limpia = rtrim($url_limpia, '/');
+                                        ?>
                                         <a class="perfil-dato-valor perfil-link"
                                             href="<?= htmlspecialchars($fila['link_empresa']) ?>"
-                                            target="_blank"><?= htmlspecialchars($fila['link_empresa']) ?></a>
+                                            target="_blank"><?= htmlspecialchars($url_limpia) ?></a>
                                     </div>
                                 </div>
                             <?php endif; ?>
@@ -464,6 +595,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
                             </div>
                             <div class="empresa-actions">
                                 <a href="empresas.php?empresa=<?= $id ?>" class="btn-ver">Ver más</a>
+                                <?php if (!empty($fila['link_empresa'])): ?>
+                                    <a href="<?= htmlspecialchars($fila['link_empresa']) ?>" target="_blank" class="btn-ver"
+                                        style="background-color: #3b82f6; color: white;">
+                                        🌐 Sitio Web
+                                    </a>
+                                <?php endif; ?>
                                 <?php if (!empty($fila['facebook'])): ?>
                                     <a href="<?= htmlspecialchars($fila['facebook']) ?>" target="_blank"
                                         class="btn-accion btn-accion-facebook">
@@ -499,6 +636,77 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
                     </div>
                 <?php endwhile; ?>
             </div>
+
+            <?php
+            if (isset($total_paginas) && $total_paginas > 1 && !$id_empresa):
+                $params_url = [];
+                if (!empty($buscar))
+                    $params_url['buscar'] = $buscar;
+                if (!empty($id_categoria))
+                    $params_url['id_categoria'] = $id_categoria;
+                $query_str = http_build_query($params_url);
+                if (!empty($query_str))
+                    $query_str = '&' . $query_str;
+                ?>
+                <style>
+                    .paginacion .btn-pag {
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 8px 16px;
+                        border-radius: 8px;
+                        background: white;
+                        color: var(--ink);
+                        text-decoration: none;
+                        font-weight: 500;
+                        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+                        border: 1px solid #e2e8f0;
+                        transition: all 0.2s;
+                    }
+
+                    .paginacion .btn-pag:hover {
+                        background: #f8fafc;
+                        border-color: #cbd5e1;
+                    }
+
+                    .paginacion .btn-pag.activa {
+                        background: var(--primario);
+                        color: white;
+                        border-color: var(--primario);
+                        pointer-events: none;
+                    }
+
+                    @media (max-width: 600px) {
+                        .paginacion .btn-pag {
+                            padding: 6px 12px;
+                            font-size: 14px;
+                        }
+                    }
+                </style>
+
+                <div class="paginacion"
+                    style="display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 40px; margin-bottom: 20px;">
+                    <?php if ($pagina_actual > 1): ?>
+                        <a href="?pagina=<?= $pagina_actual - 1 ?><?= $query_str ?>" class="btn-pag">Anterior</a>
+                    <?php endif; ?>
+
+                    <?php
+                    for ($p = 1; $p <= $total_paginas; $p++):
+                        // Mostramos solo un rango de +-2 botones alrededor del actual, y los extremos.
+                        if ($p == 1 || $p == $total_paginas || abs($p - $pagina_actual) <= 2):
+                            ?>
+                            <a href="?pagina=<?= $p ?><?= $query_str ?>" class="btn-pag <?= $p == $pagina_actual ? 'activa' : '' ?>">
+                                <?= $p ?>
+                            </a>
+                        <?php elseif (abs($p - $pagina_actual) == 3): ?>
+                            <span style="display:flex; align-items:flex-end; color: #94a3b8;">...</span>
+                        <?php endif; endfor; ?>
+
+                    <?php if ($pagina_actual < $total_paginas): ?>
+                        <a href="?pagina=<?= $pagina_actual + 1 ?><?= $query_str ?>" class="btn-pag">Siguiente</a>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
 
         <?php else: ?>
             <div class="no-results">

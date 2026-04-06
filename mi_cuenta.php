@@ -278,21 +278,36 @@ $panel_activo = $_GET['tab'] ?? 'perfil';
         <?php endif; ?>
         <form method="POST" class="mc-form">
           <input type="hidden" name="accion" value="password">
-          <?php if (!$bypass_active): ?>
-            <div class="mc-field">
-              <label>Contraseña actual</label>
-              <input type="password" name="actual" placeholder="••••••••" required>
+        <?php if (!$bypass_active): ?>
+          <div class="mc-field">
+            <label>Contraseña actual</label>
+            <div class="pw-input-wrap">
+              <input type="password" name="actual" id="pw-actual" placeholder="••••••••" required>
+              <button type="button" class="pw-toggle" onclick="togglePw('pw-actual','pw-actual-icon')">
+                <i class="bi bi-eye" id="pw-actual-icon"></i>
+              </button>
             </div>
-          <?php endif; ?>
-          <div class="mc-field">
-            <label>Nueva contraseña</label>
-            <input type="password" name="nueva" placeholder="••••••••" required>
-            <span class="mc-hint">Mínimo 6 caracteres.</span>
           </div>
-          <div class="mc-field">
-            <label>Confirmar nueva contraseña</label>
-            <input type="password" name="confirm" placeholder="••••••••" required>
+        <?php endif; ?>
+        <div class="mc-field">
+          <label>Nueva contraseña</label>
+          <div class="pw-input-wrap">
+            <input type="password" name="nueva" id="pw-nueva" placeholder="••••••••" required>
+            <button type="button" class="pw-toggle" onclick="togglePw('pw-nueva','pw-nueva-icon')">
+              <i class="bi bi-eye" id="pw-nueva-icon"></i>
+            </button>
           </div>
+          <span class="mc-hint">Mínimo 6 caracteres.</span>
+        </div>
+        <div class="mc-field">
+          <label>Confirmar nueva contraseña</label>
+          <div class="pw-input-wrap">
+            <input type="password" name="confirm" id="pw-confirm" placeholder="••••••••" required>
+            <button type="button" class="pw-toggle" onclick="togglePw('pw-confirm','pw-confirm-icon')">
+              <i class="bi bi-eye" id="pw-confirm-icon"></i>
+            </button>
+          </div>
+        </div>
           <div class="mc-form-footer">
             <button type="submit" class="mc-btn-dark">Cambiar contraseña</button>
           </div>
@@ -365,36 +380,6 @@ $panel_activo = $_GET['tab'] ?? 'perfil';
           </div>
         </form>
 
-        <p class="mc-section-title" style="margin-top: 32px;">Historial de sesiones</p>
-        <div class="mc-export-card" style="margin-top: 10px;">
-          <p>Aquí puedes ver el registro de tus recientes inicios de sesión en distintos dispositivos.</p>
-          <div class="mc-resenas-lista" style="gap: 8px;">
-            <?php
-            $stmt_ses = $conexion->prepare("SELECT * FROM sesiones_usuario WHERE id_usuario_publico = ? ORDER BY fecha_acceso DESC LIMIT 5");
-            $stmt_ses->bind_param("i", $id_u);
-            $stmt_ses->execute();
-            $sesiones_q = $stmt_ses->get_result();
-            if ($sesiones_q && $sesiones_q->num_rows > 0):
-              while ($sesion = $sesiones_q->fetch_assoc()):
-                ?>
-                <div class="mc-resena" style="padding: 12px 14px; box-shadow: none;">
-                  <div class="mc-resena-meta">
-                    <strong>Dispositivo: <?= htmlspecialchars($sesion['dispositivo'] ?? 'Desconocido') ?></strong>
-                  </div>
-                  <span class="mc-resena-fecha" style="margin-left: 0;">IP:
-                    <?= htmlspecialchars($sesion['ip'] ?? 'Desconocida') ?> -
-                    <?= date('d/m/Y H:i', strtotime($sesion['fecha_acceso'])) ?></span>
-                </div>
-                <?php
-              endwhile;
-            else:
-              ?>
-              <div class="mc-empty" style="padding: 20px 0;">
-                <p>No hay registro de sesiones recientes.</p>
-              </div>
-            <?php endif; ?>
-          </div>
-        </div>
 
         <div class="mc-danger-zone">
           <h3>Eliminar cuenta</h3>
@@ -431,6 +416,18 @@ $panel_activo = $_GET['tab'] ?? 'perfil';
     document.querySelector('.mc-mobile-select').value = id;
   }
 
+  function togglePw(inputId, iconId) {
+    const input = document.getElementById(inputId);
+    const icon = document.getElementById(iconId);
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.className = 'bi bi-eye-slash';
+    } else {
+      input.type = 'password';
+      icon.className = 'bi bi-eye';
+    }
+  }
+
   function previewFoto(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -461,7 +458,6 @@ $panel_activo = $_GET['tab'] ?? 'perfil';
       .then(r => r.json())
       .then(data => {
         if (data.success) {
-          // Animación de salida (fade out y encogimiento)
           resenaDiv.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
           resenaDiv.style.opacity = '0';
           resenaDiv.style.transform = 'scale(0.9) translateY(-10px)';
@@ -470,14 +466,12 @@ $panel_activo = $_GET['tab'] ?? 'perfil';
             const contenedor = resenaDiv.parentElement;
             resenaDiv.remove();
 
-            // Actualizar el número del badge "Mis reseñas" en la barra lateral
             const badge = document.getElementById('badge-resenas');
             if (badge) {
               let count = parseInt(badge.textContent);
               if (count > 0) badge.textContent = count - 1;
             }
 
-            // Si el contenedor se quedó sin reseñas, mostrar pantalla vacía
             if (contenedor.children.length === 0) {
               contenedor.innerHTML = `
               <div class="mc-empty" style="animation: fadeIn 0.5s ease-in;">
@@ -488,7 +482,7 @@ $panel_activo = $_GET['tab'] ?? 'perfil';
               </div>
             `;
             }
-          }, 400); // 400ms tras la animación
+          }, 400);
         } else {
           alert('Hubo un error al eliminar la reseña.');
           resetBtn();
@@ -508,19 +502,5 @@ $panel_activo = $_GET['tab'] ?? 'perfil';
     }
   }
 </script>
-
-<style>
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-</style>
 
 <?php include 'includes/footer.php'; ?>

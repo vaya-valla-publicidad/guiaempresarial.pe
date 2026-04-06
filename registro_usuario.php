@@ -2,6 +2,7 @@
 session_start();
 include 'db.php';
 include_once 'libs/mailer.php';
+include_once 'includes/security.php';
 
 if (isset($_SESSION['usuario_publico_id'])) {
   header('Location: mi_cuenta.php');
@@ -16,172 +17,183 @@ $email_param = $_GET['email'] ?? '';
 $conexion->query("DELETE FROM usuarios_publicos WHERE verificado = 0 AND codigo_expira < " . time());
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
+  if (!validarCSRF()) {
+    $is_ajax = isset($_POST['ajax']);
+    if ($is_ajax) {
+      echo json_encode(['success' => false, 'error' => 'Error de seguridad detectado (CSRF). Por favor recarga la página.']);
+      exit;
+    }
+    $error = 'Error de seguridad detectado (CSRF). Por favor recarga la página e intenta de nuevo.';
+    $paso = $_POST['accion'] === 'registrar' ? 'registro' : 'verificar';
+    $email_param = $_POST['email'] ?? '';
+  } else {
 
-  if ($_POST['accion'] === 'registrar') {
-    $nombre = trim($_POST['nombre'] ?? '');
-    $email = trim($_POST['email'] ?? '');
-    $password = $_POST['password'] ?? '';
-    $confirm = $_POST['confirm'] ?? '';
+    if ($_POST['accion'] === 'registrar') {
+      $nombre = trim($_POST['nombre'] ?? '');
+      $email = trim($_POST['email'] ?? '');
+      $password = $_POST['password'] ?? '';
+      $confirm = $_POST['confirm'] ?? '';
 
-    if (!$nombre || !$email || !$password || !$confirm) {
-      $error = 'Por favor completa todos los campos.';
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-      $error = 'El correo no es válido.';
-    } elseif (strlen($password) < 6) {
-      $error = 'La contraseña debe tener al menos 6 caracteres.';
-    } elseif ($password !== $confirm) {
-      $error = 'Las contraseñas no coinciden.';
-    } else {
-      $stmt = $conexion->prepare("SELECT id, verificado FROM usuarios_publicos WHERE email = ?");
-      $stmt->bind_param("s", $email);
-      $stmt->execute();
-      $check = $stmt->get_result();
-      if ($check && $check->num_rows > 0) {
-        $fila_check = $check->fetch_assoc();
-        if ($fila_check['verificado'] == 1) {
-          $error = 'Ya existe una cuenta verificada con ese correo.';
-        } else {
-          $conexion->query("DELETE FROM usuarios_publicos WHERE id = " . intval($fila_check['id']));
+      if (!$nombre || !$email || !$password || !$confirm) {
+        $error = 'Por favor completa todos los campos.';
+      } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = 'El correo no es válido.';
+      } elseif (strlen($password) < 6) {
+        $error = 'La contraseña debe tener al menos 6 caracteres.';
+      } elseif ($password !== $confirm) {
+        $error = 'Las contraseñas no coinciden.';
+      } else {
+        $stmt = $conexion->prepare("SELECT id, verificado FROM usuarios_publicos WHERE email = ?");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $check = $stmt->get_result();
+        if ($check && $check->num_rows > 0) {
+          $fila_check = $check->fetch_assoc();
+          if ($fila_check['verificado'] == 1) {
+            $error = 'Ya existe una cuenta verificada con ese correo.';
+          } else {
+            $conexion->query("DELETE FROM usuarios_publicos WHERE id = " . intval($fila_check['id']));
+          }
         }
-      }
 
-      if (!$error) {
-        $hash = password_hash($password, PASSWORD_DEFAULT);
-        $codigo = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-        $expira = time() + 600;
-        $stmt_insert = $conexion->prepare("INSERT INTO usuarios_publicos (nombre, email, password_hash, codigo_verificacion, codigo_expira, verificado) VALUES (?, ?, ?, ?, ?, 0)");
-        $stmt_insert->bind_param("ssssi", $nombre, $email, $hash, $codigo, $expira);
-        $stmt_insert->execute();
+        if (!$error) {
+          $hash = password_hash($password, PASSWORD_DEFAULT);
+          $codigo = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+          $expira = time() + 600;
+          $stmt_insert = $conexion->prepare("INSERT INTO usuarios_publicos (nombre, email, password_hash, codigo_verificacion, codigo_expira, verificado) VALUES (?, ?, ?, ?, ?, 0)");
+          $stmt_insert->bind_param("ssssi", $nombre, $email, $hash, $codigo, $expira);
+          $stmt_insert->execute();
 
-        $asunto = 'Confirma tu cuenta - Guía Empresarial';
-        $mensaje = "Hola $nombre,\n\nTu código de verificación es: $codigo\n\nVálido por 10 minutos.\n\nSi no solicitaste esto, ignora este correo.";
-        enviarCorreo($email, $nombre, $asunto, $mensaje);
+          $asunto = 'Confirma tu cuenta - Guía Empresarial';
+          $mensaje = "Hola $nombre,\n\nTu código de verificación es: $codigo\n\nVálido por 10 minutos.\n\nSi no solicitaste esto, ignora este correo.";
+          enviarCorreo($email, $nombre, $asunto, $mensaje);
 
-        header("Location: registro_usuario.php?paso=verificar&email=" . urlencode($email));
-        exit;
+          header("Location: registro_usuario.php?paso=verificar&email=" . urlencode($email));
+          exit;
+        }
       }
     }
-  }
 
-  if ($_POST['accion'] === 'verificar_codigo') {
-    if (!isset($_SESSION['pub_intentos_otp']))
-      $_SESSION['pub_intentos_otp'] = 0;
-    $email = trim($_POST['email'] ?? '');
-    $codigo = trim($_POST['codigo'] ?? '');
-    $is_ajax = isset($_POST['ajax']);
-
-    $stmt_check = $conexion->prepare("SELECT * FROM usuarios_publicos WHERE email = ?");
-    $stmt_check->bind_param("s", $email);
-    $stmt_check->execute();
-    $res = $stmt_check->get_result();
-
-    if ($res && $res->num_rows === 1) {
-      $u = $res->fetch_assoc();
-      if ($_SESSION['pub_intentos_otp'] >= 5) {
-        $stmt_upd = $conexion->prepare("UPDATE usuarios_publicos SET codigo_verificacion=NULL, codigo_expira=NULL WHERE email=?");
-        $stmt_upd->bind_param("s", $email);
-        $stmt_upd->execute();
+    if ($_POST['accion'] === 'verificar_codigo') {
+      if (!isset($_SESSION['pub_intentos_otp']))
         $_SESSION['pub_intentos_otp'] = 0;
-        $msg = 'Demasiados intentos. El código actual ha sido invalidado. Solicita uno nuevo.';
-        if ($is_ajax) {
-          echo json_encode(['success' => false, 'error' => $msg, 'invalidated' => true]);
-          exit;
-        }
-        $error = $msg;
-        $paso = 'verificar';
-        $email_param = $email;
-      } else {
-        $codigo_guardado = $u['codigo_verificacion'] ?? '';
-        $expira = $u['codigo_expira'] ?? 0;
-        if ($codigo === $codigo_guardado && time() < $expira) {
-          $stmt_upd = $conexion->prepare("UPDATE usuarios_publicos SET verificado=1, codigo_verificacion=NULL, codigo_expira=NULL WHERE email=?");
+      $email = trim($_POST['email'] ?? '');
+      $codigo = trim($_POST['codigo'] ?? '');
+      $is_ajax = isset($_POST['ajax']);
+
+      $stmt_check = $conexion->prepare("SELECT * FROM usuarios_publicos WHERE email = ?");
+      $stmt_check->bind_param("s", $email);
+      $stmt_check->execute();
+      $res = $stmt_check->get_result();
+
+      if ($res && $res->num_rows === 1) {
+        $u = $res->fetch_assoc();
+        if ($_SESSION['pub_intentos_otp'] >= 5) {
+          $stmt_upd = $conexion->prepare("UPDATE usuarios_publicos SET codigo_verificacion=NULL, codigo_expira=NULL WHERE email=?");
           $stmt_upd->bind_param("s", $email);
           $stmt_upd->execute();
-          $_SESSION['usuario_publico_id'] = $u['id'];
-          $_SESSION['usuario_publico_nombre'] = $u['nombre'];
-          $_SESSION['usuario_publico_foto'] = $u['foto_perfil'];
           $_SESSION['pub_intentos_otp'] = 0;
+          $msg = 'Demasiados intentos. El código actual ha sido invalidado. Solicita uno nuevo.';
           if ($is_ajax) {
-            echo json_encode(['success' => true, 'redirect' => 'mi_cuenta.php']);
-            exit;
-          }
-          header('Location: mi_cuenta.php');
-          exit;
-        } else {
-          $_SESSION['pub_intentos_otp']++;
-          $msg = 'Código incorrecto o expirado. Te quedan ' . (5 - $_SESSION['pub_intentos_otp']) . ' intentos.';
-          if ($is_ajax) {
-            echo json_encode(['success' => false, 'error' => $msg]);
+            echo json_encode(['success' => false, 'error' => $msg, 'invalidated' => true]);
             exit;
           }
           $error = $msg;
           $paso = 'verificar';
           $email_param = $email;
+        } else {
+          $codigo_guardado = $u['codigo_verificacion'] ?? '';
+          $expira = $u['codigo_expira'] ?? 0;
+          if ($codigo === $codigo_guardado && time() < $expira) {
+            $stmt_upd = $conexion->prepare("UPDATE usuarios_publicos SET verificado=1, codigo_verificacion=NULL, codigo_expira=NULL WHERE email=?");
+            $stmt_upd->bind_param("s", $email);
+            $stmt_upd->execute();
+            $_SESSION['usuario_publico_id'] = $u['id'];
+            $_SESSION['usuario_publico_nombre'] = $u['nombre'];
+            $_SESSION['usuario_publico_foto'] = $u['foto_perfil'];
+            $_SESSION['pub_intentos_otp'] = 0;
+            if ($is_ajax) {
+              echo json_encode(['success' => true, 'redirect' => 'mi_cuenta.php']);
+              exit;
+            }
+            header('Location: mi_cuenta.php');
+            exit;
+          } else {
+            $_SESSION['pub_intentos_otp']++;
+            $msg = 'Código incorrecto o expirado. Te quedan ' . (5 - $_SESSION['pub_intentos_otp']) . ' intentos.';
+            if ($is_ajax) {
+              echo json_encode(['success' => false, 'error' => $msg]);
+              exit;
+            }
+            $error = $msg;
+            $paso = 'verificar';
+            $email_param = $email;
+          }
+        }
+      } else {
+        if ($is_ajax) {
+          echo json_encode(['success' => false, 'error' => 'Usuario no encontrado o ya verificado.']);
+          exit;
         }
       }
-    } else {
-      if ($is_ajax) {
-        echo json_encode(['success' => false, 'error' => 'Usuario no encontrado o ya verificado.']);
-        exit;
-      }
     }
-  }
 
-  if ($_POST['accion'] === 'reenviar_codigo') {
-    $email = trim($_POST['email'] ?? '');
-    
-    if (!isset($_SESSION['envios_codigo'])) {
-      $_SESSION['envios_codigo'] = [
-        'count_30min' => 0,
-        'inicio_30min' => time(),
-        'count_24h' => 0,
-        'inicio_24h' => time()
-      ];
-    }
-    
-    $envios = &$_SESSION['envios_codigo'];
-    $tiempo_actual = time();
-    
-    if ($tiempo_actual - $envios['inicio_30min'] > 1800) {
-      $envios['count_30min'] = 0;
-      $envios['inicio_30min'] = $tiempo_actual;
-    }
-    
-    if ($tiempo_actual - $envios['inicio_24h'] > 86400) {
-      $envios['count_24h'] = 0;
-      $envios['inicio_24h'] = $tiempo_actual;
-    }
-    
-    if ($envios['count_24h'] >= 6 || $envios['count_30min'] >= 3) {
-      $exito = 'Has solicitado demasiados códigos. Por seguridad, inténtalo más tarde.';
-    } else {
-      $envios['count_30min']++;
-      $envios['count_24h']++;
-      
-      $stmt_check = $conexion->prepare("SELECT id, nombre FROM usuarios_publicos WHERE email = ? AND verificado=0");
-      $stmt_check->bind_param("s", $email);
-      $stmt_check->execute();
-      $res = $stmt_check->get_result();
-      
-      if ($res && $res->num_rows === 1) {
-        $u = $res->fetch_assoc();
-        $codigo = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-        $expira = time() + 600;
-        $stmt_upd = $conexion->prepare("UPDATE usuarios_publicos SET codigo_verificacion=?, codigo_expira=? WHERE email=?");
-        $stmt_upd->bind_param("sis", $codigo, $expira, $email);
-        $stmt_upd->execute();
-        $nombre_u = $u['nombre'];
-        $asunto = 'Nuevo código de verificación - Guía Empresarial';
-        $mensaje = "Hola $nombre_u,\n\nTu nuevo código de verificación es: $codigo\n\nVálido por 10 minutos.\n\nSi no solicitaste esto, ignora este correo.";
-        enviarCorreo($email, $nombre_u, $asunto, $mensaje);
-        $exito = 'Nuevo código enviado a tu correo.';
-      } else {
-        $exito = 'Código reenviado (si el correo es válido).';
+    if ($_POST['accion'] === 'reenviar_codigo') {
+      $email = trim($_POST['email'] ?? '');
+
+      if (!isset($_SESSION['envios_codigo'])) {
+        $_SESSION['envios_codigo'] = [
+          'count_30min' => 0,
+          'inicio_30min' => time(),
+          'count_24h' => 0,
+          'inicio_24h' => time()
+        ];
       }
+
+      $envios = &$_SESSION['envios_codigo'];
+      $tiempo_actual = time();
+
+      if ($tiempo_actual - $envios['inicio_30min'] > 1800) {
+        $envios['count_30min'] = 0;
+        $envios['inicio_30min'] = $tiempo_actual;
+      }
+
+      if ($tiempo_actual - $envios['inicio_24h'] > 86400) {
+        $envios['count_24h'] = 0;
+        $envios['inicio_24h'] = $tiempo_actual;
+      }
+
+      if ($envios['count_24h'] >= 6 || $envios['count_30min'] >= 3) {
+        $exito = 'Has solicitado demasiados códigos. Por seguridad, inténtalo más tarde.';
+      } else {
+        $envios['count_30min']++;
+        $envios['count_24h']++;
+
+        $stmt_check = $conexion->prepare("SELECT id, nombre FROM usuarios_publicos WHERE email = ? AND verificado=0");
+        $stmt_check->bind_param("s", $email);
+        $stmt_check->execute();
+        $res = $stmt_check->get_result();
+
+        if ($res && $res->num_rows === 1) {
+          $u = $res->fetch_assoc();
+          $codigo = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+          $expira = time() + 600;
+          $stmt_upd = $conexion->prepare("UPDATE usuarios_publicos SET codigo_verificacion=?, codigo_expira=? WHERE email=?");
+          $stmt_upd->bind_param("sis", $codigo, $expira, $email);
+          $stmt_upd->execute();
+          $nombre_u = $u['nombre'];
+          $asunto = 'Nuevo código de verificación - Guía Empresarial';
+          $mensaje = "Hola $nombre_u,\n\nTu nuevo código de verificación es: $codigo\n\nVálido por 10 minutos.\n\nSi no solicitaste esto, ignora este correo.";
+          enviarCorreo($email, $nombre_u, $asunto, $mensaje);
+          $exito = 'Nuevo código enviado a tu correo.';
+        } else {
+          $exito = 'Código reenviado (si el correo es válido).';
+        }
+      }
+
+      $paso = 'verificar';
+      $email_param = $email;
     }
-    
-    $paso = 'verificar';
-    $email_param = $email;
   }
 }
 ?>
@@ -242,6 +254,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
         <p class="reg-subtitle">Únete y empieza a dejar reseñas en negocios locales.</p>
 
         <form method="POST">
+          <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
           <input type="hidden" name="accion" value="registrar">
 
           <div class="reg-field">
@@ -310,6 +323,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
         </div>
 
         <form method="POST" id="form-otp">
+          <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
           <input type="hidden" name="accion" value="verificar_codigo">
           <input type="hidden" name="email" value="<?= htmlspecialchars($email_param) ?>">
           <input type="hidden" name="codigo" id="otp-hidden">
@@ -327,6 +341,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
         <div class="reg-resend">
           ¿No llegó el código?
           <form method="POST" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
             <input type="hidden" name="accion" value="reenviar_codigo">
             <input type="hidden" name="email" value="<?= htmlspecialchars($email_param) ?>">
             <button type="submit">Enviar nuevo código</button>

@@ -1,26 +1,25 @@
-<?php require_once __DIR__ . '/proteger.php'; ?>
 <?php
-session_start();
+require_once __DIR__ . '/proteger.php';
 include '../db.php';
 
+header('Content-Type: application/json');
+
 if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['admin', 'editor'])) {
-    header("Location: ../login/login.php");
+    echo json_encode(['ok' => false, 'error' => 'No autorizado']);
     exit;
 }
 
 if (isset($_GET['id'])) {
-
     $id = intval($_GET['id']);
-
     $stmt = $conexion->prepare("DELETE FROM empresas WHERE id_empresa = ?");
     $stmt->bind_param("i", $id);
 
     if (!$stmt->execute()) {
-        die("Error al eliminar: " . $stmt->error);
+        echo json_encode(['ok' => false, 'error' => 'Error al eliminar: ' . $stmt->error]);
+        exit;
     }
-
     $stmt->close();
+    echo json_encode(['ok' => true]);
+    exit;
 }
-
-header("Location: admin.php");
-exit;
+echo json_encode(['ok' => false, 'error' => 'No se proporcionó ID']);
