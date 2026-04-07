@@ -155,7 +155,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
     }
 }
 ?>
-<?php include 'includes/header.php'; ?>
+<?php
+$seo_title = "Empresas - Guía Empresarial";
+$seo_description = "Explora negocios locales y descubre nuevas oportunidades en tu región.";
+
+$seo_id_empresa = $_GET['empresa'] ?? null;
+$seo_id_categoria = $_GET['id_categoria'] ?? null;
+
+if ($seo_id_empresa) {
+    $stmt_seo = $conexion->prepare("SELECT nombre, descripcion, logo FROM empresas WHERE id_empresa = ?");
+    $id_emp_int = intval($seo_id_empresa);
+    $stmt_seo->bind_param("i", $id_emp_int);
+    $stmt_seo->execute();
+    $res_seo = $stmt_seo->get_result();
+    if ($res_seo && $res_seo->num_rows === 1) {
+        $emp_seo = $res_seo->fetch_assoc();
+        $seo_title = $emp_seo['nombre'] . " - Guía Empresarial";
+        if (!empty($emp_seo['descripcion'])) {
+            $seo_description = mb_strimwidth($emp_seo['descripcion'], 0, 150, "...");
+        }
+        if (!empty($emp_seo['logo'])) {
+            $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+            $domain = $_SERVER['HTTP_HOST'] ?? 'localhost';
+            $seo_image = $protocol . "://" . $domain . "/guiaempresarial.pe/assets/img/" . $emp_seo['logo'];
+        }
+    }
+} elseif ($seo_id_categoria) {
+    $stmt_seo_c = $conexion->prepare("SELECT nombre FROM categorias WHERE id_categoria = ?");
+    $id_cat_int = intval($seo_id_categoria);
+    $stmt_seo_c->bind_param("i", $id_cat_int);
+    $stmt_seo_c->execute();
+    $res_seo_c = $stmt_seo_c->get_result();
+    if ($res_seo_c && $res_seo_c->num_rows === 1) {
+        $cat_seo = $res_seo_c->fetch_assoc();
+        $seo_title = "Empresas en " . $cat_seo['nombre'] . " - Guía Empresarial";
+    }
+}
+include 'includes/header.php';
+?>
 
 <section class="empresas-page-section">
     <div class="container">
@@ -520,6 +557,73 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
                 </div>
 
             </div>
+
+            <?php
+            // EMPRESAS SIMILARES
+            $id_cat_actual = intval($fila['id_categoria'] ?? 0);
+            $id_emp_actual = intval($id_empresa);
+            if ($id_cat_actual > 0) {
+                $stmt_sim = $conexion->prepare("SELECT e.*, c.nombre AS categoria FROM empresas e JOIN categorias c ON e.id_categoria = c.id_categoria WHERE e.id_categoria = ? AND e.id_empresa != ? ORDER BY RAND() LIMIT 3");
+                $stmt_sim->bind_param("ii", $id_cat_actual, $id_emp_actual);
+                $stmt_sim->execute();
+                $res_sim = $stmt_sim->get_result();
+
+                if ($res_sim && $res_sim->num_rows > 0):
+                    ?>
+                    <div style="margin-top: 40px; padding-top: 30px; border-top: 1px solid var(--borde);">
+                        <div class="section-header" style="text-align: left; margin-bottom: 24px;">
+                            <h2 style="font-size: 24px; color: var(--ink);">También podría interesarte...</h2>
+                            <p style="color: var(--muted); font-size: 15px; margin-top: 4px;">Otras opciones en
+                                <?= htmlspecialchars($fila['categoria'] ?? '') ?>
+                            </p>
+                        </div>
+                        <div class="empresas-list">
+                            <?php while ($f_sim = $res_sim->fetch_assoc()):
+                                $logo_s = !empty($f_sim['logo']) ? htmlspecialchars($f_sim['logo']) : null;
+                                $tel_s = $f_sim['telefono'] ?? null;
+                                $num_s = $tel_s ? preg_replace('/[^0-9]/', '', $tel_s) : null;
+                                $id_s = intval($f_sim['id_empresa']);
+                                ?>
+                                <div class="empresa-item <?= $f_sim['destacada'] ? 'empresa-destacada' : '' ?>">
+                                    <div class="empresa-info-logo">
+                                        <div class="empresa-top-row">
+                                            <div class="empresa-logo">
+                                                <?php if ($logo_s): ?>
+                                                    <img src="assets/img/<?= $logo_s ?>" alt="<?= htmlspecialchars($f_sim['nombre']) ?>">
+                                                <?php else: ?>
+                                                    <div class="logo-placeholder"><?= mb_strtoupper(mb_substr($f_sim['nombre'], 0, 1)) ?>
+                                                    </div>
+                                                <?php endif; ?>
+                                            </div>
+                                            <div class="empresa-titles">
+                                                <h3 style="font-size: 16px;">
+                                                    <?= htmlspecialchars($f_sim['nombre']) ?>
+                                                    <?php if ($f_sim['destacada']): ?>
+                                                        <span class="badge-destacada">⭐</span>
+                                                    <?php endif; ?>
+                                                </h3>
+                                                <span class="empresa-categoria"
+                                                    style="font-size: 12px;"><?= htmlspecialchars($f_sim['categoria']) ?></span>
+                                            </div>
+                                        </div>
+                                        <p class="empresa-slogan" style="font-size: 13px;">
+                                            <?= !empty($f_sim['descripcion']) ? htmlspecialchars(mb_strimwidth($f_sim['descripcion'], 0, 70, '…')) : 'Tu mejor opción local' ?>
+                                        </p>
+                                        <div class="empresa-datos" style="font-size: 12px;">
+                                            <span>👁 <?= number_format($f_sim['vistas']) ?> vistas</span>
+                                        </div>
+                                        <div class="empresa-actions">
+                                            <a href="empresas.php?empresa=<?= $id_s ?>" class="btn-ver"
+                                                style="padding: 6px 12px; font-size: 13px;">Ver perfil</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endwhile; ?>
+                        </div>
+                    </div>
+                <?php endif;
+            }
+            ?>
 
             <?php
         elseif ($resultado && $resultado->num_rows > 0):

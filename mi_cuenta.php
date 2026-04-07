@@ -145,7 +145,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_eliminar_resena'
 
 $panel_activo = $_GET['tab'] ?? 'perfil';
 ?>
-<?php include 'includes/header.php'; ?>
+<?php
+$seo_title = "Mi Cuenta - Guía Empresarial";
+$seo_robots = "noindex, nofollow";
+include 'includes/header.php';
+?>
 
 <link rel="stylesheet" href="assets/css/mi_cuenta.css">
 
@@ -278,36 +282,36 @@ $panel_activo = $_GET['tab'] ?? 'perfil';
         <?php endif; ?>
         <form method="POST" class="mc-form">
           <input type="hidden" name="accion" value="password">
-        <?php if (!$bypass_active): ?>
+          <?php if (!$bypass_active): ?>
+            <div class="mc-field">
+              <label>Contraseña actual</label>
+              <div class="pw-input-wrap">
+                <input type="password" name="actual" id="pw-actual" placeholder="••••••••" required>
+                <button type="button" class="pw-toggle" onclick="togglePw('pw-actual','pw-actual-icon')">
+                  <i class="bi bi-eye" id="pw-actual-icon"></i>
+                </button>
+              </div>
+            </div>
+          <?php endif; ?>
           <div class="mc-field">
-            <label>Contraseña actual</label>
+            <label>Nueva contraseña</label>
             <div class="pw-input-wrap">
-              <input type="password" name="actual" id="pw-actual" placeholder="••••••••" required>
-              <button type="button" class="pw-toggle" onclick="togglePw('pw-actual','pw-actual-icon')">
-                <i class="bi bi-eye" id="pw-actual-icon"></i>
+              <input type="password" name="nueva" id="pw-nueva" placeholder="••••••••" required>
+              <button type="button" class="pw-toggle" onclick="togglePw('pw-nueva','pw-nueva-icon')">
+                <i class="bi bi-eye" id="pw-nueva-icon"></i>
+              </button>
+            </div>
+            <span class="mc-hint">Mínimo 6 caracteres.</span>
+          </div>
+          <div class="mc-field">
+            <label>Confirmar nueva contraseña</label>
+            <div class="pw-input-wrap">
+              <input type="password" name="confirm" id="pw-confirm" placeholder="••••••••" required>
+              <button type="button" class="pw-toggle" onclick="togglePw('pw-confirm','pw-confirm-icon')">
+                <i class="bi bi-eye" id="pw-confirm-icon"></i>
               </button>
             </div>
           </div>
-        <?php endif; ?>
-        <div class="mc-field">
-          <label>Nueva contraseña</label>
-          <div class="pw-input-wrap">
-            <input type="password" name="nueva" id="pw-nueva" placeholder="••••••••" required>
-            <button type="button" class="pw-toggle" onclick="togglePw('pw-nueva','pw-nueva-icon')">
-              <i class="bi bi-eye" id="pw-nueva-icon"></i>
-            </button>
-          </div>
-          <span class="mc-hint">Mínimo 6 caracteres.</span>
-        </div>
-        <div class="mc-field">
-          <label>Confirmar nueva contraseña</label>
-          <div class="pw-input-wrap">
-            <input type="password" name="confirm" id="pw-confirm" placeholder="••••••••" required>
-            <button type="button" class="pw-toggle" onclick="togglePw('pw-confirm','pw-confirm-icon')">
-              <i class="bi bi-eye" id="pw-confirm-icon"></i>
-            </button>
-          </div>
-        </div>
           <div class="mc-form-footer">
             <button type="submit" class="mc-btn-dark">Cambiar contraseña</button>
           </div>

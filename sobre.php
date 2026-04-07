@@ -1,13 +1,18 @@
-<?php include 'includes/header.php'; ?>
-<?php include 'db.php'; ?>
+<?php
+include 'db.php';
+$seo_title = "Sobre Nosotros - Guía Empresarial";
+$seo_description = "Conoce quiénes somos, nuestra misión y visión. Guía Empresarial impulsa y conecta a los negocios locales.";
+include 'includes/header.php';
+?>
 
 <?php
-$total_empresas   = $conexion->query("SELECT COUNT(*) as total FROM empresas")->fetch_assoc()['total'];
+$total_empresas = $conexion->query("SELECT COUNT(*) as total FROM empresas")->fetch_assoc()['total'];
 $total_categorias = $conexion->query("SELECT COUNT(*) as total FROM categorias")->fetch_assoc()['total'];
 
-$res  = $conexion->query("SELECT clave, valor FROM sobre_info");
+$res = $conexion->query("SELECT clave, valor FROM sobre_info");
 $info = [];
-while ($f = $res->fetch_assoc()) $info[$f['clave']] = $f['valor'];
+while ($f = $res->fetch_assoc())
+    $info[$f['clave']] = $f['valor'];
 ?>
 
 <section class="page-section">

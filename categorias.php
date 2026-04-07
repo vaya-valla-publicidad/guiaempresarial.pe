@@ -1,5 +1,9 @@
-<?php include 'includes/header.php'; ?>
-<?php include 'db.php'; ?>
+<?php
+include 'db.php';
+$seo_title = "Categorías - Guía Empresarial";
+$seo_description = "Explora los rubros destacados y descubre empresas relacionadas en Guía Empresarial.";
+include 'includes/header.php';
+?>
 
 <section class="page-section">
     <div class="container">
@@ -14,8 +18,8 @@
             $resultado = $conexion->query("SELECT * FROM categorias ORDER BY nombre ASC");
             while ($fila = $resultado->fetch_assoc()):
                 $nombre = htmlspecialchars($fila['nombre']);
-                $icono  = htmlspecialchars($fila['icono'] ?? 'bi-briefcase');
-            ?>
+                $icono = htmlspecialchars($fila['icono'] ?? 'bi-briefcase');
+                ?>
                 <a href="empresas.php?id_categoria=<?= $fila['id_categoria'] ?>" class="categoria-card">
                     <div class="categoria-icono-wrap">
                         <i class="bi <?= $icono ?>"></i>
