@@ -12,7 +12,6 @@ $id = intval($_GET['id']);
 $error = "";
 $success = isset($_GET['ok']) ? "Empresa actualizada correctamente ✅" : "";
 
-// ─── Validación de imágenes ────────────────────────────────────────────────
 function validarImagen($tmpPath, $nombreOriginal): bool
 {
     $extensionesPermitidas = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
@@ -20,7 +19,6 @@ function validarImagen($tmpPath, $nombreOriginal): bool
     if (!in_array($ext, $extensionesPermitidas))
         return false;
 
-    // Verifica el contenido real del archivo (no solo el nombre/extensión)
     $finfo = finfo_open(FILEINFO_MIME_TYPE);
     $mime = finfo_file($finfo, $tmpPath);
     finfo_close($finfo);
@@ -28,7 +26,6 @@ function validarImagen($tmpPath, $nombreOriginal): bool
     $mimesPermitidos = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     return in_array($mime, $mimesPermitidos);
 }
-// ──────────────────────────────────────────────────────────────────────────
 
 $stmt = $conexion->prepare("SELECT * FROM empresas WHERE id_empresa=?");
 $stmt->bind_param("i", $id);
@@ -62,7 +59,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
     }
 
-    // ─── Logo: validar antes de mover ─────────────────────────────────────
     if (!empty($_FILES['logo']['name'])) {
         if (!validarImagen($_FILES['logo']['tmp_name'], $_FILES['logo']['name'])) {
             $error = "El logo debe ser una imagen válida (jpg, jpeg, png, webp, gif).";
@@ -74,7 +70,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             }
         }
     }
-    // ──────────────────────────────────────────────────────────────────────
 
     if (empty($error)) {
         $stmt = $conexion->prepare(
@@ -101,7 +96,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         if ($stmt->execute()) {
             $stmt->close();
 
-            // ─── Carrusel: validar cada foto antes de mover ───────────────
             if (!empty($_FILES['fotos']['name'][0])) {
                 $carpeta = __DIR__ . "/../assets/img/empresascarrusel/";
                 $orden_actual = $conexion->query("SELECT MAX(orden) as max FROM empresa_galeria WHERE id_empresa=$id")->fetch_assoc()['max'] ?? 0;
@@ -121,9 +115,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     }
                 }
             }
-            // ─────────────────────────────────────────────────────────────
 
-            // PRG: redirigir para evitar duplicados al recargar la página
             header("Location: editar.php?id=" . $id . "&ok=1");
             exit;
 
@@ -143,154 +135,10 @@ $total_destacadas = $conexion->query("SELECT COUNT(*) as total FROM empresas WHE
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editar Empresa</title>
     <link rel="stylesheet" href="../assets/css/login.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
-    <style>
-        .fotos-grid {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-top: 10px;
-        }
-
-        .foto-item {
-            position: relative;
-            cursor: grab;
-            user-select: none;
-            border-radius: 10px;
-            overflow: hidden;
-            border: 2px solid #e0e0e0;
-            transition: border-color .2s, box-shadow .2s;
-        }
-
-        .foto-item:hover {
-            border-color: #3498db;
-            box-shadow: 0 4px 12px rgba(52, 152, 219, .25);
-        }
-
-        .foto-item.sortable-chosen {
-            border-color: #3498db;
-            box-shadow: 0 8px 20px rgba(52, 152, 219, .3);
-            opacity: .85;
-        }
-
-        .foto-item.sortable-ghost {
-            opacity: .3;
-        }
-
-        .foto-item img {
-            width: 120px;
-            height: 120px;
-            object-fit: cover;
-            display: block;
-        }
-
-        .foto-item .orden-badge {
-            position: absolute;
-            top: 5px;
-            left: 5px;
-            background: rgba(27, 58, 87, .8);
-            color: #fff;
-            font-size: 11px;
-            font-weight: 700;
-            padding: 2px 7px;
-            border-radius: 20px;
-        }
-
-        .foto-item .btn-borrar {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: red;
-            color: white;
-            padding: 3px 7px;
-            border-radius: 4px;
-            font-size: 12px;
-            cursor: pointer;
-            border: none;
-        }
-
-        .drag-hint {
-            font-size: 12px;
-            color: #888;
-            margin-top: 6px;
-        }
-
-        .btn-guardar-orden {
-            margin-top: 12px;
-            padding: 9px 22px;
-            background: #2c3e50;
-            color: #fff;
-            border: none;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 14px;
-            transition: .2s;
-        }
-
-        .btn-guardar-orden:hover {
-            background: #3498db;
-        }
-
-        .btn-guardar-orden.guardado {
-            background: #27ae60;
-        }
-
-        .mapa-wrap {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .mapa-buscar-row {
-            display: flex;
-            gap: 8px;
-        }
-
-        .mapa-buscar-row input {
-            flex: 1;
-        }
-
-        .mapa-buscar-row button {
-            padding: 10px 18px;
-            background: #3498db;
-            color: #fff;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-
-        .mapa-buscar-row button:hover {
-            background: #2e86c1;
-        }
-
-        .mapa-iframe {
-            width: 100%;
-            height: 320px;
-            border-radius: 12px;
-            border: 1px solid #ddd;
-            display: block;
-        }
-
-        .mapa-tip {
-            font-size: 12px;
-            color: #888;
-        }
-
-        .destacada-info {
-            font-size: 12px;
-            color: #888;
-            margin-top: 6px;
-        }
-
-        .destacada-info.lleno {
-            color: #e74c3c;
-            font-weight: 600;
-        }
-    </style>
 </head>
 
 <body>
@@ -496,7 +344,7 @@ $total_destacadas = $conexion->query("SELECT COUNT(*) as total FROM empresas WHE
                     else alert('No se pudo eliminar: ' + data);
                 });
         }
-        
+
     </script>
 </body>
 

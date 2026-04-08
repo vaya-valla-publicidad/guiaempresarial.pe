@@ -110,6 +110,11 @@ body {
     padding: 40px;
 }
 
+.panel-narrow {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
 .panel-title {
     text-align: center;
     font-size: 32px;
@@ -234,6 +239,28 @@ body {
     transform: scale(1.05);
 }
 
+.panel .btn-warning {
+    background: #f5a623 !important;
+    color: #111 !important;
+    font-weight: 700 !important;
+}
+
+.panel .btn-danger-alt {
+    background: #e74c3c !important;
+    color: #fff !important;
+    font-weight: 700 !important;
+}
+
+.btn-panel-nav {
+    margin-bottom: 10px;
+    display: inline-block !important;
+}
+
+.btn-panel-nav-sep {
+    margin-bottom: 20px;
+    display: inline-block !important;
+}
+
 .acciones {
     display: flex;
     flex-direction: row;
@@ -246,6 +273,12 @@ body {
 .panel table .bi {
     font-size: 24px;
     color: #E63946;
+}
+
+.item-chevron {
+    color: #0d6efd;
+    font-size: 20px;
+    font-weight: 700;
 }
 
 .panel form,
@@ -461,23 +494,27 @@ body {
     }
 
     .panel-container {
-        padding: 12px;
+        padding: 12px 10px;
     }
 
     .panel {
-        padding: 20px 16px;
-        border-radius: 14px;
+        padding: 24px 16px;
+        border-radius: 16px;
     }
 
     .panel-title {
         font-size: 22px;
         margin-bottom: 20px;
+        text-align: left;
     }
 
     .usuario-info {
-        justify-content: center;
-        text-align: center;
+        justify-content: flex-start;
         font-size: 13px;
+        margin-bottom: 20px;
+        background: #f8fafc;
+        padding: 10px;
+        border-radius: 10px;
     }
 
     .panel>a.btn,
@@ -485,9 +522,12 @@ body {
     div[style*="display:flex"]>a.btn {
         width: 100% !important;
         text-align: center;
-        padding: 12px 16px !important;
-        font-size: 13px !important;
-        margin-bottom: 8px;
+        padding: 14px 16px !important;
+        font-size: 14px !important;
+        margin-bottom: 10px;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
     }
 
     .panel form,
@@ -502,14 +542,15 @@ body {
     .panel form select,
     .panel form textarea {
         padding: 12px 14px;
-        font-size: 14px;
+        font-size: 16px;
+        /* Evita zoom automático en iOS */
     }
 
     .panel form .btn,
     .panel .btn-agregar,
     .panel .btn-editar {
         width: 100% !important;
-        font-size: 15px !important;
+        font-size: 16px !important;
         padding: 14px !important;
     }
 
@@ -520,15 +561,83 @@ body {
         padding: 14px !important;
     }
 
-    .acciones {
-        flex-direction: column;
-        align-items: stretch;
+    /* === TABLAS RESPONSIVAS (STACKED) === */
+    .table-wrap {
+        box-shadow: none;
+        overflow-x: visible;
     }
 
-    .panel .btn,
-    .panel .btn-danger {
+    .table-wrap::after {
+        display: none;
+    }
+
+    .panel table {
+        display: block;
+        min-width: 0;
+    }
+
+    .panel table thead,
+    .panel table tr th {
+        display: none;
+        /* Escondemos cabeceras reales */
+    }
+
+    .panel table tr {
+        display: block;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        margin-bottom: 16px;
+        padding: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .panel table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        text-align: right !important;
+        padding: 10px 0;
+        border: none;
+        border-bottom: 1px solid #f1f5f9;
+        max-width: none;
+        font-size: 14px;
+    }
+
+    .panel table td:last-child {
+        border-bottom: none;
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+        background: #f8fafc;
+        margin-top: 5px;
+        padding: 12px;
+        border-radius: 8px;
+    }
+
+    .panel table td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        color: #64748b;
+        text-align: left;
+        margin-right: 15px;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .panel table td img {
+        width: 60px !important;
+        height: 60px !important;
+    }
+
+    .acciones {
+        width: 100%;
+    }
+
+    .acciones .btn {
         width: 100% !important;
-        text-align: center;
+        padding: 10px !important;
     }
 
     .destacadas-section {
@@ -536,34 +645,8 @@ body {
     }
 
     .destacada-chip {
-        font-size: 12px;
-        padding: 5px 10px;
-    }
-
-    .table-wrap {
-        border-radius: 10px;
-        position: relative;
-    }
-
-    .table-wrap::after {
-        content: '← desliza →';
-        display: block;
-        text-align: center;
-        font-size: 11px;
-        color: #aaa;
-        padding: 6px 0 2px;
-        letter-spacing: 0.5px;
-    }
-
-    .panel table {
-        font-size: 12px;
-        min-width: 480px;
-    }
-
-    .panel table th,
-    .panel table td {
-        padding: 8px 8px;
-        max-width: 130px;
+        width: 100%;
+        justify-content: space-between;
     }
 }
 
@@ -574,46 +657,9 @@ body {
 
     .panel {
         padding: 16px 12px;
-        border-radius: 10px;
     }
 
     .panel-title {
-        font-size: 19px;
-    }
-
-    .login-section {
-        padding: 28px 18px;
-    }
-
-    .login-title {
-        font-size: 22px;
-    }
-
-    .login-form input {
-        padding: 12px 14px;
-        font-size: 14px;
-    }
-
-    .login-btn {
-        font-size: 15px;
-        padding: 12px;
-    }
-
-    .panel form,
-    .panel .form-container {
-        padding: 16px 12px;
-        border-radius: 10px;
-    }
-
-    .panel form input,
-    .panel form select,
-    .panel form textarea {
-        padding: 11px 12px;
-        font-size: 13px;
-        border-radius: 10px;
-    }
-
-    .destacadas-section {
-        padding: 12px;
+        font-size: 20px;
     }
 }

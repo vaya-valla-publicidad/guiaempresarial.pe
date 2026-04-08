@@ -1,6 +1,5 @@
-<?php require_once __DIR__ . '/proteger.php'; ?>
 <?php
-session_start();
+require_once __DIR__ . '/proteger.php';
 include '../db.php';
 header('Content-Type: application/json');
 
@@ -9,8 +8,13 @@ if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['admin', 'editor'])
     exit;
 }
 
-if (isset($_GET['id'])) {
-    $id = intval($_GET['id']);
+if (!validarCSRF()) {
+    echo json_encode(['ok' => false, 'error' => 'Token CSRF inválido']);
+    exit;
+}
+
+if (isset($_POST['id'])) {
+    $id = intval($_POST['id']);
     $stmt = $conexion->prepare("DELETE FROM categorias WHERE id_categoria = ?");
     $stmt->bind_param("i", $id);
 

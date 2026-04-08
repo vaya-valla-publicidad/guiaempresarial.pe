@@ -40,58 +40,62 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-<meta charset="UTF-8">
-<title>Agregar Usuario</title>
-<link rel="stylesheet" href="../assets/css/login.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agregar — Panel <?= ucfirst($_SESSION['rol']) ?></title>
+    <link rel="stylesheet" href="../assets/css/login.css">
 </head>
+
 <body>
 
-<div class="panel-container">
-    <section class="panel">
+    <div class="panel-container">
+        <section class="panel">
 
-        <h1 class="panel-title">Agregar Usuario</h1>
+            <h1 class="panel-title">Agregar Usuario</h1>
 
-        <div class="form-container">
+            <div class="form-container">
 
-            <?php if($error): ?>
-                <p style="color:red; text-align:center;"><?= htmlspecialchars($error) ?></p>
-            <?php endif; ?>
+                <?php if ($error): ?>
+                    <p style="color:red; text-align:center;"><?= htmlspecialchars($error) ?></p>
+                <?php endif; ?>
 
-            <?php if($success): ?>
-                <p style="color:green; text-align:center;"><?= htmlspecialchars($success) ?></p>
-            <?php endif; ?>
+                <?php if ($success): ?>
+                    <p style="color:green; text-align:center;"><?= htmlspecialchars($success) ?></p>
+                <?php endif; ?>
 
-            <form method="post">
+                <form method="post">
 
-                <div class="form-group">
-                    <label>Nombre</label>
-                    <input type="text" name="nombre" required>
-                </div>
+                    <div class="form-group">
+                        <label>Nombre</label>
+                        <input type="text" name="nombre" required>
+                    </div>
 
-                <div class="form-group">
-                    <label>Contraseña</label>
-                    <input type="password" name="pass" required>
-                </div>
+                    <div class="form-group">
+                        <label>Contraseña</label>
+                        <input type="password" name="pass" required>
+                    </div>
 
-                <div class="form-group">
-                    <label>Rol</label>
-                    <select name="rol" required>
-                        <option value="admin">Admin</option>
-                        <option value="editor">Editor</option>
-                    </select>
-                </div>
+                    <div class="form-group">
+                        <label>Rol</label>
+                        <select name="rol" required>
+                            <option value="admin">Admin</option>
+                            <option value="editor">Editor</option>
+                        </select>
+                    </div>
 
-                <button type="submit" class="btn">Agregar Usuario</button>
+                    <button type="submit" class="btn">Agregar Usuario</button>
 
-            </form>
+                </form>
 
-            <a href="admin.php" class="btn btn-danger">Volver al Panel</a>
+                <a href="admin.php" class="btn btn-danger">Volver al Panel</a>
 
-        </div>
+            </div>
 
-    </section>
-</div>
+        </section>
+    </div>
 
 </body>
+
 </html>

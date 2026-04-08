@@ -1,41 +1,44 @@
 <?php
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
+
+require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/src/Exception.php';
 require_once __DIR__ . '/src/PHPMailer.php';
 require_once __DIR__ . '/src/SMTP.php';
+
 function enviarCorreo(string $destinatario, string $nombre, string $asunto, string $cuerpo): bool
 {
-    $mail = new PHPMailer(true);
-    try {
-        $mail->isSMTP();
-        $mail->Host = 'smtp.gmail.com';
-        $mail->SMTPAuth = true;
-        $mail->Username = 'tucorreo@gmail.com';        
-        $mail->Password = 'xxxx xxxx xxxx xxxx';       
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port = 587;
-        $mail->CharSet = 'UTF-8';
-        $mail->setFrom('tucorreo@gmail.com', 'Guía Empresarial');  
-        $mail->addAddress($destinatario, $nombre);
-        $mail->isHTML(true);
-        $mail->Subject = $asunto;
-        $mail->Body = $cuerpo;
-        $mail->send();
-        return true;
-    } catch (Exception $e) {
-        return false;
-    }
+  $mail = new PHPMailer(true);
+  try {
+    $mail->isSMTP();
+    $mail->Host = SMTP_HOST;
+    $mail->SMTPAuth = true;
+    $mail->Username = SMTP_USER;
+    $mail->Password = SMTP_PASS;
+    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+    $mail->Port = SMTP_PORT;
+    $mail->CharSet = 'UTF-8';
+    $mail->setFrom(SMTP_FROM_EMAIL, SMTP_FROM_NAME);
+    $mail->addAddress($destinatario, $nombre);
+    $mail->isHTML(true);
+    $mail->Subject = $asunto;
+    $mail->Body = $cuerpo;
+    $mail->send();
+    return true;
+  } catch (Exception $e) {
+    return false;
+  }
 }
 
 function plantillaCorreoOTP(string $nombre, string $codigo, string $motivo): string
 {
-    $titulo = $motivo === 'registro' ? 'Confirma tu cuenta' : 'Tu código de acceso';
-    $mensaje = $motivo === 'registro'
-        ? "Bienvenido a Guía Empresarial. Para finalizar tu registro, ingresa el siguiente código en la pantalla de verificación:"
-        : "Has solicitado un código temporal para acceder a tu cuenta en Guía Empresarial. Ingrésalo a continuación:";
+  $titulo = $motivo === 'registro' ? 'Confirma tu cuenta' : 'Tu código de acceso';
+  $mensaje = $motivo === 'registro'
+    ? "Bienvenido a Guía Empresarial. Para finalizar tu registro, ingresa el siguiente código en la pantalla de verificación:"
+    : "Has solicitado un código temporal para acceder a tu cuenta en Guía Empresarial. Ingrésalo a continuación:";
 
-    return "
+  return "
     <div style='font-family: \"Segoe UI\", Roboto, \"Helvetica Neue\", sans-serif; background-color: #f3f4f6; padding: 40px 20px; line-height: 1.5;'>
       <div style='max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);'>
         <div style='background-color: #111827; padding: 24px; text-align: center; border-bottom: 3px solid #10b981;'>

@@ -2,6 +2,7 @@
 session_start();
 include 'db.php';
 include 'includes/security.php';
+include 'includes/components/empresa_card.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
     if (!validarCSRF()) {
@@ -211,8 +212,12 @@ include 'includes/header.php';
         $empresas_por_pagina = 20;
         $offset = ($pagina_actual - 1) * $empresas_por_pagina;
 
-        $sql_select = "SELECT e.*, c.nombre AS categoria FROM empresas e JOIN categorias c ON e.id_categoria = c.id_categoria";
-        $sql_count = "SELECT COUNT(*) as total FROM empresas e JOIN categorias c ON e.id_categoria = c.id_categoria";
+        $sql_select = "SELECT e.*, c.nombre AS categoria, 
+                              GROUP_CONCAT(g.foto ORDER BY g.orden ASC, g.id_foto ASC SEPARATOR ',') as fotos_galeria 
+                       FROM empresas e 
+                       JOIN categorias c ON e.id_categoria = c.id_categoria
+                       LEFT JOIN empresa_galeria g ON e.id_empresa = g.id_empresa";
+        $sql_count = "SELECT COUNT(DISTINCT e.id_empresa) as total FROM empresas e JOIN categorias c ON e.id_categoria = c.id_categoria";
 
         $where = [];
         $params = [];
@@ -257,7 +262,7 @@ include 'includes/header.php';
             $total_paginas = ceil($total_filas / $empresas_por_pagina);
         }
 
-        $sql = $sql_select . $clausula_where;
+        $sql = $sql_select . $clausula_where . " GROUP BY e.id_empresa";
         if (!$id_empresa) {
             $sql .= " LIMIT $empresas_por_pagina OFFSET $offset";
         }
@@ -276,7 +281,7 @@ include 'includes/header.php';
         }
 
         if ($id_empresa && (!$resultado || $resultado->num_rows === 0)) {
-            echo "<script>window.location.href='404.php';</script>";
+            header("Location: 404.php", true, 302);
             exit;
         }
 
@@ -559,7 +564,7 @@ include 'includes/header.php';
             </div>
 
             <?php
-            // EMPRESAS SIMILARES
+            
             $id_cat_actual = intval($fila['id_categoria'] ?? 0);
             $id_emp_actual = intval($id_empresa);
             if ($id_cat_actual > 0) {
@@ -578,47 +583,16 @@ include 'includes/header.php';
                             </p>
                         </div>
                         <div class="empresas-list">
-                            <?php while ($f_sim = $res_sim->fetch_assoc()):
-                                $logo_s = !empty($f_sim['logo']) ? htmlspecialchars($f_sim['logo']) : null;
-                                $tel_s = $f_sim['telefono'] ?? null;
-                                $num_s = $tel_s ? preg_replace('/[^0-9]/', '', $tel_s) : null;
-                                $id_s = intval($f_sim['id_empresa']);
-                                ?>
-                                <div class="empresa-item <?= $f_sim['destacada'] ? 'empresa-destacada' : '' ?>">
-                                    <div class="empresa-info-logo">
-                                        <div class="empresa-top-row">
-                                            <div class="empresa-logo">
-                                                <?php if ($logo_s): ?>
-                                                    <img src="assets/img/<?= $logo_s ?>" alt="<?= htmlspecialchars($f_sim['nombre']) ?>">
-                                                <?php else: ?>
-                                                    <div class="logo-placeholder"><?= mb_strtoupper(mb_substr($f_sim['nombre'], 0, 1)) ?>
-                                                    </div>
-                                                <?php endif; ?>
-                                            </div>
-                                            <div class="empresa-titles">
-                                                <h3 style="font-size: 16px;">
-                                                    <?= htmlspecialchars($f_sim['nombre']) ?>
-                                                    <?php if ($f_sim['destacada']): ?>
-                                                        <span class="badge-destacada">⭐</span>
-                                                    <?php endif; ?>
-                                                </h3>
-                                                <span class="empresa-categoria"
-                                                    style="font-size: 12px;"><?= htmlspecialchars($f_sim['categoria']) ?></span>
-                                            </div>
-                                        </div>
-                                        <p class="empresa-slogan" style="font-size: 13px;">
-                                            <?= !empty($f_sim['descripcion']) ? htmlspecialchars(mb_strimwidth($f_sim['descripcion'], 0, 70, '…')) : 'Tu mejor opción local' ?>
-                                        </p>
-                                        <div class="empresa-datos" style="font-size: 12px;">
-                                            <span>👁 <?= number_format($f_sim['vistas']) ?> vistas</span>
-                                        </div>
-                                        <div class="empresa-actions">
-                                            <a href="empresas.php?empresa=<?= $id_s ?>" class="btn-ver"
-                                                style="padding: 6px 12px; font-size: 13px;">Ver perfil</a>
-                                        </div>
-                                    </div>
-                                </div>
-                            <?php endwhile; ?>
+                            <?php
+                            
+                            $stmt_sim = $conexion->prepare("SELECT e.*, c.nombre AS categoria, GROUP_CONCAT(g.foto ORDER BY g.orden ASC SEPARATOR ',') as fotos_galeria FROM empresas e JOIN categorias c ON e.id_categoria = c.id_categoria LEFT JOIN empresa_galeria g ON e.id_empresa = g.id_empresa WHERE e.id_categoria = ? AND e.id_empresa != ? GROUP BY e.id_empresa ORDER BY RAND() LIMIT 3");
+                            $stmt_sim->bind_param("ii", $id_cat_actual, $id_emp_actual);
+                            $stmt_sim->execute();
+                            $res_sim = $stmt_sim->get_result();
+                            while ($f_sim = $res_sim->fetch_assoc()):
+                                $fotos_sim = !empty($f_sim['fotos_galeria']) ? explode(',', $f_sim['fotos_galeria']) : [];
+                                renderEmpresaCard($f_sim, $fotos_sim);
+                            endwhile; ?>
                         </div>
                     </div>
                 <?php endif;
@@ -649,177 +623,56 @@ include 'includes/header.php';
             <div class="empresas-list">
                 <?php
                 while ($fila = $resultado->fetch_assoc()):
-                    $logo = !empty($fila['logo']) ? htmlspecialchars($fila['logo']) : null;
-                    $telefono = $fila['telefono'] ?? null;
-                    $numero = $telefono ? preg_replace('/[^0-9]/', '', $telefono) : null;
-                    $id = intval($fila['id_empresa']);
-                    $stmt_f = $conexion->prepare("SELECT foto FROM empresa_galeria WHERE id_empresa = ? ORDER BY orden ASC, id_foto ASC");
-                    $stmt_f->bind_param("i", $id);
-                    $stmt_f->execute();
-                    $fotos = $stmt_f->get_result();
-                    $fotos_arr = [];
-                    if ($fotos && $fotos->num_rows > 0)
-                        while ($f = $fotos->fetch_assoc())
-                            $fotos_arr[] = $f['foto'];
-                    ?>
-                    <div class="empresa-item <?= $fila['destacada'] ? 'empresa-destacada' : '' ?>">
-                        <div class="empresa-info-logo">
-                            <div class="empresa-top-row">
-                                <div class="empresa-logo">
-                                    <?php if ($logo): ?>
-                                        <img src="assets/img/<?= $logo ?>" alt="<?= htmlspecialchars($fila['nombre']) ?>">
-                                    <?php else: ?>
-                                        <div class="logo-placeholder"><?= mb_strtoupper(mb_substr($fila['nombre'], 0, 1)) ?></div>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="empresa-titles">
-                                    <h3>
-                                        <?= htmlspecialchars($fila['nombre']) ?>
-                                        <?php if ($fila['destacada']): ?>
-                                            <span class="badge-destacada">⭐ Destacada</span>
-                                        <?php endif; ?>
-                                    </h3>
-                                    <span class="empresa-categoria"><?= htmlspecialchars($fila['categoria']) ?></span>
-                                </div>
-                            </div>
-                            <p class="empresa-slogan">
-                                <?= !empty($fila['descripcion']) ? htmlspecialchars(mb_strimwidth($fila['descripcion'], 0, 80, '…')) : 'Tu mejor opción local' ?>
-                            </p>
-                            <?php if (!empty($fila['direccion'])): ?>
-                                <p class="empresa-direccion">📍 <?= htmlspecialchars($fila['direccion']) ?></p>
-                            <?php endif; ?>
-                            <div class="empresa-datos">
-                                <?php if (!empty($fila['horario'])): ?>
-                                    <span>🕒 <?= htmlspecialchars($fila['horario']) ?></span>
-                                <?php endif; ?>
-                                <?php if ($numero): ?>
-                                    <span>📞 <?= $numero ?></span>
-                                <?php endif; ?>
-                                <span>👁 <?= number_format($fila['vistas']) ?> vistas</span>
-                            </div>
-                            <div class="empresa-actions">
-                                <a href="empresas.php?empresa=<?= $id ?>" class="btn-ver">Ver más</a>
-                                <?php if (!empty($fila['link_empresa'])): ?>
-                                    <a href="<?= htmlspecialchars($fila['link_empresa']) ?>" target="_blank" class="btn-ver"
-                                        style="background-color: #3b82f6; color: white;">
-                                        🌐 Sitio Web
-                                    </a>
-                                <?php endif; ?>
-                                <?php if (!empty($fila['facebook'])): ?>
-                                    <a href="<?= htmlspecialchars($fila['facebook']) ?>" target="_blank"
-                                        class="btn-accion btn-accion-facebook">
-                                        📘 Facebook
-                                    </a>
-                                <?php endif; ?>
-                                <?php if ($numero): ?>
-                                    <a href="https://wa.me/<?= $numero ?>" target="_blank" class="btn-whatsapp">WhatsApp</a>
-                                <?php endif; ?>
-                                <?php if (!empty($fila['ubicacion_link'])): ?>
-                                    <a href="<?= htmlspecialchars($fila['ubicacion_link']) ?>" target="_blank"
-                                        class="btn-maps">Ubicación</a>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                        <?php if (count($fotos_arr) > 0): ?>
-                            <div class="empresa-slider">
-                                <?php foreach ($fotos_arr as $i => $foto): ?>
-                                    <div class="slide <?= $i === 0 ? 'activo' : '' ?>">
-                                        <img src="assets/img/empresascarrusel/<?= htmlspecialchars($foto) ?>"
-                                            alt="Imagen de <?= htmlspecialchars($fila['nombre']) ?>" loading="lazy">
-                                    </div>
-                                <?php endforeach; ?>
-                                <?php if (count($fotos_arr) > 1): ?>
-                                    <div class="slider-dots">
-                                        <?php foreach ($fotos_arr as $i => $_): ?>
-                                            <button class="slider-dot <?= $i === 0 ? 'activo' : '' ?>" data-index="<?= $i ?>"></button>
-                                        <?php endforeach; ?>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                <?php endwhile; ?>
+                    $fotos_arr = !empty($fila['fotos_galeria']) ? explode(',', $fila['fotos_galeria']) : [];
+                    renderEmpresaCard($fila, $fotos_arr);
+                endwhile; ?>
             </div>
+        </div>
 
-            <?php
-            if (isset($total_paginas) && $total_paginas > 1 && !$id_empresa):
-                $params_url = [];
-                if (!empty($buscar))
-                    $params_url['buscar'] = $buscar;
-                if (!empty($id_categoria))
-                    $params_url['id_categoria'] = $id_categoria;
-                $query_str = http_build_query($params_url);
-                if (!empty($query_str))
-                    $query_str = '&' . $query_str;
-                ?>
-                <style>
-                    .paginacion .btn-pag {
-                        display: inline-flex;
-                        align-items: center;
-                        justify-content: center;
-                        padding: 8px 16px;
-                        border-radius: 8px;
-                        background: white;
-                        color: var(--ink);
-                        text-decoration: none;
-                        font-weight: 500;
-                        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-                        border: 1px solid #e2e8f0;
-                        transition: all 0.2s;
-                    }
+        <?php
+        if (isset($total_paginas) && $total_paginas > 1 && !$id_empresa):
+            $params_url = [];
+            if (!empty($buscar))
+                $params_url['buscar'] = $buscar;
+            if (!empty($id_categoria))
+                $params_url['id_categoria'] = $id_categoria;
+            $query_str = http_build_query($params_url);
+            if (!empty($query_str))
+                $query_str = '&' . $query_str;
+            ?>
 
-                    .paginacion .btn-pag:hover {
-                        background: #f8fafc;
-                        border-color: #cbd5e1;
-                    }
+            <div class="paginacion"
+                style="display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 40px; margin-bottom: 20px;">
+                <?php if ($pagina_actual > 1): ?>
+                    <a href="?pagina=<?= $pagina_actual - 1 ?><?= $query_str ?>" class="btn-pag">Anterior</a>
+                <?php endif; ?>
 
-                    .paginacion .btn-pag.activa {
-                        background: var(--primario);
-                        color: white;
-                        border-color: var(--primario);
-                        pointer-events: none;
-                    }
+                <?php
+                for ($p = 1; $p <= $total_paginas; $p++):
+                    
+                    if ($p == 1 || $p == $total_paginas || abs($p - $pagina_actual) <= 2):
+                        ?>
+                        <a href="?pagina=<?= $p ?><?= $query_str ?>" class="btn-pag <?= $p == $pagina_actual ? 'activa' : '' ?>">
+                            <?= $p ?>
+                        </a>
+                    <?php elseif (abs($p - $pagina_actual) == 3): ?>
+                        <span style="display:flex; align-items:flex-end; color: #94a3b8;">...</span>
+                    <?php endif; endfor; ?>
 
-                    @media (max-width: 600px) {
-                        .paginacion .btn-pag {
-                            padding: 6px 12px;
-                            font-size: 14px;
-                        }
-                    }
-                </style>
-
-                <div class="paginacion"
-                    style="display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 40px; margin-bottom: 20px;">
-                    <?php if ($pagina_actual > 1): ?>
-                        <a href="?pagina=<?= $pagina_actual - 1 ?><?= $query_str ?>" class="btn-pag">Anterior</a>
-                    <?php endif; ?>
-
-                    <?php
-                    for ($p = 1; $p <= $total_paginas; $p++):
-                        // Mostramos solo un rango de +-2 botones alrededor del actual, y los extremos.
-                        if ($p == 1 || $p == $total_paginas || abs($p - $pagina_actual) <= 2):
-                            ?>
-                            <a href="?pagina=<?= $p ?><?= $query_str ?>" class="btn-pag <?= $p == $pagina_actual ? 'activa' : '' ?>">
-                                <?= $p ?>
-                            </a>
-                        <?php elseif (abs($p - $pagina_actual) == 3): ?>
-                            <span style="display:flex; align-items:flex-end; color: #94a3b8;">...</span>
-                        <?php endif; endfor; ?>
-
-                    <?php if ($pagina_actual < $total_paginas): ?>
-                        <a href="?pagina=<?= $pagina_actual + 1 ?><?= $query_str ?>" class="btn-pag">Siguiente</a>
-                    <?php endif; ?>
-                </div>
-            <?php endif; ?>
-
-        <?php else: ?>
-            <div class="no-results">
-                <p>😕 No se encontraron
-                    empresas<?= $buscar ? ' para "<strong>' . htmlspecialchars($buscar) . '</strong>"' : '' ?>.</p>
-                <br><br>
-                <a href="empresas.php">Ver todas las empresas</a>
+                <?php if ($pagina_actual < $total_paginas): ?>
+                    <a href="?pagina=<?= $pagina_actual + 1 ?><?= $query_str ?>" class="btn-pag">Siguiente</a>
+                <?php endif; ?>
             </div>
         <?php endif; ?>
+
+    <?php else: ?>
+        <div class="no-results">
+            <p>😕 No se encontraron
+                empresas<?= $buscar ? ' para "<strong>' . htmlspecialchars($buscar) . '</strong>"' : '' ?>.</p>
+            <br><br>
+            <a href="empresas.php">Ver todas las empresas</a>
+        </div>
+    <?php endif; ?>
 
     </div>
 </section>

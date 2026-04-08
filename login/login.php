@@ -89,6 +89,7 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) 
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inicio de sesión</title>
     <link rel="stylesheet" href="/guiaempresarial.pe/assets/css/login.css">
 </head>

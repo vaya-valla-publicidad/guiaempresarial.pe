@@ -9,6 +9,7 @@ $rol = $_SESSION['rol'];
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel <?= ucfirst($rol) ?></title>
     <link rel="stylesheet" href="/guiaempresarial.pe/assets/css/login.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -26,18 +27,16 @@ $rol = $_SESSION['rol'];
                 <a href="cerrar.php">Cerrar sesión</a>
             </div>
 
-            <a href="/guiaempresarial.pe/index.php" class="btn" style="margin-bottom:10px; display:inline-block;">
+            <a href="/guiaempresarial.pe/index.php" class="btn btn-panel-nav">
                 Ver sitio principal
             </a>
-            <a href="editar_sobre.php" class="btn" style="margin-bottom:20px; display:inline-block;">
+            <a href="editar_sobre.php" class="btn btn-panel-nav-sep">
                 Editar Sobre Nosotros
             </a>
-            <a href="gestionar_banner.php" class="btn" style="background:#f5a623;color:#111;font-weight:700;">
-
+            <a href="gestionar_banner.php" class="btn btn-warning">
                 <i class="bi bi-images"></i> Gestionar Banner / Carrusel
             </a>
-            <a href="gestionar_resenas.php" class="btn"
-                style="background:#e74c3c;color:#fff;font-weight:700;margin-bottom:20px;display:inline-block;">
+            <a href="gestionar_resenas.php" class="btn btn-danger-alt btn-panel-nav-sep">
                 <i class="bi bi-star-half"></i> Gestionar Reseñas
             </a>
             <h2>Categorías</h2><br>
@@ -57,12 +56,12 @@ $rol = $_SESSION['rol'];
                     while ($cat = $res_cat->fetch_assoc()):
                         ?>
                         <tr>
-                            <td><?= $cat['id_categoria'] ?></td>
-                            <td style="font-size:22px;">
+                            <td data-label="ID"><?= $cat['id_categoria'] ?></td>
+                            <td data-label="Icono" style="font-size:22px;">
                                 <i class="bi <?= htmlspecialchars($cat['icono'] ?? 'bi-briefcase') ?>"></i>
                             </td>
-                            <td><?= htmlspecialchars($cat['nombre']) ?></td>
-                            <td>
+                            <td data-label="Nombre"><?= htmlspecialchars($cat['nombre']) ?></td>
+                            <td data-label="Acciones">
                                 <div class="acciones">
                                     <a href="editar_categoria.php?id=<?= $cat['id_categoria'] ?>" class="btn">Editar</a>
                                     <button onclick="eliminarRegistro('categoria', <?= $cat['id_categoria'] ?>, this)"
@@ -133,39 +132,41 @@ $rol = $_SESSION['rol'];
                     while ($fila = $res->fetch_assoc()):
                         ?>
                         <tr id="fila-<?= $fila['id_empresa'] ?>">
-                            <td><?= $fila['id_empresa'] ?></td>
-                            <td>
+                            <td data-label="ID"><?= $fila['id_empresa'] ?></td>
+                            <td data-label="Destacada">
                                 <button class="btn-estrella <?= $fila['destacada'] ? 'activa' : '' ?>"
                                     onclick="toggleDestacada(<?= $fila['id_empresa'] ?>, '<?= $fila['destacada'] ? 'quitar' : 'destacar' ?>')"
                                     title="<?= $fila['destacada'] ? 'Quitar destacada' : 'Destacar' ?>">
                                     <?= $fila['destacada'] ? '⭐' : '☆' ?>
                                 </button>
                             </td>
-                            <td><?= number_format($fila['vistas']) ?></td>
-                            <td>
+                            <td data-label="Vistas"><?= number_format($fila['vistas']) ?></td>
+                            <td data-label="Logo">
                                 <?php if (!empty($fila['logo'])): ?>
                                     <img src="/guiaempresarial.pe/assets/img/<?= htmlspecialchars($fila['logo']) ?>"
                                         style="width:45px;height:45px;object-fit:cover;border-radius:6px;">
                                 <?php else: ?>—<?php endif; ?>
                             </td>
-                            <td><?= htmlspecialchars($fila['nombre']) ?></td>
-                            <td><?= htmlspecialchars($fila['telefono'] ?? '—') ?></td>
-                            <td><?= htmlspecialchars($fila['direccion'] ?? '—') ?></td>
-                            <td><?= htmlspecialchars($fila['categoria']) ?></td>
-                            <td><?= !empty($fila['horario']) ? htmlspecialchars($fila['horario']) : '—' ?></td>
-                            <td><?= !empty($fila['descripcion']) ? htmlspecialchars(mb_strimwidth($fila['descripcion'], 0, 50, '…')) : '—' ?>
+                            <td data-label="Nombre"><?= htmlspecialchars($fila['nombre']) ?></td>
+                            <td data-label="Teléfono"><?= htmlspecialchars($fila['telefono'] ?? '—') ?></td>
+                            <td data-label="Dirección"><?= htmlspecialchars($fila['direccion'] ?? '—') ?></td>
+                            <td data-label="Rubro"><?= htmlspecialchars($fila['categoria']) ?></td>
+                            <td data-label="Horario">
+                                <?= !empty($fila['horario']) ? htmlspecialchars($fila['horario']) : '—' ?></td>
+                            <td data-label="Descripción">
+                                <?= !empty($fila['descripcion']) ? htmlspecialchars(mb_strimwidth($fila['descripcion'], 0, 50, '…')) : '—' ?>
                             </td>
-                            <td>
+                            <td data-label="Mapa">
                                 <?php if (!empty($fila['ubicacion_link'])): ?>
                                     <a href="<?= htmlspecialchars($fila['ubicacion_link']) ?>" target="_blank">Ver mapa</a>
                                 <?php else: ?>—<?php endif; ?>
                             </td>
-                            <td>
+                            <td data-label="Web">
                                 <?php if (!empty($fila['link_empresa'])): ?>
                                     <a href="<?= htmlspecialchars($fila['link_empresa']) ?>" target="_blank">Ver página</a>
                                 <?php else: ?>—<?php endif; ?>
                             </td>
-                            <td>
+                            <td data-label="Acciones">
                                 <div class="acciones">
                                     <a href="editar.php?id=<?= $fila['id_empresa'] ?>" class="btn">Editar</a>
                                     <button onclick="eliminarRegistro('empresa', <?= $fila['id_empresa'] ?>, this)"
@@ -177,7 +178,6 @@ $rol = $_SESSION['rol'];
                 </table>
             </div>
             <br><br>
-
 
         </section>
     </div>
@@ -202,7 +202,7 @@ $rol = $_SESSION['rol'];
             if (!confirm('¿Estás seguro de eliminar permanentemente este registro?')) return;
 
             let archivo = '';
-            // if (tipo === 'usuario') archivo = 'eliminar_usuario.php'; 
+
             if (tipo === 'empresa') archivo = 'eliminar.php';
             if (tipo === 'categoria') archivo = 'eliminar_categoria.php';
 

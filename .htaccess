@@ -1,5 +1,25 @@
 ErrorDocument 404 /guiaempresarial.pe/404.php
 
+# Opciones de seguridad básicas
+Options -Indexes
+ServerSignature Off
+
+# Protección contra acceso a archivos por extensión
+<FilesMatch "\.(log|sql|md|git|env)$">
+    Require all denied
+</FilesMatch>
+
+# Proteger archivos específicos
+<Files "README.md">
+    Require all denied
+</Files>
+
+# Headers de seguridad adicionales
+<IfModule mod_headers.c>
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteCond %{REQUEST_FILENAME} !-f

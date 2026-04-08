@@ -30,8 +30,9 @@ $orden = array_map('intval', $data['orden']);
 $stmt = $conexion->prepare("UPDATE empresa_galeria SET orden = ? WHERE id_foto = ?");
 
 foreach ($orden as $posicion => $id_foto) {
-    if ($id_foto <= 0) continue; // saltar IDs inválidos
-    $pos = intval($posicion) + 1; // orden desde 1, no desde 0
+    if ($id_foto <= 0)
+        continue;
+    $pos = intval($posicion) + 1;
     $stmt->bind_param("ii", $pos, $id_foto);
     $stmt->execute();
 }

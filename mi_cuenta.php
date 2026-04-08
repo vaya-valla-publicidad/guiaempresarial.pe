@@ -1,6 +1,7 @@
 <?php
 session_start();
 include 'db.php';
+include 'includes/security.php';
 
 if (!isset($_SESSION['usuario_publico_id'])) {
   header('Location: login_usuario.php');
@@ -16,104 +17,109 @@ $error = '';
 $exito = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
-  if ($_POST['accion'] === 'borrar_cuenta') {
-    $stmt_del_r = $conexion->prepare("DELETE FROM resenas WHERE id_usuario_publico = ?");
-    $stmt_del_r->bind_param("i", $id_u);
-    $stmt_del_r->execute();
-    if (!empty($u['foto_perfil']) && file_exists('assets/img/avatars/' . $u['foto_perfil'])) {
-      unlink('assets/img/avatars/' . $u['foto_perfil']);
+  if (!validarCSRF()) {
+    logSeguridad('csrf_invalido', 'Intento de POST en mi_cuenta sin token');
+    $error = 'Error de seguridad. Intente nuevamente.';
+  } else {
+    if ($_POST['accion'] === 'borrar_cuenta') {
+      $stmt_del_r = $conexion->prepare("DELETE FROM resenas WHERE id_usuario_publico = ?");
+      $stmt_del_r->bind_param("i", $id_u);
+      $stmt_del_r->execute();
+      if (!empty($u['foto_perfil']) && file_exists('assets/img/avatars/' . $u['foto_perfil'])) {
+        unlink('assets/img/avatars/' . $u['foto_perfil']);
+      }
+      $stmt_del_u = $conexion->prepare("DELETE FROM usuarios_publicos WHERE id = ?");
+      $stmt_del_u->bind_param("i", $id_u);
+      $stmt_del_u->execute();
+      session_destroy();
+      header('Location: index.php');
+      exit;
     }
-    $stmt_del_u = $conexion->prepare("DELETE FROM usuarios_publicos WHERE id = ?");
-    $stmt_del_u->bind_param("i", $id_u);
-    $stmt_del_u->execute();
-    session_destroy();
-    header('Location: index.php');
-    exit;
-  }
 
-  if ($_POST['accion'] === 'borrar_foto') {
-    if (!empty($u['foto_perfil']) && file_exists('assets/img/avatars/' . $u['foto_perfil'])) {
-      unlink('assets/img/avatars/' . $u['foto_perfil']);
+    if ($_POST['accion'] === 'borrar_foto') {
+      if (!empty($u['foto_perfil']) && file_exists('assets/img/avatars/' . $u['foto_perfil'])) {
+        unlink('assets/img/avatars/' . $u['foto_perfil']);
+      }
+      $stmt_bf = $conexion->prepare("UPDATE usuarios_publicos SET foto_perfil = NULL WHERE id = ?");
+      $stmt_bf->bind_param("i", $id_u);
+      $stmt_bf->execute();
+      $_SESSION['usuario_publico_foto'] = null;
+      $u['foto_perfil'] = null;
+      $exito = 'Foto de perfil eliminada.';
     }
-    $stmt_bf = $conexion->prepare("UPDATE usuarios_publicos SET foto_perfil = NULL WHERE id = ?");
-    $stmt_bf->bind_param("i", $id_u);
-    $stmt_bf->execute();
-    $_SESSION['usuario_publico_foto'] = null;
-    $u['foto_perfil'] = null;
-    $exito = 'Foto de perfil eliminada.';
-  }
 
-  if ($_POST['accion'] === 'datos') {
-    $nombre_nuevo = trim($_POST['nombre'] ?? '');
-    if ($nombre_nuevo && $nombre_nuevo !== $u['nombre']) {
-      $stmt_dn = $conexion->prepare("UPDATE usuarios_publicos SET nombre = ? WHERE id = ?");
-      $stmt_dn->bind_param("si", $nombre_nuevo, $id_u);
-      $stmt_dn->execute();
-      $_SESSION['usuario_publico_nombre'] = $nombre_nuevo;
-      $exito = 'Nombre actualizado.';
-      $u['nombre'] = $nombre_nuevo;
-    }
-  }
-
-  if ($_POST['accion'] === 'password') {
-    $bypass = isset($_SESSION['login_bypass_pw']) && $_SESSION['login_bypass_pw'] === true;
-    $actual = $_POST['actual'] ?? '';
-    $nueva = $_POST['nueva'] ?? '';
-    $confirm = $_POST['confirm'] ?? '';
-    if (!$bypass && !password_verify($actual, $u['password_hash'])) {
-      $error = 'La contraseña actual no es correcta.';
-    } elseif (strlen($nueva) < 6) {
-      $error = 'La nueva contraseña debe tener al menos 6 caracteres.';
-    } elseif ($nueva !== $confirm) {
-      $error = 'Las contraseñas nuevas no coinciden.';
-    } else {
-      $hash = password_hash($nueva, PASSWORD_DEFAULT);
-      $stmt_pw = $conexion->prepare("UPDATE usuarios_publicos SET password_hash = ? WHERE id = ?");
-      $stmt_pw->bind_param("si", $hash, $id_u);
-      $stmt_pw->execute();
-      $exito = 'Contraseña actualizada.';
-      if ($bypass)
-        unset($_SESSION['login_bypass_pw']);
-    }
-  }
-
-  if ($_POST['accion'] === 'foto' && isset($_FILES['foto_perfil'])) {
-    $file = $_FILES['foto_perfil'];
-    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    $permitidos = ['jpg', 'jpeg', 'png', 'webp'];
-    if (!in_array($ext, $permitidos)) {
-      $error = 'Solo se permiten imágenes JPG, PNG o WEBP.';
-    } elseif ($file['size'] > 2 * 1024 * 1024) {
-      $error = 'La imagen no puede superar 2MB.';
-    } else {
-      $nombre_archivo = 'avatar_' . $id_u . '_' . time() . '.' . $ext;
-      $destino = 'assets/img/avatars/' . $nombre_archivo;
-      if (!is_dir('assets/img/avatars'))
-        mkdir('assets/img/avatars', 0755, true);
-      if (move_uploaded_file($file['tmp_name'], $destino)) {
-        if ($u['foto_perfil'] && file_exists('assets/img/avatars/' . $u['foto_perfil'])) {
-          unlink('assets/img/avatars/' . $u['foto_perfil']);
-        }
-        $stmt_fot = $conexion->prepare("UPDATE usuarios_publicos SET foto_perfil = ? WHERE id = ?");
-        $stmt_fot->bind_param("si", $nombre_archivo, $id_u);
-        $stmt_fot->execute();
-        $_SESSION['usuario_publico_foto'] = $nombre_archivo;
-        $u['foto_perfil'] = $nombre_archivo;
-        $exito = 'Foto de perfil actualizada.';
-      } else {
-        $error = 'No se pudo guardar la imagen.';
+    if ($_POST['accion'] === 'datos') {
+      $nombre_nuevo = trim($_POST['nombre'] ?? '');
+      if ($nombre_nuevo && $nombre_nuevo !== $u['nombre']) {
+        $stmt_dn = $conexion->prepare("UPDATE usuarios_publicos SET nombre = ? WHERE id = ?");
+        $stmt_dn->bind_param("si", $nombre_nuevo, $id_u);
+        $stmt_dn->execute();
+        $_SESSION['usuario_publico_nombre'] = $nombre_nuevo;
+        $exito = 'Nombre actualizado.';
+        $u['nombre'] = $nombre_nuevo;
       }
     }
-  }
 
-  if ($_POST['accion'] === 'privacidad') {
-    $visi = $_POST['visibilidad_resenas'] ?? 'publico';
-    if ($visi === 'publico' || $visi === 'anonimo') {
-      $stmt_pri = $conexion->prepare("UPDATE usuarios_publicos SET visibilidad_resenas = ? WHERE id = ?");
-      $stmt_pri->bind_param("si", $visi, $id_u);
-      $stmt_pri->execute();
-      $u['visibilidad_resenas'] = $visi;
-      $exito = 'Opciones de privacidad guardadas.';
+    if ($_POST['accion'] === 'password') {
+      $bypass = isset($_SESSION['login_bypass_pw']) && $_SESSION['login_bypass_pw'] === true;
+      $actual = $_POST['actual'] ?? '';
+      $nueva = $_POST['nueva'] ?? '';
+      $confirm = $_POST['confirm'] ?? '';
+      if (!$bypass && !password_verify($actual, $u['password_hash'])) {
+        $error = 'La contraseña actual no es correcta.';
+      } elseif (strlen($nueva) < 6) {
+        $error = 'La nueva contraseña debe tener al menos 6 caracteres.';
+      } elseif ($nueva !== $confirm) {
+        $error = 'Las contraseñas nuevas no coinciden.';
+      } else {
+        $hash = password_hash($nueva, PASSWORD_DEFAULT);
+        $stmt_pw = $conexion->prepare("UPDATE usuarios_publicos SET password_hash = ? WHERE id = ?");
+        $stmt_pw->bind_param("si", $hash, $id_u);
+        $stmt_pw->execute();
+        $exito = 'Contraseña actualizada.';
+        if ($bypass)
+          unset($_SESSION['login_bypass_pw']);
+      }
+    }
+
+    if ($_POST['accion'] === 'foto' && isset($_FILES['foto_perfil'])) {
+      $file = $_FILES['foto_perfil'];
+      $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+      $permitidos = ['jpg', 'jpeg', 'png', 'webp'];
+      if (!in_array($ext, $permitidos)) {
+        $error = 'Solo se permiten imágenes JPG, PNG o WEBP.';
+      } elseif ($file['size'] > 2 * 1024 * 1024) {
+        $error = 'La imagen no puede superar 2MB.';
+      } else {
+        $nombre_archivo = 'avatar_' . $id_u . '_' . time() . '.' . $ext;
+        $destino = 'assets/img/avatars/' . $nombre_archivo;
+        if (!is_dir('assets/img/avatars'))
+          mkdir('assets/img/avatars', 0755, true);
+        if (move_uploaded_file($file['tmp_name'], $destino)) {
+          if ($u['foto_perfil'] && file_exists('assets/img/avatars/' . $u['foto_perfil'])) {
+            unlink('assets/img/avatars/' . $u['foto_perfil']);
+          }
+          $stmt_fot = $conexion->prepare("UPDATE usuarios_publicos SET foto_perfil = ? WHERE id = ?");
+          $stmt_fot->bind_param("si", $nombre_archivo, $id_u);
+          $stmt_fot->execute();
+          $_SESSION['usuario_publico_foto'] = $nombre_archivo;
+          $u['foto_perfil'] = $nombre_archivo;
+          $exito = 'Foto de perfil actualizada.';
+        } else {
+          $error = 'No se pudo guardar la imagen.';
+        }
+      }
+    }
+
+    if ($_POST['accion'] === 'privacidad') {
+      $visi = $_POST['visibilidad_resenas'] ?? 'publico';
+      if ($visi === 'publico' || $visi === 'anonimo') {
+        $stmt_pri = $conexion->prepare("UPDATE usuarios_publicos SET visibilidad_resenas = ? WHERE id = ?");
+        $stmt_pri->bind_param("si", $visi, $id_u);
+        $stmt_pri->execute();
+        $u['visibilidad_resenas'] = $visi;
+        $exito = 'Opciones de privacidad guardadas.';
+      }
     }
   }
 }
@@ -135,6 +141,10 @@ if ($resenas_q)
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_eliminar_resena'])) {
   header('Content-Type: application/json');
+  if (!validarCSRF()) {
+    echo json_encode(['success' => false, 'error' => 'CSRF Inválido']);
+    exit;
+  }
   $id_r = intval($_POST['ajax_eliminar_resena']);
   $stmt_del = $conexion->prepare("DELETE FROM resenas WHERE id_resena = ? AND id_usuario_publico = ?");
   $stmt_del->bind_param("ii", $id_r, $id_u);
@@ -152,6 +162,7 @@ include 'includes/header.php';
 ?>
 
 <link rel="stylesheet" href="assets/css/mi_cuenta.css">
+<script>window.csrfToken = '<?php echo function_exists('generarTokenCSRF') ? generarTokenCSRF() : ""; ?>';</script>
 
 <div class="mc-page">
 
@@ -230,6 +241,7 @@ include 'includes/header.php';
           </div>
           <div class="mc-avatar-actions">
             <form method="POST" enctype="multipart/form-data" id="form-foto">
+              <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
               <input type="hidden" name="accion" value="foto">
               <label class="mc-btn-upload" for="foto_input">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -244,6 +256,7 @@ include 'includes/header.php';
             </form>
             <?php if (!empty($u['foto_perfil'])): ?>
               <form method="POST" style="display:inline">
+                <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
                 <input type="hidden" name="accion" value="borrar_foto">
                 <button type="submit" class="mc-btn-ghost mc-btn-sm">Eliminar foto</button>
               </form>
@@ -253,6 +266,7 @@ include 'includes/header.php';
         </div>
 
         <form method="POST" class="mc-form">
+          <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
           <input type="hidden" name="accion" value="datos">
           <div class="mc-field">
             <label>Nombre <span class="mc-req">*</span></label>
@@ -281,6 +295,7 @@ include 'includes/header.php';
           </div>
         <?php endif; ?>
         <form method="POST" class="mc-form">
+          <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
           <input type="hidden" name="accion" value="password">
           <?php if (!$bypass_active): ?>
             <div class="mc-field">
@@ -365,6 +380,7 @@ include 'includes/header.php';
         <p class="mc-section-title">Privacidad de la actividad</p>
 
         <form method="POST" class="mc-form">
+          <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
           <input type="hidden" name="accion" value="privacidad">
 
           <div class="mc-field">
@@ -384,13 +400,13 @@ include 'includes/header.php';
           </div>
         </form>
 
-
         <div class="mc-danger-zone">
           <h3>Eliminar cuenta</h3>
           <p>Eliminar tu cuenta eliminará permanentemente tu perfil y todo el contenido asociado. Esta acción no se
             puede revertir.</p>
           <form method="POST"
             onsubmit="return confirm('¿Seguro que deseas borrar tu cuenta? Esta acción no se puede deshacer.');">
+            <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
             <input type="hidden" name="accion" value="borrar_cuenta">
             <button type="submit" class="mc-btn-delete">Eliminar cuenta</button>
           </form>
@@ -457,7 +473,7 @@ include 'includes/header.php';
     fetch('mi_cuenta.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: 'ajax_eliminar_resena=' + id_resena
+      body: 'ajax_eliminar_resena=' + id_resena + '&csrf_token=' + window.csrfToken
     })
       .then(r => r.json())
       .then(data => {

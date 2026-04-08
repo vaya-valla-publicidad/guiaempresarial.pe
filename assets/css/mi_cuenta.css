@@ -16,7 +16,6 @@
   --mc-font: 'DM Sans', sans-serif;
 }
 
-/* ─── Dark mode via body.dark-mode (igual que el resto del sitio) ─── */
 body.dark-mode {
   --mc-dark: #f3f4f6;
   --mc-mid: #d1d5db;
@@ -71,7 +70,6 @@ body.dark-mode .mc-alerta-error {
   border-color: #dc2626;
 }
 
-/* ─── Header ─── */
 .mc-header {
   display: flex;
   align-items: center;
@@ -164,7 +162,6 @@ body.dark-mode .mc-logout:hover {
   background: rgba(255, 255, 255, 0.08);
 }
 
-/* ─── Mobile nav ─── */
 .mc-mobile-nav {
   display: none;
   padding: 16px 0 0;
@@ -202,7 +199,6 @@ body.dark-mode .mc-mobile-select:focus {
   border-color: #f87171;
 }
 
-/* ─── Layout ─── */
 .mc-layout {
   display: flex;
   gap: 0;
@@ -274,7 +270,6 @@ body.dark-mode .mc-badge {
   color: #f3f4f6;
 }
 
-/* ─── Content & Panels ─── */
 .mc-content {
   flex: 1;
   min-width: 0;
@@ -288,7 +283,6 @@ body.dark-mode .mc-badge {
   display: block;
 }
 
-/* ─── Avatar row ─── */
 .mc-avatar-row {
   display: flex;
   align-items: center;
@@ -339,7 +333,6 @@ body.dark-mode .mc-upload-hint {
   color: #d1d5db;
 }
 
-/* ─── Buttons ─── */
 .mc-btn-upload {
   display: inline-flex;
   align-items: center;
@@ -372,7 +365,6 @@ body.dark-mode .mc-btn-upload:hover {
   background: rgba(255, 255, 255, 0.08);
 }
 
-/* ─── Form fields ─── */
 .mc-field {
   margin-bottom: 20px;
 }
@@ -594,7 +586,6 @@ body.dark-mode .mc-btn-delete:hover {
   background: #fca5a5;
 }
 
-/* ─── Section title ─── */
 .mc-section-title {
   font-size: 15px;
   font-weight: 600;
@@ -609,7 +600,6 @@ body.dark-mode .mc-section-title {
   border-bottom-color: #4b5563;
 }
 
-/* ─── Export card ─── */
 .mc-export-card {
   border: 1.5px solid var(--mc-border);
   border-radius: var(--mc-radius);
@@ -639,7 +629,6 @@ body.dark-mode .mc-export-card p {
   color: #d1d5db;
 }
 
-/* ─── Danger zone ─── */
 .mc-danger-zone {
   background: #fff5f5;
   border: 1.5px solid #fecaca;
@@ -675,7 +664,6 @@ body.dark-mode .mc-danger-zone p {
   color: #d1d5db;
 }
 
-/* ─── Reviews list ─── */
 .mc-resenas-lista {
   display: flex;
   flex-direction: column;
@@ -787,7 +775,6 @@ body.dark-mode .mc-resena-texto {
   gap: 8px;
 }
 
-/* ─── Empty state ─── */
 .mc-empty {
   display: flex;
   flex-direction: column;
@@ -806,7 +793,6 @@ body.dark-mode .mc-empty {
   color: #d1d5db;
 }
 
-/* ─── Password toggle ─── */
 .pw-input-wrap {
   position: relative;
 }
@@ -847,7 +833,6 @@ body.dark-mode .pw-toggle:hover {
   color: #f3f4f6;
 }
 
-/* ─── Animations ─── */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -860,7 +845,6 @@ body.dark-mode .pw-toggle:hover {
   }
 }
 
-/* ─── Responsive ─── */
 @media (max-width: 680px) {
   .mc-page {
     padding: 0 20px 60px;

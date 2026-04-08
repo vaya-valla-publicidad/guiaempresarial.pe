@@ -42,6 +42,7 @@ if (!isset($seo_robots))
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="manifest" href="/guiaempresarial.pe/manifest.json">
   <meta name="theme-color" content="#0d6efd">
+  <script>window.csrfToken = '<?php echo function_exists('generarTokenCSRF') ? generarTokenCSRF() : ""; ?>';</script>
 </head>
 
 <body>

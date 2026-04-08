@@ -9,7 +9,12 @@ if (!in_array($_SESSION['rol'], ['admin', 'editor'])) {
     exit;
 }
 
-$id     = intval($_POST['id'] ?? 0);
+if (!validarCSRF()) {
+    echo json_encode(['ok' => false, 'error' => 'Token CSRF inválido']);
+    exit;
+}
+
+$id = intval($_POST['id'] ?? 0);
 $accion = $_POST['accion'] ?? '';
 
 if (!$id) {
