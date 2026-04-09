@@ -68,7 +68,8 @@ function renderEmpresaCard($fila, $fotos_arr = [])
         <?php if (count($fotos_arr) > 0): ?>
             <div class="empresa-slider">
                 <?php foreach ($fotos_arr as $i => $foto): ?>
-                    <div class="slide <?= $i === 0 ? 'activo' : '' ?>">
+                    <div class="slide <?= $i === 0 ? 'activo' : '' ?>"
+                        style="background-image: url('<?= $path_galeria . htmlspecialchars($foto) ?>');">
                         <img src="<?= $path_galeria . htmlspecialchars($foto) ?>"
                             alt="Imagen de <?= htmlspecialchars($fila['nombre']) ?>" loading="lazy">
                     </div>

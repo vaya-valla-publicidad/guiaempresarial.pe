@@ -274,8 +274,9 @@ if ($total_resenas > 0) {
                                     </div>
                                     <p class="resena-comentario"><?= nl2br(htmlspecialchars($r['comentario'])) ?></p>
                                     <a href="gestionar_resenas.php?empresa=<?= $id_empresa ?>&eliminar=<?= $r['id_resena'] ?>"
-                                        class="btn-del-resena" onclick="return confirm('¿Eliminar esta reseña?')">
-                                        Eliminar reseña
+                                        class="btn btn-danger" onclick="return confirm('¿Eliminar esta reseña?')"
+                                        style="font-size:11px !important; padding: 6px 15px !important; margin-top: 10px;">
+                                        <i class="bi bi-trash3"></i> Eliminar reseña
                                     </a>
                                 </div>
                             <?php endforeach; ?>

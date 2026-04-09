@@ -41,9 +41,9 @@ $panel_url = ($rol === 'admin') ? 'admin.php' : 'editor.php';
       Usa imágenes <strong>1920 × 600 px</strong> para que se vean perfectas en PC y celular.
       El alto mínimo es 480 px — imágenes más altas se recortarán verticalmente al centro.
       <div class="size-tags">
-        <span class="size-tag">✅ Ideal: 1920 × 600 px</span>
-        <span class="size-tag">✅ Bueno: 1280 × 480 px</span>
-        <span class="size-tag">⚠️ Mínimo: 800 × 400 px</span>
+        <span class="size-tag success">✅ Ideal: 1920 × 600 px</span>
+        <span class="size-tag success">✅ Bueno: 1280 × 480 px</span>
+        <span class="size-tag warning">⚠️ Mínimo: 800 × 400 px</span>
         <span class="size-tag">📁 Máx. 5 MB</span>
         <span class="size-tag">🖼 JPG · PNG · WEBP</span>
       </div>
@@ -52,8 +52,8 @@ $panel_url = ($rol === 'admin') ? 'admin.php' : 'editor.php';
 
   <div class="drop-zone" id="drop-zone">
     <i class="bi bi-cloud-arrow-up drop-icon"></i>
-    <span class="drop-label">Arrastra una imagen aquí o <strong>haz clic para seleccionar</strong></span>
-    <span class="drop-sublabel">JPG, PNG, WEBP, GIF — máximo 5 MB</span>
+    <span class="drop-label">Arrastra una imagen aquí para subirla</span>
+    <span class="drop-sublabel">JPG, PNG, WEBP — máximo 5 MB</span>
 
     <div class="drop-preview-wrap" id="drop-preview-wrap">
       <img id="drop-preview-img" src="" alt="preview">
@@ -61,15 +61,15 @@ $panel_url = ($rol === 'admin') ? 'admin.php' : 'editor.php';
     </div>
 
     <div class="drop-footer">
-      <button class="btn-file-select" id="btn-file-select" type="button">
+      <button class="btn btn-file-select" id="btn-file-select" type="button">
         <i class="bi bi-folder2-open"></i> Seleccionar archivo
       </button>
-      <div class="time-upload-wrap">
+      <div class="time-upload-wrap" style="margin: 0 20px;">
         <label for="inp-tiempo"><i class="bi bi-clock"></i> Tiempo:</label>
         <input type="range" id="inp-tiempo" min="1" max="30" value="5" step="1">
         <span class="time-upload-val" id="inp-tiempo-val">5s</span>
       </div>
-      <button class="btn-upload" id="btn-subir" disabled>
+      <button class="btn btn-upload" id="btn-subir" disabled>
         <i class="bi bi-plus-circle"></i> Agregar al banner
       </button>
     </div>
@@ -89,7 +89,7 @@ $panel_url = ($rol === 'admin') ? 'admin.php' : 'editor.php';
       <div class="banner-card <?= !$b['activo'] ? 'inactivo' : '' ?>"
            data-id="<?= $b['id_banner'] ?>">
 
-        <span class="card-orden">#<?= $pos++ ?></span>
+        <div class="banner-card-header">#<?= $pos++ ?></div>
 
         <div class="banner-card-img">
           <img src="/guiaempresarial.pe/assets/img/banner/<?= htmlspecialchars($b['imagen']) ?>"
@@ -106,7 +106,7 @@ $panel_url = ($rol === 'admin') ? 'admin.php' : 'editor.php';
                      min="1" max="30" value="<?= round($b['tiempo_ms'] / 1000) ?>">
               <span class="time-val"><?= round($b['tiempo_ms'] / 1000) ?>s</span>
             </div>
-            <button class="btn-save-time" data-id="<?= $b['id_banner'] ?>">Guardar tiempo</button>
+            <button class="btn btn-save-time" data-id="<?= $b['id_banner'] ?>">Guardar tiempo</button>
           </div>
           <div class="card-controls">
             <div style="display:flex;align-items:center;gap:7px;">

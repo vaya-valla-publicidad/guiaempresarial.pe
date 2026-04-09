@@ -22,8 +22,8 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 if (empty($_SESSION['admin_access_granted']) || $_SESSION['admin_access_granted'] !== true) {
-    http_response_code(403);
-    die("Acceso Denegado. La puerta secreta requiere una llave válida.");
+    header("Location: /guiaempresarial.pe/index.php");
+    exit();
 }
 
 include '../db.php';

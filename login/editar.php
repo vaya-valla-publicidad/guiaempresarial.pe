@@ -154,17 +154,17 @@ $total_destacadas = $conexion->query("SELECT COUNT(*) as total FROM empresas WHE
 
             <h3>Logo de la empresa</h3>
             <?php if (!empty($empresa['logo'])): ?>
-                <div style="position:relative;display:inline-block">
+                <div style="position:relative;display:inline-block;margin-bottom:15px;">
                     <img src="../assets/img/<?= htmlspecialchars($empresa['logo']) ?>"
-                        style="width:100px;height:100px;object-fit:cover;border-radius:6px;">
-                    <a href="javascript:void(0)" onclick="eliminarFoto(<?= $id ?>,'logo',this.parentElement)" style="position:absolute;top:5px;right:5px;background:red;color:white;
-                  padding:4px 6px;border-radius:4px;text-decoration:none;font-size:12px;">X</a>
+                        style="width:120px;height:120px;object-fit:cover;border-radius:12px;border:3px solid #fff;box-shadow:0 5px 15px rgba(0,0,0,0.1);">
+                    <a href="javascript:void(0)" onclick="eliminarFoto(<?= $id ?>,'logo',this.parentElement)"
+                        class="btn-borrar" style="position:absolute;top:-10px;right:-10px;">✕</a>
                 </div>
             <?php endif; ?>
-            <br><br>
+            <br>
             <input type="file" name="logo" accept="image/*">
 
-            <h3>Fotos del carrusel</h3>
+            <h3 style="margin-top:30px;">Fotos del carrusel</h3>
             <input type="file" name="fotos[]" multiple accept="image/*">
             <br><br>
 
@@ -235,8 +235,10 @@ $total_destacadas = $conexion->query("SELECT COUNT(*) as total FROM empresas WHE
                 <iframe id="mapa-iframe" class="mapa-iframe"
                     src="https://maps.google.com/maps?q=<?= $mapaQuery ?>&output=embed" allowfullscreen
                     loading="lazy"></iframe>
-                <p class="mapa-tip">1. Busca el negocio arriba &nbsp;·&nbsp; 2. En Google Maps comparte la ubicación y
-                    pega el link abajo</p>
+
+                <p class="mapa-tip">1. Busca el negocio arriba &nbsp;·&nbsp; 2. Entra a Google Maps, comparte la
+                    ubicación y pega el link abajo</p>
+
                 <input type="text" name="ubicacion_link"
                     value="<?= htmlspecialchars($empresa['ubicacion_link'] ?? '') ?>"
                     placeholder="Pega la URL de Google Maps">
