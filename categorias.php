@@ -20,7 +20,7 @@ include 'includes/header.php';
                 $nombre = htmlspecialchars($fila['nombre']);
                 $icono = htmlspecialchars($fila['icono'] ?? 'bi-briefcase');
                 ?>
-                <a href="empresas.php?id_categoria=<?= $fila['id_categoria'] ?>" class="categoria-card">
+                <a href="categoria/<?= $fila['slug'] ?>" class="categoria-card">
                     <div class="categoria-icono-wrap">
                         <i class="bi <?= $icono ?>"></i>
                     </div>

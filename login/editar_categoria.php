@@ -1,6 +1,8 @@
 <?php require_once __DIR__ . '/proteger.php'; ?>
 <?php
 include '../db.php';
+include '../includes/slug_helper.php';
+
 
 if (!isset($_GET['id'])) {
     header("Location: admin.php");
@@ -24,9 +26,10 @@ if (!$cat) {
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $nombre = trim($_POST['nombre']);
     $icono = trim($_POST['icono']) ?: 'bi-briefcase';
+    $slug = generarSlug($nombre);
 
-    $stmt = $conexion->prepare("UPDATE categorias SET nombre=?, icono=? WHERE id_categoria=?");
-    $stmt->bind_param("ssi", $nombre, $icono, $id);
+    $stmt = $conexion->prepare("UPDATE categorias SET nombre=?, icono=?, slug=? WHERE id_categoria=?");
+    $stmt->bind_param("sssi", $nombre, $icono, $slug, $id);
     if ($stmt->execute()) {
         $success = "Categoría actualizada ✅";
         $cat['nombre'] = $nombre;

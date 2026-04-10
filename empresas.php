@@ -162,34 +162,64 @@ $seo_description = "Explora negocios locales y descubre nuevas oportunidades en 
 
 $seo_id_empresa = $_GET['empresa'] ?? null;
 $seo_id_categoria = $_GET['id_categoria'] ?? null;
+$slug_param = $_GET['slug'] ?? null;
+$cat_slug_param = $_GET['cat_slug'] ?? null;
 
-if ($seo_id_empresa) {
-    $stmt_seo = $conexion->prepare("SELECT nombre, descripcion, logo FROM empresas WHERE id_empresa = ?");
-    $id_emp_int = intval($seo_id_empresa);
-    $stmt_seo->bind_param("i", $id_emp_int);
+$id_empresa = $seo_id_empresa;
+$id_categoria = $seo_id_categoria;
+
+if ($seo_id_empresa && is_numeric($seo_id_empresa)) {
+    $stmt_r = $conexion->prepare("SELECT slug FROM empresas WHERE id_empresa = ?");
+    $stmt_r->bind_param("i", $seo_id_empresa);
+    $stmt_r->execute();
+    $res_r = $stmt_r->get_result();
+    if ($res_r && $row = $res_r->fetch_assoc()) {
+        header("Location: " . APP_URL . "/empresa/" . $row['slug'], true, 301);
+        exit;
+    }
+}
+if ($seo_id_categoria && is_numeric($seo_id_categoria)) {
+    $stmt_r = $conexion->prepare("SELECT slug FROM categorias WHERE id_categoria = ?");
+    $stmt_r->bind_param("i", $seo_id_categoria);
+    $stmt_r->execute();
+    $res_r = $stmt_r->get_result();
+    if ($res_r && $row = $res_r->fetch_assoc()) {
+        header("Location: " . APP_URL . "/categoria/" . $row['slug'], true, 301);
+        exit;
+    }
+}
+
+if ($slug_param) {
+    $stmt_seo = $conexion->prepare("SELECT id_empresa, nombre, descripcion, logo FROM empresas WHERE slug = ?");
+    $stmt_seo->bind_param("s", $slug_param);
     $stmt_seo->execute();
     $res_seo = $stmt_seo->get_result();
     if ($res_seo && $res_seo->num_rows === 1) {
         $emp_seo = $res_seo->fetch_assoc();
+        $id_empresa = $emp_seo['id_empresa'];
         $seo_title = $emp_seo['nombre'] . " - Guía Empresarial";
         if (!empty($emp_seo['descripcion'])) {
             $seo_description = mb_strimwidth($emp_seo['descripcion'], 0, 150, "...");
         }
         if (!empty($emp_seo['logo'])) {
-            $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
-            $domain = $_SERVER['HTTP_HOST'] ?? 'localhost';
-            $seo_image = $protocol . "://" . $domain . "/guiaempresarial.pe/assets/img/" . $emp_seo['logo'];
+            $seo_image = APP_URL . "/assets/img/" . $emp_seo['logo'];
         }
+    } else {
+        header("Location: " . APP_URL . "/404.php", true, 302);
+        exit;
     }
-} elseif ($seo_id_categoria) {
-    $stmt_seo_c = $conexion->prepare("SELECT nombre FROM categorias WHERE id_categoria = ?");
-    $id_cat_int = intval($seo_id_categoria);
-    $stmt_seo_c->bind_param("i", $id_cat_int);
+} elseif ($cat_slug_param) {
+    $stmt_seo_c = $conexion->prepare("SELECT id_categoria, nombre FROM categorias WHERE slug = ?");
+    $stmt_seo_c->bind_param("s", $cat_slug_param);
     $stmt_seo_c->execute();
     $res_seo_c = $stmt_seo_c->get_result();
     if ($res_seo_c && $res_seo_c->num_rows === 1) {
         $cat_seo = $res_seo_c->fetch_assoc();
+        $id_categoria = $cat_seo['id_categoria'];
         $seo_title = "Empresas en " . $cat_seo['nombre'] . " - Guía Empresarial";
+    } else {
+        header("Location: " . APP_URL . "/404.php", true, 302);
+        exit;
     }
 }
 include 'includes/header.php';
@@ -204,15 +234,13 @@ include 'includes/header.php';
         </div>
 
         <?php
-        $id_categoria = $_GET['id_categoria'] ?? null;
-        $id_empresa = $_GET['empresa'] ?? null;
         $buscar = $_GET['buscar'] ?? null;
 
         $pagina_actual = isset($_GET['pagina']) ? max(1, intval($_GET['pagina'])) : 1;
         $empresas_por_pagina = 20;
         $offset = ($pagina_actual - 1) * $empresas_por_pagina;
 
-        $sql_select = "SELECT e.*, c.nombre AS categoria, 
+        $sql_select = "SELECT e.*, c.nombre AS categoria, c.slug AS cat_slug, 
                               GROUP_CONCAT(g.foto ORDER BY g.orden ASC, g.id_foto ASC SEPARATOR ',') as fotos_galeria 
                        FROM empresas e 
                        JOIN categorias c ON e.id_categoria = c.id_categoria
@@ -281,7 +309,7 @@ include 'includes/header.php';
         }
 
         if ($id_empresa && (!$resultado || $resultado->num_rows === 0)) {
-            header("Location: 404.php", true, 302);
+            header("Location: " . APP_URL . "/404.php", true, 302);
             exit;
         }
 
@@ -306,14 +334,14 @@ include 'includes/header.php';
             $stmt_vistas->execute();
             ?>
 
-            <a href="empresas.php" class="btn-volver">← Volver a empresas</a>
+            <a href="<?= APP_URL ?>/empresas.php" class="btn-volver">← Volver a empresas</a>
 
             <div class="perfil-wrapper">
                 <div class="perfil-hero">
                     <div class="perfil-banner"></div>
                     <div class="perfil-hero-body">
                         <?php if ($logo): ?>
-                            <img class="perfil-logo" src="assets/img/<?= $logo ?>"
+                            <img class="perfil-logo" src="<?= APP_URL ?>/assets/img/<?= $logo ?>"
                                 alt="<?= htmlspecialchars($fila['nombre']) ?>">
                         <?php else: ?>
                             <div class="perfil-logo logo-placeholder" style="width:90px;height:90px;font-size:32px;">
@@ -429,7 +457,7 @@ include 'includes/header.php';
                             <p class="perfil-section-label">Galería</p>
                             <div class="perfil-galeria-grid">
                                 <?php foreach ($fotos_arr as $foto): ?>
-                                    <img src="assets/img/empresascarrusel/<?= htmlspecialchars($foto) ?>"
+                                    <img src="<?= APP_URL ?>/assets/img/empresascarrusel/<?= htmlspecialchars($foto) ?>"
                                         alt="Foto de <?= htmlspecialchars($fila['nombre']) ?>" class="perfil-galeria-foto">
                                 <?php endforeach; ?>
                             </div>
@@ -634,8 +662,11 @@ include 'includes/header.php';
             $params_url = [];
             if (!empty($buscar))
                 $params_url['buscar'] = $buscar;
-            if (!empty($id_categoria))
-                $params_url['id_categoria'] = $id_categoria;
+            if (!empty($seo_id_categoria) && empty($cat_slug_param))
+                $params_url['id_categoria'] = $seo_id_categoria;
+            if (!empty($seo_id_empresa) && empty($slug_param))
+                $params_url['empresa'] = $seo_id_empresa;
+            
             $query_str = http_build_query($params_url);
             if (!empty($query_str))
                 $query_str = '&' . $query_str;

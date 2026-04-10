@@ -1,6 +1,8 @@
 <?php require_once __DIR__ . '/proteger.php'; ?>
 <?php
 include '../db.php';
+include '../includes/slug_helper.php';
+
 
 $error = "";
 $success = "";
@@ -8,10 +10,11 @@ $success = "";
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $nombre = trim($_POST['nombre']);
     $icono = trim($_POST['icono']) ?: 'bi-briefcase';
+    $slug = generarSlug($nombre);
 
     if (!empty($nombre)) {
-        $stmt = $conexion->prepare("INSERT INTO categorias (nombre, icono) VALUES (?, ?)");
-        $stmt->bind_param("ss", $nombre, $icono);
+        $stmt = $conexion->prepare("INSERT INTO categorias (nombre, icono, slug) VALUES (?, ?, ?)");
+        $stmt->bind_param("sss", $nombre, $icono, $slug);
         if (!$stmt->execute()) {
             $error = "Error: " . $stmt->error;
         } else {

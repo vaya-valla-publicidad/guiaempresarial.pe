@@ -25,22 +25,24 @@ INSERT INTO `banner_carrusel` (`id_banner`, `imagen`, `orden`, `activo`, `tiempo
 CREATE TABLE `categorias` (
   `id_categoria` int(11) NOT NULL,
   `nombre` varchar(100) NOT NULL,
+  `slug` varchar(255) DEFAULT NULL,
   `descripcion` text DEFAULT NULL,
   `icono` varchar(50) DEFAULT 'bi-briefcase'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-INSERT INTO `categorias` (`id_categoria`, `nombre`, `descripcion`, `icono`) VALUES
-(1, 'Tecnología', 'Empresas relacionadas con software, hardware y servicios digitales', 'bi-cpu'),
-(2, 'Restaurante', 'Restaurantes y negocios de comida', 'bi-egg-fried'),
-(8, 'Ferreteria', NULL, 'bi-tools'),
-(9, 'Tienda', NULL, 'bi-shop'),
-(10, 'Comercio', NULL, 'bi-building'),
-(11, 'Salud', NULL, 'bi-heart-pulse');
+INSERT INTO `categorias` (`id_categoria`, `nombre`, `slug`, `descripcion`, `icono`) VALUES
+(1, 'Tecnología', 'tecnologia', 'Empresas relacionadas con software, hardware y servicios digitales', 'bi-cpu'),
+(2, 'Restaurante', 'restaurante', 'Restaurantes y negocios de comida', 'bi-egg-fried'),
+(8, 'Ferreteria', 'ferreteria', NULL, 'bi-tools'),
+(9, 'Tienda', 'tienda', NULL, 'bi-shop'),
+(10, 'Comercio', 'comercio', NULL, 'bi-building'),
+(11, 'Salud', 'salud', NULL, 'bi-heart-pulse');
 
 CREATE TABLE `empresas` (
   `id_empresa` int(11) NOT NULL,
   `logo` varchar(255) DEFAULT NULL,
   `nombre` varchar(150) NOT NULL,
+  `slug` varchar(255) DEFAULT NULL,
   `email` varchar(100) DEFAULT NULL,
   `telefono` varchar(20) DEFAULT NULL,
   `direccion` varchar(200) DEFAULT NULL,
@@ -55,11 +57,11 @@ CREATE TABLE `empresas` (
   `facebook` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-INSERT INTO `empresas` (`id_empresa`, `logo`, `nombre`, `email`, `telefono`, `direccion`, `id_categoria`, `fecha_registro`, `horario`, `descripcion`, `ubicacion_link`, `link_empresa`, `vistas`, `destacada`, `facebook`) VALUES
-(12, '69b2e6c81a9ce_RosalRestaurant.jpg', 'El Rosal Restaurant', NULL, '977411702', 'Jr. Salaverry (8va cuadra), Huacho', 2, '2026-03-09 17:12:50', 'de 12 a 10 pm', 'La tradición de Huacho en tu paladar desde 1960. 🥘✨', 'https://www.google.com/maps/place/El+Rosal/@-11.1101762,-77.6124137,17z/data=!3m1!4b1!4m6!3m5!1s0x9106df0b73d6425f:0x6e3e28e69603d472!8m2!3d-11.1101762!4d-77.6124137!16s%2Fg%2F11bwpd_yh9?entry=ttu&g_ep=EgoyMDI2MDMwOC4wIKXMDSoASAFQAw%3D%3D', NULL, 38, 1, 'https://www.facebook.com/ELROSALRESTAURANT'),
-(13, '69b2eb9d7814f_chifaespaña.jpg', 'Chifa España', NULL, '937 245 536', 'Av. 28 de Julio 544 – Huacho', 2, '2026-03-12 16:36:45', NULL, '¡EL AUTENTICO SABOR ORIENTAL TE ESPERA AQUI!', 'https://www.google.com/maps/place/Chifa+Espa%C3%B1a/@-11.1075533,-77.6095983,19z/data=!4m6!3m5!1s0x9106df7536dc3f1b:0x75454f4e78f60660!8m2!3d-11.1073572!4d-77.6095098!16s%2Fg%2F1tjs5_st?entry=ttu&g_ep=EgoyMDI2MDMxMS4wIKXMDSoASAFQAw%3D%3D', NULL, 2, 1, 'https://www.facebook.com/chifaespana544'),
-(14, '69b82b6ce767e_lachutana.jpg', 'La Chutana-Lubricentro', NULL, '994337831', 'Av. Cruz Blanca 1890 Santa María, Huaura, Peru, 15138', 8, '2026-03-16 16:10:20', NULL, 'En La Chutana Lubricentro engreimos a tu fierro con productos de la mejor calidad y productos :)', 'https://www.google.com/maps/place/Av.+Cruz+Blanca+1890,+Huacho+15137/@-11.0985195,-77.5959335,17z/data=!3m1!4b1!4m5!3m4!1s0x9106df907e002ea1:0x3e3fe5d41e672a7e!8m2!3d-11.0985195!4d-77.5959335?entry=ttu&g_ep=EgoyMDI2MDMxMS4wIKXMDSoASAFQAw%3D%3D', NULL, 8, 0, 'https://www.facebook.com/lachutana.huacho'),
-(15, '69c2b957bfeb7_Odontologia.jpg', 'Cruzado Odontologia Especializada', NULL, '945 651 054', 'Prologación Miguel Grau 162 - 2do piso, Huacho, Peru', 11, '2026-03-24 16:18:09', NULL, 'Instalaciones modernas, alta calidad de equipos e insumos que en combinación con la ética profesional, brinda atención óptima y segura.', 'https://www.google.com/maps/place/Cruzado+Odontolog%C3%ADa+Especializada/@-11.1080604,-77.604148,18z/data=!4m6!3m5!1s0x9106df557a2f5c59:0x5c3aa558e2691d18!8m2!3d-11.1080578!4d-77.6043518!16s%2Fg%2F11fk1b8y7c?entry=ttu&g_ep=EgoyMDI2MDMxOC4xIKXMDSoASAFQAw%3D%3D', NULL, 13, 1, 'https://www.facebook.com/cruzadoodontologia');
+INSERT INTO `empresas` (`id_empresa`, `logo`, `nombre`, `slug`, `email`, `telefono`, `direccion`, `id_categoria`, `fecha_registro`, `horario`, `descripcion`, `ubicacion_link`, `link_empresa`, `vistas`, `destacada`, `facebook`) VALUES
+(12, '69b2e6c81a9ce_RosalRestaurant.jpg', 'El Rosal Restaurant', 'el-rosal-restaurant', NULL, '977411702', 'Jr. Salaverry (8va cuadra), Huacho', 2, '2026-03-09 17:12:50', 'de 12 a 10 pm', 'La tradición de Huacho en tu paladar desde 1960. 🥘✨', 'https://www.google.com/maps/place/El+Rosal/@-11.1101762,-77.6124137,17z/data=!3m1!4b1!4m6!3m5!1s0x9106df0b73d6425f:0x6e3e28e69603d472!8m2!3d-11.1101762!4d-77.6124137!16s%2Fg%2F11bwpd_yh9?entry=ttu&g_ep=EgoyMDI2MDMwOC4wIKXMDSoASAFQAw%3D%3D', NULL, 49, 1, 'https://www.facebook.com/ELROSALRESTAURANT'),
+(13, '69b2eb9d7814f_chifaespaña.jpg', 'Chifa España', 'chifa-espana', NULL, '937 245 536', 'Av. 28 de Julio 544 – Huacho', 2, '2026-03-12 16:36:45', NULL, '¡EL AUTENTICO SABOR ORIENTAL TE ESPERA AQUI!', 'https://www.google.com/maps/place/Chifa+Espa%C3%B1a/@-11.1075533,-77.6095983,19z/data=!4m6!3m5!1s0x9106df7536dc3f1b:0x75454f4e78f60660!8m2!3d-11.1073572!4d-77.6095098!16s%2Fg%2F1tjs5_st?entry=ttu&g_ep=EgoyMDI2MDMxMS4wIKXMDSoASAFQAw%3D%3D', NULL, 7, 1, 'https://www.facebook.com/chifaespana544'),
+(14, '69b82b6ce767e_lachutana.jpg', 'La Chutana-Lubricentro', 'la-chutana-lubricentro', NULL, '994337831', 'Av. Cruz Blanca 1890 Santa María, Huaura, Peru, 15138', 8, '2026-03-16 16:10:20', NULL, 'En La Chutana Lubricentro engreimos a tu fierro con productos de la mejor calidad y productos :)', 'https://www.google.com/maps/place/Av.+Cruz+Blanca+1890,+Huacho+15137/@-11.0985195,-77.5959335,17z/data=!3m1!4b1!4m5!3m4!1s0x9106df907e002ea1:0x3e3fe5d41e672a7e!8m2!3d-11.0985195!4d-77.5959335?entry=ttu&g_ep=EgoyMDI2MDMxMS4wIKXMDSoASAFQAw%3D%3D', NULL, 15, 0, 'https://www.facebook.com/lachutana.huacho'),
+(15, '69c2b957bfeb7_Odontologia.jpg', 'Cruzado Odontologia Especializada', 'cruzado-odontologia-especializada', NULL, '945 651 054', 'Prologación Miguel Grau 162 - 2do piso, Huacho, Peru', 11, '2026-03-24 16:18:09', NULL, 'Instalaciones modernas, alta calidad de equipos e insumos que en combinación con la ética profesional, brinda atención óptima y segura.', 'https://www.google.com/maps/place/Cruzado+Odontolog%C3%ADa+Especializada/@-11.1080604,-77.604148,18z/data=!4m6!3m5!1s0x9106df557a2f5c59:0x5c3aa558e2691d18!8m2!3d-11.1080578!4d-77.6043518!16s%2Fg%2F11fk1b8y7c?entry=ttu&g_ep=EgoyMDI2MDMxOC4xIKXMDSoASAFQAw%3D%3D', NULL, 20, 1, 'https://www.facebook.com/cruzadoodontologia');
 
 CREATE TABLE `empresa_galeria` (
   `id_foto` int(11) NOT NULL,
@@ -112,7 +114,10 @@ INSERT INTO `sesiones_usuario` (`id`, `id_usuario_publico`, `ip`, `dispositivo`,
 (3, 12, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-01 11:45:25'),
 (4, 15, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-06 09:40:55'),
 (5, 15, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-06 11:49:55'),
-(6, 15, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-06 12:12:07');
+(6, 15, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-06 12:12:07'),
+(7, 16, '192.168.1.108', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36', '2026-04-07 09:30:42'),
+(8, 17, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-09 09:26:35'),
+(9, 16, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-09 09:34:47');
 
 CREATE TABLE `sobre_info` (
   `id` int(11) NOT NULL,
@@ -159,7 +164,7 @@ CREATE TABLE `usuarios_publicos` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `usuarios_publicos` (`id`, `nombre`, `email`, `password_hash`, `foto_perfil`, `fecha_registro`, `codigo_verificacion`, `codigo_expira`, `verificado`, `visibilidad_resenas`) VALUES
-(4, 'ejemplo', 'ejemplo@gmail.com', '$2y$10$kO9E81Np0F/14T3FjadbFOkp5gboCs8995R7piWPtEELqW6xWaoqu', NULL, '2026-03-25 17:50:11', NULL, NULL, 0, 'publico');
+(16, 'ejemplo', 'ejemplo@gmail.com', '$2y$10$GhBJu/KcKykF9YG57qmFIuDcGZcUZzkcDQypBfYtDjrt480.IZMAy', NULL, '2026-04-07 14:16:46', NULL, NULL, 1, 'publico');
 
 
 ALTER TABLE `banner_carrusel`
@@ -167,10 +172,12 @@ ALTER TABLE `banner_carrusel`
   ADD KEY `idx_banner_orden` (`orden`,`activo`);
 
 ALTER TABLE `categorias`
-  ADD PRIMARY KEY (`id_categoria`);
+  ADD PRIMARY KEY (`id_categoria`),
+  ADD UNIQUE KEY `slug` (`slug`);
 
 ALTER TABLE `empresas`
   ADD PRIMARY KEY (`id_empresa`),
+  ADD UNIQUE KEY `slug` (`slug`),
   ADD KEY `id_categoria` (`id_categoria`),
   ADD KEY `idx_empresa_nombre` (`nombre`);
 
@@ -213,10 +220,10 @@ ALTER TABLE `empresa_galeria`
   MODIFY `id_foto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
 
 ALTER TABLE `resenas`
-  MODIFY `id_resena` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `id_resena` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 ALTER TABLE `sesiones_usuario`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 ALTER TABLE `sobre_info`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
@@ -225,7 +232,7 @@ ALTER TABLE `usuarios`
   MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 ALTER TABLE `usuarios_publicos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 
 ALTER TABLE `empresas`

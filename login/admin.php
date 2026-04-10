@@ -11,7 +11,7 @@ $rol = $_SESSION['rol'];
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel <?= ucfirst($rol) ?></title>
-    <link rel="stylesheet" href="/guiaempresarial.pe/assets/css/login.css">
+    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
 
@@ -28,7 +28,7 @@ $rol = $_SESSION['rol'];
             </div>
 
             <div class="panel-actions">
-                <a href="/guiaempresarial.pe/index.php" class="btn">
+                <a href="<?= APP_URL ?>/index.php" class="btn">
                     <i class="bi bi-house"></i> Ver sitio principal
                 </a>
                 <a href="editar_sobre.php" class="btn">
@@ -180,7 +180,7 @@ $rol = $_SESSION['rol'];
                             <td data-label="Vistas"><?= number_format($fila['vistas']) ?></td>
                             <td data-label="Logo">
                                 <?php if (!empty($fila['logo'])): ?>
-                                    <img src="/guiaempresarial.pe/assets/img/<?= htmlspecialchars($fila['logo']) ?>"
+                                    <img src="<?= APP_URL ?>/assets/img/<?= htmlspecialchars($fila['logo']) ?>"
                                         style="width:45px;height:45px;object-fit:cover;border-radius:6px;">
                                 <?php else: ?>—<?php endif; ?>
                             </td>

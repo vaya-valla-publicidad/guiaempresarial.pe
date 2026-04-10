@@ -20,7 +20,7 @@ $total_slides = count($slides);
     <?php if ($total_slides > 0): ?>
         <?php foreach ($slides as $i => $slide): ?>
             <div class="hero-slide <?= $i === 0 ? 'activo' : '' ?>" data-tiempo="<?= intval($slide['tiempo_ms']) ?>">
-                <img src="/guiaempresarial.pe/assets/img/banner/<?= htmlspecialchars($slide['imagen']) ?>"
+                <img src="<?= APP_URL ?>/assets/img/banner/<?= htmlspecialchars($slide['imagen']) ?>"
                     alt="Banner <?= $i + 1 ?>" loading="<?= $i === 0 ? 'eager' : 'lazy' ?>">
             </div>
         <?php endforeach; ?>
@@ -63,7 +63,7 @@ $total_slides = count($slides);
             <h1>⭐ Empresas Destacadas</h1>
         </div>
         <?php
-        $sql_destacadas = "SELECT e.*, c.nombre AS categoria,
+        $sql_destacadas = "SELECT e.*, c.nombre AS categoria, c.slug AS cat_slug,
                                 GROUP_CONCAT(g.foto ORDER BY g.orden ASC, g.id_foto ASC SEPARATOR ',') as fotos_galeria
                        FROM empresas e
                        JOIN categorias c ON e.id_categoria = c.id_categoria
@@ -92,13 +92,13 @@ $total_slides = count($slides);
             <p>Las empresas más populares de nuestra guía</p>
         </div>
         <?php
-        $sql_vistas = "SELECT e.*, c.nombre AS categoria,
+        $sql_vistas = "SELECT e.*, c.nombre AS categoria, c.slug AS cat_slug,
                                GROUP_CONCAT(g.foto ORDER BY g.orden ASC, g.id_foto ASC SEPARATOR ',') as fotos_galeria
                     FROM empresas e
                     JOIN categorias c ON e.id_categoria = c.id_categoria
                     LEFT JOIN empresa_galeria g ON e.id_empresa = g.id_empresa
                     GROUP BY e.id_empresa
-                    ORDER BY e.vistas DESC LIMIT 3";
+                    ORDER BY e.vistas DESC LIMIT 4";
         $res_vistas = $conexion->query($sql_vistas);
         if ($res_vistas && $res_vistas->num_rows > 0):
             echo '<div class="empresas-list">';
@@ -251,8 +251,24 @@ $total_slides = count($slides);
         clearTimeout(buscarTimer);
         const q = this.value.trim();
         if (q.length > 0) {
+            resultadosDiv.innerHTML = `
+                <div class="buscar-result-item is-loading">
+                    <div class="buscar-result-logo skeleton"></div>
+                    <div class="buscar-result-info">
+                        <div class="skeleton-text skeleton"></div>
+                        <div class="skeleton-text short skeleton"></div>
+                    </div>
+                </div>
+                <div class="buscar-result-item is-loading">
+                    <div class="buscar-result-logo skeleton"></div>
+                    <div class="buscar-result-info">
+                        <div class="skeleton-text skeleton"></div>
+                        <div class="skeleton-text short skeleton"></div>
+                    </div>
+                </div>
+            `;
             buscarTimer = setTimeout(() => {
-                fetch('buscar.php?q=' + encodeURIComponent(q))
+                fetch('<?= APP_URL ?>/buscar.php?q=' + encodeURIComponent(q))
                     .then(r => r.text())
                     .then(d => { resultadosDiv.innerHTML = d; });
             }, 350);

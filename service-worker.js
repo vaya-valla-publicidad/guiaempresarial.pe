@@ -1,10 +1,10 @@
 const CACHE_NAME = "guia-empresarial-v3";
 
 const urlsIniciales = [
-  "/guiaempresarial.pe/",
-  "/guiaempresarial.pe/index.php",
-  "/guiaempresarial.pe/assets/css/style.css",
-  "/guiaempresarial.pe/assets/img/image.png"
+  "./",
+  "index.php",
+  "assets/css/style.css",
+  "assets/img/image.png"
 ];
 
 self.addEventListener("install", event => {

@@ -8,8 +8,8 @@ function renderEmpresaCard($fila, $fotos_arr = [])
     $numero = $telefono ? preg_replace('/[^0-9]/', '', $telefono) : null;
     $is_destacada = (isset($fila['destacada']) && $fila['destacada'] == 1);
 
-    $path_img = 'assets/img/';
-    $path_galeria = 'assets/img/empresascarrusel/';
+    $path_img = APP_URL . '/assets/img/';
+    $path_galeria = APP_URL . '/assets/img/empresascarrusel/';
 
     $css_class = 'empresa-item' . ($is_destacada ? ' empresa-destacada' : '');
     ?>
@@ -44,7 +44,7 @@ function renderEmpresaCard($fila, $fotos_arr = [])
                 <span>👁 <?= number_format($fila['vistas']) ?> vistas</span>
             </div>
             <div class="empresa-actions">
-                <a href="empresas.php?empresa=<?= $id ?>" class="btn-ver">Ver más</a>
+                <a href="empresa/<?= htmlspecialchars($fila['slug']) ?>" class="btn-ver">Ver más</a>
 
                 <?php if (!empty($fila['link_empresa'])): ?>
                     <a href="<?= htmlspecialchars($fila['link_empresa']) ?>" target="_blank" class="btn-ver"

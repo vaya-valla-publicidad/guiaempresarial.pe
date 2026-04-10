@@ -2,6 +2,7 @@
 include 'proteger.php';
 include '../db.php';
 include '../includes/security.php';
+include '../includes/slug_helper.php';
 
 $error = "";
 $success = "";
@@ -21,6 +22,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $ubicacion_link = inputLimpio($_POST['ubicacion_link'] ?? '') ?: null;
         $link_empresa = inputLimpio($_POST['link_empresa'] ?? '') ?: null;
         $facebook = inputLimpio($_POST['facebook'] ?? '') ?: null;
+        $slug = generarSlug($nombre);
+
         $logo = null;
 
         if (!empty($_FILES['logo']['name'])) {
@@ -39,10 +42,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
 
         $stmt = $conexion->prepare(
-            "INSERT INTO empresas (nombre,telefono,direccion,id_categoria,descripcion,horario,ubicacion_link,link_empresa,facebook,logo)
-     VALUES (?,?,?,?,?,?,?,?,?,?)"
+            "INSERT INTO empresas (nombre,telefono,direccion,id_categoria,descripcion,horario,ubicacion_link,link_empresa,facebook,logo,slug)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?)"
         );
-        $stmt->bind_param("sssissssss", $nombre, $telefono, $direccion, $id_categoria, $descripcion, $horario, $ubicacion_link, $link_empresa, $facebook, $logo);
+        $stmt->bind_param("sssisssssss", $nombre, $telefono, $direccion, $id_categoria, $descripcion, $horario, $ubicacion_link, $link_empresa, $facebook, $logo, $slug);
 
         if (!$stmt->execute()) {
             $error = "Error SQL: " . $stmt->error;

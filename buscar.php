@@ -9,7 +9,7 @@ $q_escaped = escaparLike($q);
 $texto = '%' . $q_escaped . '%';
 
 $stmt = $conexion->prepare(
-    "SELECT e.id_empresa, e.nombre, e.logo, e.descripcion, c.nombre AS categoria
+    "SELECT e.id_empresa, e.nombre, e.logo, e.descripcion, e.slug, c.nombre AS categoria
      FROM empresas e
      JOIN categorias c ON e.id_categoria = c.id_categoria
      WHERE e.nombre      LIKE ?
@@ -36,9 +36,9 @@ while ($f = $resultado->fetch_assoc()):
     $id   = intval($f['id_empresa']);
     $desc = !empty($f['descripcion']) ? mb_strimwidth($f['descripcion'], 0, 60, '…') : '';
 ?>
-<a href="empresas.php?empresa=<?= $id ?>" class="buscar-result-item">
+<a href="<?= APP_URL ?>/empresa/<?= htmlspecialchars($f['slug']) ?>" class="buscar-result-item">
     <?php if (!empty($f['logo'])): ?>
-        <img src="assets/img/<?= htmlspecialchars($f['logo']) ?>"
+        <img src="<?= APP_URL ?>/assets/img/<?= htmlspecialchars($f['logo']) ?>"
              alt="<?= htmlspecialchars($f['nombre']) ?>"
              class="buscar-result-logo"
              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">

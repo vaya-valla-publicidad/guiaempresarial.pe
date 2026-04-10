@@ -1,6 +1,8 @@
 <?php require_once __DIR__ . '/proteger.php'; ?>
 <?php
 include '../db.php';
+include '../includes/slug_helper.php';
+
 $rol = $_SESSION['rol'];
 
 if (!isset($_GET['id'])) {
@@ -50,6 +52,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $facebook = trim($_POST['facebook']) ?: null;
     $logo = $empresa['logo'];
     $destacada_new = intval($_POST['destacada']);
+    $slug = generarSlug($nombre);
+
 
     if ($destacada_new === 1 && $empresa['destacada'] == 0) {
         $total_dest = $conexion->query("SELECT COUNT(*) as total FROM empresas WHERE destacada = 1")->fetch_assoc()['total'];
@@ -74,11 +78,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if (empty($error)) {
         $stmt = $conexion->prepare(
             "UPDATE empresas SET nombre=?, telefono=?, direccion=?, id_categoria=?,
-             descripcion=?, horario=?, ubicacion_link=?, link_empresa=?, facebook=?, logo=?, destacada=?
+             descripcion=?, horario=?, ubicacion_link=?, link_empresa=?, facebook=?, logo=?, destacada=?, slug=?
              WHERE id_empresa=?"
         );
         $stmt->bind_param(
-            "sssissssssii",
+            "sssissssssisi",
             $nombre,
             $telefono,
             $direccion,
@@ -90,6 +94,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $facebook,
             $logo,
             $destacada_new,
+            $slug,
             $id
         );
 
