@@ -5,13 +5,14 @@ include_once 'libs/mailer.php';
 include_once 'includes/security.php';
 
 if (isset($_SESSION['usuario_publico_id'])) {
-  header('Location: mi_cuenta.php');
+  $destino = !empty($_GET['redir']) ? validarRedireccionLocal(urldecode($_GET['redir'])) : 'mi_cuenta.php';
+  header("Location: $destino");
   exit;
 }
 
 $error = '';
 $exito = '';
-$redir = $_GET['redir'] ?? '';
+$redir = validarRedireccionLocal($_GET['redir'] ?? '');
 $paso = $_GET['paso'] ?? 'email';
 $email_param = $_GET['email'] ?? '';
 

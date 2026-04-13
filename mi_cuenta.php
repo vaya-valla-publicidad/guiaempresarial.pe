@@ -2,6 +2,7 @@
 session_start();
 include 'db.php';
 include 'includes/security.php';
+include_once 'includes/components/empresa_card.php';
 
 if (!isset($_SESSION['usuario_publico_id'])) {
   header('Location: login_usuario.php');
@@ -84,30 +85,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
 
     if ($_POST['accion'] === 'foto' && isset($_FILES['foto_perfil'])) {
       $file = $_FILES['foto_perfil'];
-      $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-      $permitidos = ['jpg', 'jpeg', 'png', 'webp'];
-      if (!in_array($ext, $permitidos)) {
-        $error = 'Solo se permiten imágenes JPG, PNG o WEBP.';
-      } elseif ($file['size'] > 2 * 1024 * 1024) {
-        $error = 'La imagen no puede superar 2MB.';
-      } else {
-        $nombre_archivo = 'avatar_' . $id_u . '_' . time() . '.' . $ext;
-        $destino = 'assets/img/avatars/' . $nombre_archivo;
-        if (!is_dir('assets/img/avatars'))
-          mkdir('assets/img/avatars', 0755, true);
-        if (move_uploaded_file($file['tmp_name'], $destino)) {
-          if ($u['foto_perfil'] && file_exists('assets/img/avatars/' . $u['foto_perfil'])) {
-            unlink('assets/img/avatars/' . $u['foto_perfil']);
-          }
-          $stmt_fot = $conexion->prepare("UPDATE usuarios_publicos SET foto_perfil = ? WHERE id = ?");
-          $stmt_fot->bind_param("si", $nombre_archivo, $id_u);
-          $stmt_fot->execute();
-          $_SESSION['usuario_publico_foto'] = $nombre_archivo;
-          $u['foto_perfil'] = $nombre_archivo;
-          $exito = 'Foto de perfil actualizada.';
-        } else {
-          $error = 'No se pudo guardar la imagen.';
+      $resultado_subida = subirImagenSegura($file, 'assets/img/avatars', [
+        'tamano_max' => 2 * 1024 * 1024,
+        'extensiones' => ['jpg', 'jpeg', 'png', 'webp']
+      ]);
+
+      if ($resultado_subida['success']) {
+        $nombre_archivo = $resultado_subida['nombre'];
+        if ($u['foto_perfil'] && file_exists('assets/img/avatars/' . $u['foto_perfil'])) {
+          unlink('assets/img/avatars/' . $u['foto_perfil']);
         }
+        $stmt_fot = $conexion->prepare("UPDATE usuarios_publicos SET foto_perfil = ? WHERE id = ?");
+        $stmt_fot->bind_param("si", $nombre_archivo, $id_u);
+        $stmt_fot->execute();
+        $_SESSION['usuario_publico_foto'] = $nombre_archivo;
+        $u['foto_perfil'] = $nombre_archivo;
+        $exito = 'Foto de perfil actualizada correctamente.';
+      } else {
+        $error = $resultado_subida['error'];
       }
     }
 
@@ -135,9 +130,31 @@ $stmt_res->bind_param("i", $id_u);
 $stmt_res->execute();
 $resenas_q = $stmt_res->get_result();
 $mis_resenas = [];
-if ($resenas_q)
-  while ($r = $resenas_q->fetch_assoc())
+if ($resenas_q) {
+  while ($r = $resenas_q->fetch_assoc()) {
     $mis_resenas[] = $r;
+  }
+}
+
+// Cargar favoritos
+$stmt_favs_q = $conexion->prepare(
+  "SELECT e.*, c.nombre AS categoria, 
+          GROUP_CONCAT(g.foto ORDER BY g.orden ASC, g.id_foto ASC SEPARATOR ',') as fotos_galeria
+   FROM favoritos f
+   JOIN empresas e ON f.id_empresa = e.id_empresa
+   JOIN categorias c ON e.id_categoria = c.id_categoria
+   LEFT JOIN empresa_galeria g ON e.id_empresa = g.id_empresa
+   WHERE f.id_usuario_publico = ?
+   GROUP BY e.id_empresa
+   ORDER BY f.fecha_agregado DESC"
+);
+$stmt_favs_q->bind_param("i", $id_u);
+$stmt_favs_q->execute();
+$res_favs = $stmt_favs_q->get_result();
+$mis_favoritos = [];
+while ($f = $res_favs->fetch_assoc()) {
+  $mis_favoritos[] = $f;
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_eliminar_resena'])) {
   header('Content-Type: application/json');
@@ -162,7 +179,6 @@ include 'includes/header.php';
 ?>
 
 <link rel="stylesheet" href="assets/css/mi_cuenta.css">
-<script>window.csrfToken = '<?php echo function_exists('generarTokenCSRF') ? generarTokenCSRF() : ""; ?>';</script>
 
 <div class="mc-page">
 
@@ -209,6 +225,7 @@ include 'includes/header.php';
       <option value="perfil">Editar perfil</option>
       <option value="password">Contraseña</option>
       <option value="resenas">Mis reseñas</option>
+      <option value="favoritos">Favoritos</option>
       <option value="privacidad">Privacidad y seguridad</option>
     </select>
   </div>
@@ -222,6 +239,10 @@ include 'includes/header.php';
         <a class="mc-nav-link" onclick="mcSwitch('resenas')" id="mcnav-resenas">
           Mis reseñas
           <span class="mc-badge" id="badge-resenas"><?= count($mis_resenas) ?></span>
+        </a>
+        <a class="mc-nav-link" onclick="mcSwitch('favoritos')" id="mcnav-favoritos">
+          Favoritos
+          <span class="mc-badge" id="badge-favoritos"><?= count($mis_favoritos) ?></span>
         </a>
         <a class="mc-nav-link" onclick="mcSwitch('privacidad')" id="mcnav-privacidad">Privacidad y seguridad</a>
       </nav>
@@ -375,6 +396,26 @@ include 'includes/header.php';
         <?php endif; ?>
       </div>
 
+      <div class="mc-panel" id="mc-panel-favoritos">
+        <?php if (empty($mis_favoritos)): ?>
+          <div class="mc-empty">
+            <i class="bi bi-heart" style="font-size: 40px; margin-bottom: 10px;"></i>
+            <p>No tienes empresas en favoritos todavía.</p>
+            <a href="empresas.php" class="mc-btn-primary mc-btn-sm"
+              style="margin-top:10px; text-decoration:none;">Explorar empresas</a>
+          </div>
+        <?php else: ?>
+          <div class="empresas-list" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+            <?php
+            foreach ($mis_favoritos as $fila):
+              $fotos_arr = !empty($fila['fotos_galeria']) ? explode(',', $fila['fotos_galeria']) : [];
+              renderFavoritoCard($fila, $fotos_arr);
+            endforeach;
+            ?>
+          </div>
+        <?php endif; ?>
+      </div>
+
       <div class="mc-panel" id="mc-panel-privacidad">
 
         <p class="mc-section-title">Privacidad de la actividad</p>
@@ -423,6 +464,7 @@ include 'includes/header.php';
     perfil: { label: 'Editar perfil', sub: 'Configure su presencia y datos de cuenta' },
     password: { label: 'Contraseña', sub: 'Administre su contraseña de acceso' },
     resenas: { label: 'Mis reseñas', sub: 'Gestiona las reseñas que has publicado' },
+    favoritos: { label: 'Favoritos', sub: 'Tus negocios y servicios guardados' },
     privacidad: { label: 'Privacidad y seguridad', sub: 'Administre su configuración de privacidad' },
   };
 

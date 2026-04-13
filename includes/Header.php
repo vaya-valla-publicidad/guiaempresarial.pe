@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/security.php';
 if (!isset($seo_title))
   $seo_title = "Guía Empresarial";
 if (!isset($seo_description))
@@ -11,6 +13,18 @@ if (!isset($seo_url))
   $seo_url = $protocol . "://" . $domain . $_SERVER['REQUEST_URI'];
 if (!isset($seo_robots))
   $seo_robots = "index, follow";
+
+$user_favs = [];
+if (isset($_SESSION['usuario_publico_id'])) {
+  require_once __DIR__ . '/../db.php';
+  $id_u_fav = intval($_SESSION['usuario_publico_id']);
+  $stmt_favs = $conexion->query("SELECT id_empresa FROM favoritos WHERE id_usuario_publico = $id_u_fav");
+  if ($stmt_favs) {
+    while ($rf = $stmt_favs->fetch_assoc()) {
+      $user_favs[] = (int) $rf['id_empresa'];
+    }
+  }
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -74,8 +88,8 @@ if (!isset($seo_robots))
           <?php if (isset($_SESSION['usuario_publico_id'])): ?>
             <a href="<?= APP_URL ?>/mi_cuenta.php" class="nav-link" style="display:flex;align-items:center;gap:8px;">
               <?php if (!empty($_SESSION['usuario_publico_foto'])): ?>
-                <img src="<?= APP_URL ?>/assets/img/avatars/<?= htmlspecialchars($_SESSION['usuario_publico_foto']) ?>" alt="Foto perfil"
-                  style="width:24px;height:24px;border-radius:50%;object-fit:cover;">
+                <img src="<?= APP_URL ?>/assets/img/avatars/<?= htmlspecialchars($_SESSION['usuario_publico_foto']) ?>"
+                  alt="Foto perfil" style="width:24px;height:24px;border-radius:50%;object-fit:cover;">
               <?php else: ?>
                 👤
               <?php endif; ?>
@@ -102,6 +116,8 @@ if (!isset($seo_robots))
       const navActions = document.getElementById('nav-actions');
       const navOverlay = document.getElementById('nav-overlay');
       const toggleIcon = navToggle.querySelector('i');
+
+      window.csrfToken = '<?php echo function_exists('generarTokenCSRF') ? generarTokenCSRF() : ""; ?>';
 
       function abrirMenu() {
         navActions.classList.add('open');

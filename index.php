@@ -20,8 +20,8 @@ $total_slides = count($slides);
     <?php if ($total_slides > 0): ?>
         <?php foreach ($slides as $i => $slide): ?>
             <div class="hero-slide <?= $i === 0 ? 'activo' : '' ?>" data-tiempo="<?= intval($slide['tiempo_ms']) ?>">
-                <img src="<?= APP_URL ?>/assets/img/banner/<?= htmlspecialchars($slide['imagen']) ?>"
-                    alt="Banner <?= $i + 1 ?>" loading="<?= $i === 0 ? 'eager' : 'lazy' ?>">
+                <img src="<?= APP_URL ?>/assets/img/banner/<?= htmlspecialchars($slide['imagen']) ?>" alt="Banner <?= $i + 1 ?>"
+                    loading="<?= $i === 0 ? 'eager' : 'lazy' ?>">
             </div>
         <?php endforeach; ?>
 
@@ -40,10 +40,10 @@ $total_slides = count($slides);
     <?php endif; ?>
 
     <div class="hero-content">
-        <h1>Impulsando Negocios Locales</h1>
-        <p class="hero-subtitle">Descubre, conecta y potencia empresas de tu región</p>
-        <p class="hero-tagline">Visibilidad real para negocios reales</p>
-        <div class="search-wrapper">
+        <h1 class="anim-down">Impulsando Negocios Locales</h1>
+        <p class="hero-subtitle anim-up anim-delay-1">Descubre, conecta y potencia empresas de tu región</p>
+        <p class="hero-tagline anim-up anim-delay-1">Visibilidad real para negocios reales</p>
+        <div class="search-wrapper anim-up anim-delay-2">
             <form id="formBuscar" class="search-form">
                 <div class="search-box">
                     <input type="text" id="buscar" name="q" placeholder="Buscar empresas, productos o servicios..."
@@ -128,7 +128,7 @@ $total_slides = count($slides);
                 $nombre = htmlspecialchars($fila['nombre']);
                 $icono = htmlspecialchars($fila['icono'] ?? 'bi-briefcase');
                 ?>
-                <a href="empresas.php?id_categoria=<?= $fila['id_categoria'] ?>" class="categoria-card">
+                <a href="categoria/<?= htmlspecialchars($fila['slug']) ?>" class="categoria-card">
                     <div class="categoria-icono-wrap"><i class="bi <?= $icono ?>"></i></div>
                     <span class="categoria-nombre"><?= $nombre ?></span>
                 </a>
@@ -226,21 +226,7 @@ $total_slides = count($slides);
         startAuto();
     })();
 
-    document.querySelectorAll('.empresa-slider').forEach(slider => {
-        const slides = slider.querySelectorAll('.slide');
-        const dots = slider.querySelectorAll('.slider-dot');
-        if (slides.length <= 1) return;
-        let idx = 0;
-        function goTo(n) {
-            slides[idx].classList.remove('activo');
-            if (dots[idx]) dots[idx].classList.remove('activo');
-            idx = (n + slides.length) % slides.length;
-            slides[idx].classList.add('activo');
-            if (dots[idx]) dots[idx].classList.add('activo');
-        }
-        const ap = setInterval(() => goTo(idx + 1), 4000);
-        dots.forEach((d, i) => d.addEventListener('click', () => { clearInterval(ap); goTo(i); }));
-    });
+    // Los carruseles de empresas ahora se inicializan globalmente desde footer.php
 
     const inputBuscar = document.getElementById('buscar');
     const resultadosDiv = document.getElementById('resultados');

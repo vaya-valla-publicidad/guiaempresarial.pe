@@ -273,3 +273,17 @@ if (!function_exists('verificarLimiteCorreo')) {
         return true;
     }
 }
+
+if (!function_exists('validarRedireccionLocal')) {
+    function validarRedireccionLocal($url)
+    {
+        if (empty($url))
+            return 'mi_cuenta.php';
+        $url = trim($url);
+
+        if (preg_match('~^(https?:)?//~i', $url)) {
+            return 'mi_cuenta.php';
+        }
+        return $url;
+    }
+}

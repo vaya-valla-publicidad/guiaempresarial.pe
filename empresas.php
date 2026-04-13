@@ -3,160 +3,6 @@ session_start();
 include 'db.php';
 include 'includes/security.php';
 include 'includes/components/empresa_card.php';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resena_empresa'])) {
-    if (!validarCSRF()) {
-        logSeguridad('csrf_invalido', 'Intento de enviar reseña sin token válido');
-        header("Location: empresas.php?empresa=" . intval($_POST['id_empresa'] ?? 0) . "&resena=error#resenas");
-        exit;
-    }
-
-    if (!verificarRateLimit('enviar_resena', 3, 60)) {
-        header("Location: empresas.php?empresa=" . intval($_POST['id_empresa'] ?? 0) . "&resena=error#resenas");
-        exit;
-    }
-
-    $id_emp = intval($_POST['id_empresa']);
-    $estrellas = intval($_POST['estrellas']);
-    $comentario = inputLimpio($_POST['comentario']);
-    $nombre = inputLimpio($_POST['nombre_autor'] ?? '');
-
-    $palabras_prohibidas = [
-        'idiota',
-        'imbecil',
-        'mierda',
-        'puta',
-        'puto',
-        'pendejo',
-        'estupido',
-        'basura',
-        'asco',
-        'maldito',
-        'inutil',
-        'animal',
-        'bestia',
-        'burro',
-        'bruto',
-        'tarado',
-        'retrasado',
-        'subnormal',
-        'mongolo',
-        'hdp',
-        'hijo de puta',
-        'malparido',
-        'desgraciado',
-        'miserable',
-        'imbécil',
-        'estúpido',
-        'inútil',
-        'maldición',
-        'cabrón',
-        'cabron',
-        'hijoputa',
-        'gonorrea',
-        'marica',
-        'maricón',
-        'maricon',
-        'estafa',
-        'estafador',
-        'estafadora',
-        'ladron',
-        'ladrona',
-        'ladrón',
-        'roba',
-        'roban',
-        'robaron',
-        'mentira',
-        'mentiroso',
-        'mentirosa',
-        'falso',
-        'falsa',
-        'fraude',
-        'fraudulento',
-        'engaño',
-        'engañan',
-        'engañaron',
-        'timo',
-        'timador',
-        'corrupto',
-        'corrupta',
-        'corruptos',
-        'ilegal',
-        'ilegales',
-        'clandestino',
-        'peligroso',
-        'peligrosa',
-        'trampa',
-        'tramposo',
-        'tramposa',
-        'chanta',
-        'chantaje',
-        'amenaza',
-        'amenazaron',
-        'extorsion',
-        'extorsión',
-        'extorsionan',
-        'sexo',
-        'porno',
-        'prostituta',
-        'prostituto',
-        'prepago',
-        'escort',
-        'matar',
-        'muerte',
-        'asesino',
-        'asesina',
-        'golpear',
-        'golpean',
-        'violencia',
-        'violento',
-        'violenta',
-        'pegar',
-        'pegaron',
-        'amenazar',
-        've a',
-        'mejor vayan a',
-        'vayan mejor',
-        'no vayan',
-        'cierren',
-        'cierren este',
-    ];
-
-    $texto_check = strtolower($comentario . ' ' . $nombre);
-    $tiene_mala_palabra = false;
-    foreach ($palabras_prohibidas as $palabra) {
-        if (strpos($texto_check, $palabra) !== false) {
-            $tiene_mala_palabra = true;
-            break;
-        }
-    }
-
-    $id_u_pub = isset($_SESSION['usuario_publico_id']) ? intval($_SESSION['usuario_publico_id']) : 0;
-    if ($id_u_pub && $comentario && $estrellas >= 1 && $estrellas <= 5 && !$tiene_mala_palabra) {
-        $stmt = $conexion->prepare("INSERT INTO resenas (id_empresa, nombre_autor, estrellas, comentario, id_usuario_publico) VALUES (?, ?, ?, ?, ?)");
-        $nombre_sesion = $_SESSION['usuario_publico_nombre'];
-        $stmt->bind_param("isiss", $id_emp, $nombre_sesion, $estrellas, $comentario, $id_u_pub);
-
-        if ($stmt->execute()) {
-            $stmt->close();
-            header("Location: empresas.php?empresa=$id_emp&resena=ok#resenas");
-            exit;
-        } else {
-            $stmt->close();
-            logSeguridad('error_resena', 'Error al guardar reseña: ' . $conexion->error, 'error');
-            header("Location: empresas.php?empresa=$id_emp&resena=error#resenas");
-            exit;
-        }
-    } elseif ($tiene_mala_palabra) {
-        header("Location: empresas.php?empresa=$id_emp&resena=mala#resenas");
-        exit;
-    } else {
-        header("Location: empresas.php?empresa=$id_emp&resena=error#resenas");
-        exit;
-    }
-}
-?>
-<?php
 $seo_title = "Empresas - Guía Empresarial";
 $seo_description = "Explora negocios locales y descubre nuevas oportunidades en tu región.";
 
@@ -496,14 +342,16 @@ include 'includes/header.php';
                 <div class="perfil-resenas" id="resenas">
                     <p class="perfil-section-label">Reseñas</p>
 
-                    <?php if ($resena_msg === 'ok'): ?>
-                        <div class="resena-alerta resena-alerta-ok">✅ ¡Reseña enviada con éxito!</div>
-                    <?php elseif ($resena_msg === 'mala'): ?>
-                        <div class="resena-alerta resena-alerta-error">⚠️ Tu reseña contiene palabras no permitidas.</div>
-                    <?php elseif ($resena_msg === 'error'): ?>
-                        <div class="resena-alerta resena-alerta-error">❌ Por favor completa todos los campos y selecciona
-                            estrellas.</div>
-                    <?php endif; ?>
+                    <div id="resenaAlertContainer">
+                        <?php if ($resena_msg === 'ok'): ?>
+                            <div class="resena-alerta resena-alerta-ok">✅ ¡Reseña enviada con éxito!</div>
+                        <?php elseif ($resena_msg === 'mala'): ?>
+                            <div class="resena-alerta resena-alerta-error">⚠️ Tu reseña contiene palabras no permitidas.</div>
+                        <?php elseif ($resena_msg === 'error'): ?>
+                            <div class="resena-alerta resena-alerta-error">❌ Por favor completa todos los campos y selecciona
+                                estrellas.</div>
+                        <?php endif; ?>
+                    </div>
 
                     <?php if ($total_resenas > 0): ?>
                         <div class="resenas-promedio">
@@ -524,9 +372,8 @@ include 'includes/header.php';
                         <?php if (isset($_SESSION['usuario_publico_id'])): ?>
                             <p class="resena-form-titulo">Hola, <?= htmlspecialchars($_SESSION['usuario_publico_nombre']) ?> 👋
                                 Deja tu reseña</p>
-                            <form method="POST" action="empresas.php?empresa=<?= $id_empresa ?>">
+                            <form id="formResena" method="POST" action="empresas.php?empresa=<?= $id_empresa ?>">
                                 <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
-                                <input type="hidden" name="resena_empresa" value="1">
                                 <input type="hidden" name="id_empresa" value="<?= $id_empresa ?>">
                                 <div class="form-group">
                                     <label>Calificación</label>
@@ -539,22 +386,22 @@ include 'includes/header.php';
                                 </div>
                                 <div class="form-group">
                                     <label>Comentario</label>
-                                    <textarea name="comentario" rows="3" placeholder="Cuéntanos tu experiencia..." required
-                                        maxlength="500"></textarea>
+                                    <textarea name="comentario" id="resenaComentario" rows="3"
+                                        placeholder="Cuéntanos tu experiencia..." required maxlength="500"></textarea>
                                 </div>
-                                <button type="submit" class="btn-enviar-resena">Enviar reseña</button>
+                                <button type="submit" class="btn-enviar-resena" id="btnEnviarResena">Enviar reseña</button>
                             </form>
                         <?php else: ?>
                             <div style="text-align:center;padding:20px 0;">
                                 <p style="color:var(--muted);margin-bottom:16px;font-size:15px;">
                                     Inicia sesión para dejar tu reseña
                                 </p>
-                                <a href="login_usuario.php?redir=<?= urlencode('empresas.php?empresa=' . $id_empresa . '#resenas') ?>"
+                                <a href="<?= APP_URL ?>/login_usuario.php?redir=<?= urlencode('empresa/' . ($slug_param ?? $id_empresa) . '#resenas') ?>"
                                     class="btn-enviar-resena" style="text-decoration:none;display:inline-block;">
                                     Iniciar sesión
                                 </a>
                                 <p style="margin-top:12px;font-size:13px;color:var(--muted);">
-                                    ¿No tienes cuenta? <a href="registro_usuario.php"
+                                    ¿No tienes cuenta? <a href="<?= APP_URL ?>/registro_usuario.php"
                                         style="color:var(--rojo);font-weight:700;">Regístrate gratis</a>
                                 </p>
                             </div>
@@ -586,13 +433,23 @@ include 'includes/header.php';
                                 </div>
                             <?php endforeach; ?>
                         </div>
+                    <?php else: ?>
+                        <div class="empty-reviews-premium">
+                            <span class="empty-reviews-icon">
+                                <i class="bi bi-chat-left-heart"></i>
+                            </span>
+                            <div class="empty-reviews-text">
+                                <h3>¡Sé el primero en calificar!</h3>
+                                <p>Este negocio aún no tiene reseñas. Comparte tu experiencia y ayuda a otros.</p>
+                            </div>
+                        </div>
                     <?php endif; ?>
                 </div>
 
             </div>
 
             <?php
-            
+
             $id_cat_actual = intval($fila['id_categoria'] ?? 0);
             $id_emp_actual = intval($id_empresa);
             if ($id_cat_actual > 0) {
@@ -612,7 +469,7 @@ include 'includes/header.php';
                         </div>
                         <div class="empresas-list">
                             <?php
-                            
+
                             $stmt_sim = $conexion->prepare("SELECT e.*, c.nombre AS categoria, GROUP_CONCAT(g.foto ORDER BY g.orden ASC SEPARATOR ',') as fotos_galeria FROM empresas e JOIN categorias c ON e.id_categoria = c.id_categoria LEFT JOIN empresa_galeria g ON e.id_empresa = g.id_empresa WHERE e.id_categoria = ? AND e.id_empresa != ? GROUP BY e.id_empresa ORDER BY RAND() LIMIT 3");
                             $stmt_sim->bind_param("ii", $id_cat_actual, $id_emp_actual);
                             $stmt_sim->execute();
@@ -666,7 +523,7 @@ include 'includes/header.php';
                 $params_url['id_categoria'] = $seo_id_categoria;
             if (!empty($seo_id_empresa) && empty($slug_param))
                 $params_url['empresa'] = $seo_id_empresa;
-            
+
             $query_str = http_build_query($params_url);
             if (!empty($query_str))
                 $query_str = '&' . $query_str;
@@ -680,7 +537,7 @@ include 'includes/header.php';
 
                 <?php
                 for ($p = 1; $p <= $total_paginas; $p++):
-                    
+
                     if ($p == 1 || $p == $total_paginas || abs($p - $pagina_actual) <= 2):
                         ?>
                         <a href="?pagina=<?= $p ?><?= $query_str ?>" class="btn-pag <?= $p == $pagina_actual ? 'activa' : '' ?>">
@@ -728,22 +585,101 @@ include 'includes/header.php';
     });
 
     (function () {
-        const estrellasInput = document.getElementById('estrellasInput');
-        const estrellasValor = document.getElementById('estrellasValor');
-        if (!estrellasInput) return;
-        const btns = estrellasInput.querySelectorAll('.estrella-btn');
+        const starsInput = document.getElementById('estrellasInput');
+        const starsValue = document.getElementById('estrellasValor');
+        if (!starsInput) return;
+        const btns = starsInput.querySelectorAll('.estrella-btn');
         btns.forEach((btn, index) => {
             btn.addEventListener('mouseover', () => {
                 btns.forEach((b, i) => b.classList.toggle('activa', i <= index));
             });
             btn.addEventListener('click', () => {
-                estrellasValor.value = btn.dataset.valor;
+                starsValue.value = btn.dataset.valor;
                 btns.forEach((b, i) => b.classList.toggle('activa', i <= index));
             });
         });
-        estrellasInput.addEventListener('mouseleave', () => {
-            const val = parseInt(estrellasValor.value || 0);
+        starsInput.addEventListener('mouseleave', () => {
+            const val = parseInt(starsValue.value || 0);
             btns.forEach((b, i) => b.classList.toggle('activa', i < val));
+        });
+
+
+        const form = document.getElementById('formResena');
+        if (!form) return;
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnEnviarResena');
+            const alertBox = document.getElementById('resenaAlertContainer');
+            const stars = starsValue.value;
+            const comment = document.getElementById('resenaComentario').value;
+
+            if (!stars) {
+                alertBox.innerHTML = '<div class="resena-alerta resena-alerta-error">❌ Por favor selecciona una calificación.</div>';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enviando...';
+
+            const formData = new FormData(form);
+
+            fetch('<?= APP_URL ?>/ajax/resena_submit.php', {
+                method: 'POST',
+                body: formData
+            })
+                .then(r => r.json())
+                .then(data => {
+                    btn.disabled = false;
+                    btn.innerHTML = 'Enviar reseña';
+
+                    if (data.success) {
+                        alertBox.innerHTML = '<div class="resena-alerta resena-alerta-ok">✅ ¡Tu reseña se ha publicado con éxito!</div>';
+                        form.reset();
+                        starsValue.value = '';
+                        btns.forEach(b => b.classList.remove('activa'));
+
+
+                        const lista = document.querySelector('.resenas-lista');
+                        const emptyState = document.querySelector('.empty-reviews-premium');
+
+                        if (emptyState) emptyState.remove();
+
+                        const item = document.createElement('div');
+                        item.className = 'resena-item nuevo';
+                        item.innerHTML = `
+                        <div class="resena-header">
+                            <div class="resena-avatar">${data.letra}</div>
+                            <div>
+                                <strong>${data.nombre}</strong>
+                                <div class="estrellas-display small">
+                                    ${'★'.repeat(data.estrellas)}${'☆'.repeat(5 - data.estrellas)}
+                                </div>
+                            </div>
+                            <span class="resena-fecha">${data.fecha}</span>
+                        </div>
+                        <p class="resena-comentario">${data.comentario}</p>
+                    `;
+
+                        if (lista) {
+                            lista.prepend(item);
+                        } else {
+                            const nuevaLista = document.createElement('div');
+                            nuevaLista.className = 'resenas-lista';
+                            nuevaLista.appendChild(item);
+                            form.closest('.resena-form-wrapper').after(nuevaLista);
+                        }
+
+                        setTimeout(() => item.classList.add('visible'), 10);
+                    } else {
+                        alertBox.innerHTML = `<div class="resena-alerta resena-alerta-error">❌ ${data.error}</div>`;
+                    }
+                })
+                .catch(err => {
+                    btn.disabled = false;
+                    btn.innerHTML = 'Enviar reseña';
+                    alertBox.innerHTML = '<div class="resena-alerta resena-alerta-error">❌ Error al conectar con el servidor.</div>';
+                });
         });
     })();
 </script>

@@ -888,3 +888,143 @@ body.dark-mode .pw-toggle:hover {
     width: 100%;
   }
 }
+
+.mc-panel .empresas-list {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+  gap: 25px !important;
+}
+
+.fav-poster-card {
+  position: relative;
+  height: 380px;
+  border-radius: 28px;
+  overflow: hidden;
+  background: #1e293b;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+  cursor: pointer;
+}
+
+.fav-poster-card:hover {
+  transform: scale(1.02);
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.25);
+}
+
+.fav-p-bg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 1.2s ease;
+}
+
+.fav-poster-card:hover .fav-p-bg {
+  transform: scale(1.1);
+  filter: brightness(0.6);
+}
+
+.fav-p-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, 0.8) 100%);
+  opacity: 1;
+}
+
+.fav-p-remove {
+  align-self: flex-end;
+  width: 42px;
+  height: 42px;
+  background: white;
+  border: none;
+  border-radius: 50%;
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: 0.3s;
+  z-index: 10;
+}
+
+.fav-p-remove:hover {
+  transform: scale(1.15) rotate(15deg);
+}
+
+.fav-p-info {
+  transform: translateY(40px);
+  transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.fav-poster-card:hover .fav-p-info {
+  transform: translateY(0);
+}
+
+.fav-p-cat {
+  display: inline-block;
+  padding: 4px 12px;
+  background: var(--mc-pink);
+  color: white;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+  opacity: 0.9;
+}
+
+.fav-p-title {
+  color: white;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.1;
+  margin: 0 0 16px 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.fav-p-actions {
+  opacity: 0;
+  transition: 0.3s 0.1s;
+}
+
+.fav-poster-card:hover .fav-p-actions {
+  opacity: 1;
+}
+
+.fav-p-btn {
+  display: inline-block;
+  padding: 12px 24px;
+  background: white;
+  color: #1e293b;
+  text-decoration: none !important;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 700;
+  transition: 0.2s;
+}
+
+.fav-p-btn:hover {
+  background: #f7dc05;
+  transform: translateY(-2px);
+}
+
+.fav-p-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(45deg, #1e293b, #334155);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.fav-p-placeholder i {
+  font-size: 60px;
+  margin-bottom: 10px;
+}

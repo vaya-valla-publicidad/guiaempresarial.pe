@@ -67,6 +67,18 @@ function renderEmpresaCard($fila, $fotos_arr = [])
         </div>
         <?php if (count($fotos_arr) > 0): ?>
             <div class="empresa-slider">
+                <?php
+                global $user_favs;
+                $favs_check = is_array($user_favs) ? $user_favs : [];
+                $es_favorito = in_array((int) $id, $favs_check);
+                if (isset($_SESSION['usuario_publico_id'])):
+                    ?>
+                    <button class="btn-favorito <?= $es_favorito ? 'activo' : '' ?>" onclick="toggleFavorito(event, <?= $id ?>)"
+                        data-id="<?= $id ?>" title="<?= $es_favorito ? 'Quitar de favoritos' : 'Guardar en favoritos' ?>">
+                        <i class="bi <?= $es_favorito ? 'bi-heart-fill' : 'bi-heart' ?>"></i>
+                    </button>
+                <?php endif; ?>
+
                 <?php foreach ($fotos_arr as $i => $foto): ?>
                     <div class="slide <?= $i === 0 ? 'activo' : '' ?>"
                         style="background-image: url('<?= $path_galeria . htmlspecialchars($foto) ?>');">
@@ -83,6 +95,41 @@ function renderEmpresaCard($fila, $fotos_arr = [])
                 <?php endif; ?>
             </div>
         <?php endif; ?>
+    </div>
+    <?php
+}
+
+
+function renderFavoritoCard($fila, $fotos_arr = [])
+{
+    $id = intval($fila['id_empresa']);
+    $path_galeria = APP_URL . '/assets/img/empresascarrusel/';
+    $display_foto = !empty($fotos_arr[0]) ? $path_galeria . htmlspecialchars($fotos_arr[0]) : null;
+    $slug = htmlspecialchars($fila['slug']);
+    ?>
+    <div class="fav-poster-card empresa-item" data-id="<?= $id ?>">
+        <?php if ($display_foto): ?>
+            <img src="<?= $display_foto ?>" alt="<?= htmlspecialchars($fila['nombre']) ?>" class="fav-p-bg" loading="lazy">
+        <?php else: ?>
+            <div class="fav-p-placeholder">
+                <i class="bi bi-building"></i>
+                <span><?= htmlspecialchars($fila['nombre']) ?></span>
+            </div>
+        <?php endif; ?>
+
+        <div class="fav-p-overlay">
+            <button class="fav-p-remove" onclick="toggleFavorito(event, <?= $id ?>)" title="Quitar">
+                <i class="bi bi-heart-fill"></i>
+            </button>
+
+            <div class="fav-p-info">
+                <span class="fav-p-cat"><?= htmlspecialchars($fila['categoria']) ?></span>
+                <h3 class="fav-p-title"><?= htmlspecialchars($fila['nombre']) ?></h3>
+                <div class="fav-p-actions">
+                    <a href="<?= APP_URL ?>/empresa/<?= $slug ?>" class="fav-p-btn">Ver Detalles</a>
+                </div>
+            </div>
+        </div>
     </div>
     <?php
 }
