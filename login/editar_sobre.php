@@ -7,25 +7,38 @@ $error = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $campos = [
-        'quienes_somos',
-        'mision',
-        'vision',
-        'por_que_1_titulo',
-        'por_que_1_texto',
-        'por_que_2_titulo',
-        'por_que_2_texto',
-        'por_que_3_titulo',
-        'por_que_3_texto',
+        'quienes_somos', 'mision', 'vision',
+        'por_que_1_titulo', 'por_que_1_texto',
+        'por_que_2_titulo', 'por_que_2_texto',
+        'por_que_3_titulo', 'por_que_3_texto',
+        'stat_empresas', 'stat_categorias'
     ];
     foreach ($campos as $campo) {
         $valor = trim($_POST[$campo] ?? '');
-        $stmt = $conexion->prepare("UPDATE sobre_info SET valor=? WHERE clave=?");
-        $stmt->bind_param("ss", $valor, $campo);
+        
+        $check = $conexion->prepare("SELECT COUNT(*) as existe FROM sobre_info WHERE clave=?");
+        $check->bind_param("s", $campo);
+        $check->execute();
+        $existe = $check->get_result()->fetch_assoc()['existe'];
+        $check->close();
+
+        if ($existe) {
+            $stmt = $conexion->prepare("UPDATE sobre_info SET valor=? WHERE clave=?");
+            $stmt->bind_param("ss", $valor, $campo);
+        } else {
+            $stmt = $conexion->prepare("INSERT INTO sobre_info (valor, clave) VALUES (?, ?)");
+            $stmt->bind_param("ss", $valor, $campo);
+        }
         $stmt->execute();
         $stmt->close();
     }
     $success = "Información actualizada correctamente ✅";
 }
+
+$real_stats = [
+    'empresas' => $conexion->query("SELECT COUNT(*) as total FROM empresas")->fetch_assoc()['total'],
+    'categorias' => $conexion->query("SELECT COUNT(*) as total FROM categorias")->fetch_assoc()['total']
+];
 
 $res = $conexion->query("SELECT clave, valor FROM sobre_info");
 $info = [];
@@ -105,6 +118,32 @@ while ($f = $res->fetch_assoc())
                         <label>Texto 3</label>
                         <textarea name="por_que_3_texto"
                             rows="3"><?= htmlspecialchars($info['por_que_3_texto'] ?? '') ?></textarea>
+                    </div>
+
+                    <hr style="margin: 30px 0;">
+                    <h3 style="margin-bottom:16px;">Contadores (Estadísticas en "Sobre Nosotros")</h3>
+                    <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Estos valores se mostrarán en la web pública. Puedes poner números con símbolos (ej: 100+).</p>
+
+                    <div class="form-group">
+                        <label>Empresas registradas (Texto publico)</label>
+                        <div style="display:flex; align-items:center; gap: 15px;">
+                            <input type="text" name="stat_empresas" style="flex:1;"
+                                value="<?= htmlspecialchars($info['stat_empresas'] ?? '') ?>" placeholder="Ej: 50+">
+                            <span style="font-size:12px; white-space:nowrap; background:#f1f5f9; padding:10px; border-radius:8px;">
+                                📊 Real en sistema: <strong><?= $real_stats['empresas'] ?></strong>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Categorías disponibles (Texto publico)</label>
+                        <div style="display:flex; align-items:center; gap: 15px;">
+                            <input type="text" name="stat_categorias" style="flex:1;"
+                                value="<?= htmlspecialchars($info['stat_categorias'] ?? '') ?>" placeholder="Ej: 15+">
+                            <span style="font-size:12px; white-space:nowrap; background:#f1f5f9; padding:10px; border-radius:8px;">
+                                🏷 Real en sistema: <strong><?= $real_stats['categorias'] ?></strong>
+                            </span>
+                        </div>
                     </div>
 
                     <button type="submit" class="btn">Guardar cambios</button>

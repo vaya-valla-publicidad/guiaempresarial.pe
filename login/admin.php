@@ -43,6 +43,79 @@ $rol = $_SESSION['rol'];
                 </a>
             </div>
 
+            <style>
+                .stats-dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px; }
+                .stat-box { background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 10px; position: relative; border-left: 5px solid #1B3A57; border-left: 5px solid var(--azul, #1B3A57); transition: 0.3s; }
+                .stat-box:hover { transform: translateY(-5px); box-shadow: 0 10px 15px rgba(0,0,0,0.1); }
+                .stat-box i { font-size: 24px; color: #1B3A57; color: var(--azul, #1B3A57); }
+                .stat-box .stat-title { font-size: 14px; font-weight: 600; color: #64748b; text-transform: uppercase; }
+                .stat-box .stat-value { font-size: 28px; font-weight: 800; color: #1e293b; }
+                .stat-box .stat-footer { font-size: 13px; color: #94a3b8; }
+                .top5-list { list-style: none; padding: 0; margin: 0; }
+                .top5-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
+                .top5-item:last-child { border-bottom: none; }
+                .top5-name { font-weight: 600; font-size: 13px; color: #475569; }
+                .top5-views { background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+                .btn-reiniciar-vistas { background: #fee2e2; color: #991b1b; padding: 5px 10px; border-radius: 6px; text-decoration: none; font-size: 12px; display: inline-flex; align-items: center; gap: 5px; margin-top: 10px; font-weight: 600; width: fit-content; border: none; cursor: pointer; transition: 0.2s; }
+                .btn-reiniciar-vistas:hover { background: #ef4444; color: #fff; }
+            </style>
+
+            <?php
+            $stats_global = $conexion->query("SELECT SUM(vistas) as total, COUNT(*) as empresas FROM empresas")->fetch_assoc();
+            $total_visitas = $stats_global['total'] ?? 0;
+            $total_emp = $stats_global['empresas'] ?? 0;
+            $top5 = $conexion->query("SELECT nombre, vistas FROM empresas ORDER BY vistas DESC LIMIT 5");
+            ?>
+
+            <div class="stats-dashboard">
+                <div class="stat-box">
+                    <i class="bi bi-eye"></i>
+                    <span class="stat-title">Impacto Global</span>
+                    <span class="stat-value"><?= number_format($total_visitas) ?></span>
+                    <span class="stat-footer">Visitas totales en la plataforma</span>
+                    <button onclick="confirmarReinicio()" class="btn-reiniciar-vistas">
+                        <i class="bi bi-arrow-counterclockwise"></i> Reiniciar todas las vistas
+                    </button>
+                </div>
+
+                <div class="stat-box" style="border-left-color: #f7941d;">
+                    <i class="bi bi-graph-up-arrow" style="color: #f7941d;"></i>
+                    <span class="stat-title">Top 5 Popularidad</span>
+                    <ul class="top5-list">
+                        <?php if ($top5 && $top5->num_rows > 0): ?>
+                            <?php while ($t = $top5->fetch_assoc()): ?>
+                                <li class="top5-item">
+                                    <span class="top5-name"><?= htmlspecialchars(mb_strimwidth($t['nombre'], 0, 20, '…')) ?></span>
+                                    <span class="top5-views"><?= $t['vistas'] ?></span>
+                                </li>
+                            <?php endwhile; ?>
+                        <?php else: ?>
+                            <li class="top5-item">No hay datos suficientes</li>
+                        <?php endif; ?>
+                    </ul>
+                </div>
+
+                <div class="stat-box" style="border-left-color: #10b981;">
+                    <i class="bi bi-building" style="color: #10b981;"></i>
+                    <span class="stat-title">Activos</span>
+                    <span class="stat-value"><?= $total_emp ?></span>
+                    <span class="stat-footer">Empresas registradas actualmente</span>
+                    <div style="margin-top:auto;">
+                         <a href="agregar_empresa.php" class="btn-reiniciar-vistas" style="background:#dcfce7; color:#166534;">
+                            <i class="bi bi-plus-circle"></i> Nuevo registro
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+            function confirmarReinicio() {
+                if (confirm('⚠️ ¿Estás COMPLETAMENTE SEGURO de reiniciar TODAS las vistas a cero?\n\nEsta acción no se puede deshacer.')) {
+                    location.href = 'reiniciar_vistas.php';
+                }
+            }
+            </script>
+
             <h2>Administración de Usuarios</h2><br>
             <a href="agregar.php" class="btn">Agregar Usuario</a>
             <br><br>
@@ -137,8 +210,14 @@ $rol = $_SESSION['rol'];
             </div>
 
             <h2>Empresas</h2><br>
-            <a href="agregar_empresa.php" class="btn">Agregar Empresa</a>
-            <br><br>
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px; margin-bottom:20px;">
+                <a href="agregar_empresa.php" class="btn">Agregar Empresa</a>
+                <div class="search-panel" style="position:relative; flex:1; max-width:400px;">
+                    <i class="bi bi-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#aaa;"></i>
+                    <input type="text" id="filtroEmpresa" placeholder="Buscar por nombre o rubro..." 
+                           style="width:100%; padding:10px 15px 10px 40px; border:1px solid #ddd; border-radius:8px; font-size:14px; outline:none; transition:border-color 0.3s;">
+                </div>
+            </div>
 
             <div class="table-wrap">
                 <table>
@@ -177,7 +256,16 @@ $rol = $_SESSION['rol'];
                                     <?= $fila['destacada'] ? '⭐' : '☆' ?>
                                 </button>
                             </td>
-                            <td data-label="Vistas"><?= number_format($fila['vistas']) ?></td>
+                            <td data-label="Vistas">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <?= number_format($fila['vistas']) ?>
+                                    <a href="reiniciar_vistas.php?id=<?= $fila['id_empresa'] ?>" 
+                                       onclick="return confirm('¿Reiniciar vistas de esta empresa?')" 
+                                       style="font-size:14px; color:#cbd5e1; text-decoration:none;" title="Reiniciar">
+                                        <i class="bi bi-arrow-counterclockwise"></i>
+                                    </a>
+                                </div>
+                            </td>
                             <td data-label="Logo">
                                 <?php if (!empty($fila['logo'])): ?>
                                     <img src="<?= APP_URL ?>/assets/img/<?= htmlspecialchars($fila['logo']) ?>"
@@ -212,6 +300,13 @@ $rol = $_SESSION['rol'];
                             </td>
                         </tr>
                     <?php endwhile; ?>
+                    <tr id="noResultsAdmin" style="display:none;">
+                        <td colspan="13" style="text-align:center; padding:50px 20px; color:var(--ink-muted);">
+                            <div style="font-size: 44px; margin-bottom: 12px; opacity: 0.3;">🔍</div>
+                            <p style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">No se encontraron resultados</p>
+                            <p style="font-size: 13px; opacity: 0.7;">Prueba con un término de búsqueda diferente.</p>
+                        </td>
+                    </tr>
                 </table>
             </div>
             <br><br>
@@ -280,6 +375,29 @@ $rol = $_SESSION['rol'];
                     btn.style.opacity = '1';
                 });
         }
+
+        document.getElementById('filtroEmpresa')?.addEventListener('keyup', function() {
+            const term = this.value.toLowerCase();
+            const rows = document.querySelectorAll('table tr[id^="fila-"]');
+            let found = false;
+            
+            rows.forEach(row => {
+                const nombre = row.querySelector('[data-label="Nombre"]')?.textContent.toLowerCase() || "";
+                const rubro = row.querySelector('[data-label="Rubro"]')?.textContent.toLowerCase() || "";
+                
+                if (nombre.includes(term) || rubro.includes(term)) {
+                    row.style.display = "";
+                    found = true;
+                } else {
+                    row.style.display = "none";
+                }
+            });
+
+            const noResults = document.getElementById('noResultsAdmin');
+            if (noResults) {
+                noResults.style.display = found ? "none" : "";
+            }
+        });
     </script>
 
 </body>

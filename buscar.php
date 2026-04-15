@@ -36,7 +36,7 @@ while ($f = $resultado->fetch_assoc()):
     $id   = intval($f['id_empresa']);
     $desc = !empty($f['descripcion']) ? mb_strimwidth($f['descripcion'], 0, 60, '…') : '';
 ?>
-<a href="<?= APP_URL ?>/empresa/<?= htmlspecialchars($f['slug']) ?>" class="buscar-result-item">
+<a href="<?= APP_URL ?>/negocio/<?= htmlspecialchars($f['slug']) ?>" class="buscar-result-item">
     <?php if (!empty($f['logo'])): ?>
         <img src="<?= APP_URL ?>/assets/img/<?= htmlspecialchars($f['logo']) ?>"
              alt="<?= htmlspecialchars($f['nombre']) ?>"

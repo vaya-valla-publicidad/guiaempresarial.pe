@@ -1,7 +1,6 @@
 ErrorDocument 404 /guiaempresarial.pe/404.php
 
-# Opciones de seguridad básicas
-Options -Indexes
+Options +FollowSymLinks -Indexes -MultiViews
 ServerSignature Off
 
 # Protección contra acceso a archivos por extensión
@@ -22,10 +21,11 @@ ServerSignature Off
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    RewriteBase /guiaempresarial.pe/
     
-    RewriteRule ^empresa/([^/]+)/?$ empresas.php?slug=$1 [L,QSA]
+    RewriteRule ^negocio/([^/]+)/?$ empresas.php?slug=$1 [L,QSA]
     
-    RewriteRule ^categoria/([^/]+)/?$ empresas.php?cat_slug=$1 [L,QSA]
+    RewriteRule ^rubro/([^/]+)/?$ empresas.php?cat_slug=$1 [L,QSA]
 
     # Redirección de archivos no encontrados
     RewriteCond %{REQUEST_FILENAME} !-f

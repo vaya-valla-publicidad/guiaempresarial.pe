@@ -3,6 +3,40 @@ include 'db.php';
 include 'includes/components/empresa_card.php';
 $seo_title = "Guía Empresarial - Impulsando Negocios Locales";
 $seo_description = "Descubre, conecta y potencia empresas de tu región. Visibilidad real para negocios reales.";
+
+$json_ld_schema = [
+    [
+        "@context" => "https://schema.org",
+        "@type" => "Organization",
+        "name" => "Guía Empresarial",
+        "url" => APP_URL . "/index.php",
+        "logo" => APP_URL . "/assets/img/image.png",
+        "sameAs" => [
+            "https://www.facebook.com/guiaempresarios"
+        ],
+        "contactPoint" => [
+            [
+                "@type" => "ContactPoint",
+                "telephone" => "+51 987 226 299",
+                "contactType" => "customer service",
+                "areaServed" => "PE",
+                "availableLanguage" => "Spanish"
+            ]
+        ]
+    ],
+    [
+        "@context" => "https://schema.org",
+        "@type" => "WebSite",
+        "name" => "Guía Empresarial",
+        "url" => APP_URL . "/index.php",
+        "potentialAction" => [
+            "@type" => "SearchAction",
+            "target" => APP_URL . "/empresas.php?buscar={search_term_string}",
+            "query-input" => "required name=search_term_string"
+        ]
+    ]
+];
+
 include 'includes/header.php';
 ?>
 
@@ -110,7 +144,7 @@ $total_slides = count($slides);
         endif;
         ?>
         <div class="ver-mas-empresas">
-            <a href="empresas.php" class="btn-ver-mas">Ver más empresas →</a>
+            <a href="<?= APP_URL ?>/empresas.php" class="btn-ver-mas">Ver más empresas →</a>
         </div>
     </div>
 </section>
@@ -128,12 +162,12 @@ $total_slides = count($slides);
                 $nombre = htmlspecialchars($fila['nombre']);
                 $icono = htmlspecialchars($fila['icono'] ?? 'bi-briefcase');
                 ?>
-                <a href="categoria/<?= htmlspecialchars($fila['slug']) ?>" class="categoria-card">
+                <a href="<?= APP_URL ?>/rubro/<?= htmlspecialchars($fila['slug']) ?>" class="categoria-card">
                     <div class="categoria-icono-wrap"><i class="bi <?= $icono ?>"></i></div>
                     <span class="categoria-nombre"><?= $nombre ?></span>
                 </a>
             <?php endwhile; ?>
-            <a href="categorias.php" class="categoria-card ver-mas-card">
+            <a href="<?= APP_URL ?>/categorias.php" class="categoria-card ver-mas-card">
                 <div class="categoria-icono-wrap"><i class="bi bi-plus-circle"></i></div>
                 <span class="categoria-nombre">Ver más categorías</span>
             </a>
@@ -226,7 +260,6 @@ $total_slides = count($slides);
         startAuto();
     })();
 
-    // Los carruseles de empresas ahora se inicializan globalmente desde footer.php
 
     const inputBuscar = document.getElementById('buscar');
     const resultadosDiv = document.getElementById('resultados');
@@ -263,15 +296,32 @@ $total_slides = count($slides);
         }
     });
 
+    function limpiarBuscadorTotal() {
+        if(inputBuscar) inputBuscar.value = '';
+        if(resultadosDiv) resultadosDiv.innerHTML = '';
+    }
+
+    window.addEventListener('load', limpiarBuscadorTotal);
+    window.addEventListener('pageshow', limpiarBuscadorTotal);
+
     formBuscar.addEventListener('submit', function (e) {
         e.preventDefault();
         const q = inputBuscar.value.trim();
-        if (q.length > 0) window.location.href = 'empresas.php?buscar=' + encodeURIComponent(q);
+        if (q.length > 0) {
+            limpiarBuscadorTotal();
+            window.location.href = '<?= APP_URL ?>/empresas.php?buscar=' + encodeURIComponent(q);
+        }
+    });
+
+    resultadosDiv.addEventListener('click', function(e) {
+        if(e.target.closest('a')) {
+            setTimeout(limpiarBuscadorTotal, 50);
+        }
     });
 
     document.addEventListener('click', function (e) {
         if (!e.target.closest('.search-wrapper')) {
-            resultadosDiv.innerHTML = '';
+            if(resultadosDiv) resultadosDiv.innerHTML = '';
         }
     });
 </script>

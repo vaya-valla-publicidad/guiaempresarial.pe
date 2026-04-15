@@ -3,6 +3,12 @@ include 'db.php';
 $seo_title = "Categorías - Guía Empresarial";
 $seo_description = "Explora los rubros destacados y descubre empresas relacionadas en Guía Empresarial.";
 include 'includes/header.php';
+include 'includes/components/breadcrumbs.php';
+?>
+
+<?php
+$bc_items = [["name" => "Categorías", "url" => null]];
+echo renderBreadcrumbs($bc_items);
 ?>
 
 <section class="page-section">
@@ -20,7 +26,7 @@ include 'includes/header.php';
                 $nombre = htmlspecialchars($fila['nombre']);
                 $icono = htmlspecialchars($fila['icono'] ?? 'bi-briefcase');
                 ?>
-                <a href="categoria/<?= $fila['slug'] ?>" class="categoria-card">
+                <a href="<?= APP_URL ?>/rubro/<?= $fila['slug'] ?>" class="categoria-card">
                     <div class="categoria-icono-wrap">
                         <i class="bi <?= $icono ?>"></i>
                     </div>

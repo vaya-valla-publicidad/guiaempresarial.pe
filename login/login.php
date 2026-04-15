@@ -9,7 +9,7 @@ if (isset($_GET['token'])) {
             if (session_status() === PHP_SESSION_NONE)
                 session_start();
             $_SESSION['admin_access_granted'] = true;
-            header("Location: /guiaempresarial.pe/login/login.php");
+            header("Location: " . APP_URL . "/login/login.php");
             exit();
         } else {
             error_log("Intento de acceso con token inválido desde IP: " . $_SERVER['REMOTE_ADDR']);
@@ -22,7 +22,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 if (empty($_SESSION['admin_access_granted']) || $_SESSION['admin_access_granted'] !== true) {
-    header("Location: /guiaempresarial.pe/index.php");
+    header("Location: " . APP_URL . "/index.php");
     exit();
 }
 
@@ -66,9 +66,9 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) 
             $_SESSION['ultimo_intento'] = 0;
 
             if ($fila['rol'] === 'admin') {
-                header("Location: /guiaempresarial.pe/login/admin.php");
+                header("Location: " . APP_URL . "/login/admin.php");
             } else {
-                header("Location: /guiaempresarial.pe/login/editor.php");
+                header("Location: " . APP_URL . "/login/editor.php");
             }
             exit();
         } else {
@@ -91,7 +91,7 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inicio de sesión</title>
-    <link rel="stylesheet" href="/guiaempresarial.pe/assets/css/login.css">
+    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css">
 </head>
 
 <body>

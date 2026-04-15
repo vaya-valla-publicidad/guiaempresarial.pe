@@ -6,13 +6,16 @@ include 'includes/header.php';
 ?>
 
 <?php
-$total_empresas = $conexion->query("SELECT COUNT(*) as total FROM empresas")->fetch_assoc()['total'];
-$total_categorias = $conexion->query("SELECT COUNT(*) as total FROM categorias")->fetch_assoc()['total'];
-
 $res = $conexion->query("SELECT clave, valor FROM sobre_info");
 $info = [];
 while ($f = $res->fetch_assoc())
     $info[$f['clave']] = $f['valor'];
+
+$total_empresas_real = $conexion->query("SELECT COUNT(*) as total FROM empresas")->fetch_assoc()['total'];
+$total_categorias_real = $conexion->query("SELECT COUNT(*) as total FROM categorias")->fetch_assoc()['total'];
+
+$total_empresas = !empty($info['stat_empresas']) ? $info['stat_empresas'] : $total_empresas_real . "+";
+$total_categorias = !empty($info['stat_categorias']) ? $info['stat_categorias'] : $total_categorias_real . "+";
 ?>
 
 <section class="page-section">

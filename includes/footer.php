@@ -58,18 +58,19 @@ if ("serviceWorker" in navigator) {
 }
 </script>
 <script>
-const toggleBtn = document.getElementById('toggle-theme');
-
-if(localStorage.getItem("theme") === "dark") {
-  document.body.classList.add("dark-mode");
-  toggleBtn.checked = true;
+const toggleTheme = document.getElementById('toggle-theme');
+if (toggleTheme) {
+    if (localStorage.getItem("theme") === "dark") {
+        toggleTheme.checked = true;
+    }
+    toggleTheme.addEventListener('change', () => {
+        const isDark = toggleTheme.checked;
+        document.documentElement.classList.toggle('dark-mode', isDark);
+        document.body.classList.toggle('dark-mode', isDark);
+        localStorage.setItem("theme", isDark ? "dark" : "light");
+        document.cookie = "theme=" + (isDark ? "dark" : "light") + ";path=/;max-age=" + (30 * 24 * 60 * 60);
+    });
 }
-toggleBtn.addEventListener('change', () => {
-  document.body.classList.toggle('dark-mode');
-  const dark = document.body.classList.contains('dark-mode');
-  localStorage.setItem("theme", dark ? "dark" : "light");
-
-});
 </script>
 <script>
 const links = document.querySelectorAll('.nav-link');

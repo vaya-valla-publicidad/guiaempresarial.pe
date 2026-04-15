@@ -44,7 +44,7 @@ function renderEmpresaCard($fila, $fotos_arr = [])
                 <span>👁 <?= number_format($fila['vistas']) ?> vistas</span>
             </div>
             <div class="empresa-actions">
-                <a href="empresa/<?= htmlspecialchars($fila['slug']) ?>" class="btn-ver">Ver más</a>
+                <a href="<?= APP_URL ?>/negocio/<?= htmlspecialchars($fila['slug']) ?>" class="btn-ver">Ver más</a>
 
                 <?php if (!empty($fila['link_empresa'])): ?>
                     <a href="<?= htmlspecialchars($fila['link_empresa']) ?>" target="_blank" class="btn-ver"
@@ -126,7 +126,7 @@ function renderFavoritoCard($fila, $fotos_arr = [])
                 <span class="fav-p-cat"><?= htmlspecialchars($fila['categoria']) ?></span>
                 <h3 class="fav-p-title"><?= htmlspecialchars($fila['nombre']) ?></h3>
                 <div class="fav-p-actions">
-                    <a href="<?= APP_URL ?>/empresa/<?= $slug ?>" class="fav-p-btn">Ver Detalles</a>
+                    <a href="<?= APP_URL ?>/negocio/<?= $slug ?>" class="fav-p-btn">Ver Detalles</a>
                 </div>
             </div>
         </div>

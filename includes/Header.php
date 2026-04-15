@@ -56,10 +56,23 @@ if (isset($_SESSION['usuario_publico_id'])) {
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="manifest" href="<?= APP_URL ?>/manifest.json">
   <meta name="theme-color" content="#0d6efd">
-  <script>window.csrfToken = '<?php echo function_exists('generarTokenCSRF') ? generarTokenCSRF() : ""; ?>';</script>
+  <script>
+    (function() {
+      const theme = localStorage.getItem('theme');
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark-mode');
+      }
+    })();
+    window.csrfToken = '<?php echo function_exists('generarTokenCSRF') ? generarTokenCSRF() : ""; ?>';
+  </script>
 </head>
 
-<body>
+<body class="<?php echo (isset($_COOKIE['theme']) && $_COOKIE['theme'] === 'dark') ? 'dark-mode' : ''; ?>">
+  <script>
+    if (localStorage.getItem('theme') === 'dark') {
+      document.body.classList.add('dark-mode');
+    }
+  </script>
 
   <div class="nav-overlay" id="nav-overlay"></div>
 
@@ -100,9 +113,12 @@ if (isset($_SESSION['usuario_publico_id'])) {
             <a href="<?= APP_URL ?>/login_usuario.php" class="nav-link">Ingresar</a>
           <?php endif; ?>
         </nav>
-        <label class="theme-switch">
+        <label class="theme-switch" for="toggle-theme">
           <input type="checkbox" id="toggle-theme">
-          <span class="slider"></span>
+          <span class="slider">
+            <i class="bi bi-sun-fill"></i>
+            <i class="bi bi-moon-fill"></i>
+          </span>
         </label>
       </div>
 

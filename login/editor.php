@@ -11,7 +11,7 @@ $rol = $_SESSION['rol'];
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel <?= ucfirst($rol) ?></title>
-    <link rel="stylesheet" href="/guiaempresarial.pe/assets/css/login.css">
+    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
 
@@ -27,7 +27,7 @@ $rol = $_SESSION['rol'];
                 <a href="cerrar.php">Cerrar sesión</a>
             </div>
 
-            <a href="/guiaempresarial.pe/index.php" class="btn btn-panel-nav">
+            <a href="<?= APP_URL ?>/index.php" class="btn btn-panel-nav">
                 Ver sitio principal
             </a>
             <a href="editar_sobre.php" class="btn btn-panel-nav-sep">
@@ -70,6 +70,13 @@ $rol = $_SESSION['rol'];
                             </td>
                         </tr>
                     <?php endwhile; ?>
+                    <tr id="noResultsEditor" style="display:none;">
+                        <td colspan="13" style="text-align:center; padding:50px 20px; color:var(--ink-muted);">
+                            <div style="font-size: 44px; margin-bottom: 12px; opacity: 0.3;">🔍</div>
+                            <p style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">No se encontraron resultados</p>
+                            <p style="font-size: 13px; opacity: 0.7;">Prueba con un término de búsqueda diferente.</p>
+                        </td>
+                    </tr>
                 </table>
             </div>
             <br><br>
@@ -100,8 +107,14 @@ $rol = $_SESSION['rol'];
             </div>
 
             <h2>Empresas</h2><br>
-            <a href="agregar_empresa.php" class="btn">Agregar Empresa</a>
-            <br><br>
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px; margin-bottom:20px;">
+                <a href="agregar_empresa.php" class="btn">Agregar Empresa</a>
+                <div class="search-panel" style="position:relative; flex:1; max-width:400px;">
+                    <i class="bi bi-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#aaa;"></i>
+                    <input type="text" id="filtroEmpresa" placeholder="Buscar por nombre o rubro..." 
+                           style="width:100%; padding:10px 15px 10px 40px; border:1px solid #ddd; border-radius:8px; font-size:14px; outline:none; transition:border-color 0.3s;">
+                </div>
+            </div>
 
             <div class="table-wrap">
                 <table>
@@ -140,10 +153,19 @@ $rol = $_SESSION['rol'];
                                     <?= $fila['destacada'] ? '⭐' : '☆' ?>
                                 </button>
                             </td>
-                            <td data-label="Vistas"><?= number_format($fila['vistas']) ?></td>
+                            <td data-label="Vistas">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <?= number_format($fila['vistas']) ?>
+                                    <a href="reiniciar_vistas.php?id=<?= $fila['id_empresa'] ?>" 
+                                       onclick="return confirm('¿Reiniciar vistas de esta empresa?')" 
+                                       style="font-size:14px; color:#cbd5e1; text-decoration:none;" title="Reiniciar">
+                                        <i class="bi bi-arrow-counterclockwise"></i>
+                                    </a>
+                                </div>
+                            </td>
                             <td data-label="Logo">
                                 <?php if (!empty($fila['logo'])): ?>
-                                    <img src="/guiaempresarial.pe/assets/img/<?= htmlspecialchars($fila['logo']) ?>"
+                                    <img src="<?= APP_URL ?>/assets/img/<?= htmlspecialchars($fila['logo']) ?>"
                                         style="width:45px;height:45px;object-fit:cover;border-radius:6px;">
                                 <?php else: ?>—<?php endif; ?>
                             </td>
@@ -175,6 +197,12 @@ $rol = $_SESSION['rol'];
                             </td>
                         </tr>
                     <?php endwhile; ?>
+                    <tr id="noResultsEditor" style="display:none;">
+                        <td colspan="13" style="text-align:center; padding:30px; color:#aaa;">
+                            <i class="bi bi-search" style="font-size:24px; display:block; margin-bottom:10px;"></i>
+                            No se encontraron empresas que coincidan con la búsqueda.
+                        </td>
+                    </tr>
                 </table>
             </div>
             <br><br>
@@ -237,6 +265,29 @@ $rol = $_SESSION['rol'];
                     btn.style.opacity = '1';
                 });
         }
+
+        document.getElementById('filtroEmpresa')?.addEventListener('keyup', function() {
+            const term = this.value.toLowerCase();
+            const rows = document.querySelectorAll('table tr[id^="fila-"]');
+            let found = false;
+            
+            rows.forEach(row => {
+                const nombre = row.querySelector('[data-label="Nombre"]')?.textContent.toLowerCase() || "";
+                const rubro = row.querySelector('[data-label="Rubro"]')?.textContent.toLowerCase() || "";
+                
+                if (nombre.includes(term) || rubro.includes(term)) {
+                    row.style.display = "";
+                    found = true;
+                } else {
+                    row.style.display = "none";
+                }
+            });
+
+            const noResults = document.getElementById('noResultsEditor');
+            if (noResults) {
+                noResults.style.display = found ? "none" : "";
+            }
+        });
     </script>
 
 </body>

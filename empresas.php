@@ -3,6 +3,7 @@ session_start();
 include 'db.php';
 include 'includes/security.php';
 include 'includes/components/empresa_card.php';
+include 'includes/components/breadcrumbs.php';
 $seo_title = "Empresas - Guía Empresarial";
 $seo_description = "Explora negocios locales y descubre nuevas oportunidades en tu región.";
 
@@ -20,7 +21,7 @@ if ($seo_id_empresa && is_numeric($seo_id_empresa)) {
     $stmt_r->execute();
     $res_r = $stmt_r->get_result();
     if ($res_r && $row = $res_r->fetch_assoc()) {
-        header("Location: " . APP_URL . "/empresa/" . $row['slug'], true, 301);
+        header("Location: " . APP_URL . "/negocio/" . $row['slug'], true, 301);
         exit;
     }
 }
@@ -30,7 +31,7 @@ if ($seo_id_categoria && is_numeric($seo_id_categoria)) {
     $stmt_r->execute();
     $res_r = $stmt_r->get_result();
     if ($res_r && $row = $res_r->fetch_assoc()) {
-        header("Location: " . APP_URL . "/categoria/" . $row['slug'], true, 301);
+        header("Location: " . APP_URL . "/rubro/" . $row['slug'], true, 301);
         exit;
     }
 }
@@ -78,6 +79,27 @@ include 'includes/header.php';
             <h1>Empresas</h1>
             <p>Explora negocios locales y descubre nuevas oportunidades</p>
         </div>
+
+        <?php if (!$id_empresa): ?>
+        <div class="search-listing-wrapper" style="margin-bottom: 40px; max-width: 600px; margin-left: auto; margin-right: auto;">
+            <form action="<?= APP_URL ?>/empresas.php" method="GET" class="search-form" style="display: flex; gap: 10px; background: white; padding: 6px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid var(--borde);">
+                <div style="position: relative; flex: 1; display: flex; align-items: center;">
+                    <i class="bi bi-search" style="position: absolute; left: 15px; color: var(--muted); font-size: 18px;"></i>
+                    <input type="text" name="buscar" id="inputBuscarListing" value="" 
+                           placeholder="¿Qué estás buscando hoy?" 
+                           style="width: 100%; border: none; padding: 12px 40px 12px 45px; border-radius: 8px; outline: none; font-size: 16px;">
+                    <?php if (!empty($_GET['buscar'])): ?>
+                        <a href="<?= APP_URL ?>/empresas.php" style="position: absolute; right: 10px; color: var(--muted); font-size: 20px; text-decoration: none; display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; transition: background 0.2s;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='transparent'">
+                            <i class="bi bi-x"></i>
+                        </a>
+                    <?php endif; ?>
+                </div>
+                <button type="submit" class="btn-primary" style="margin: 0; padding: 0 30px; border-radius: 12px; border: none; font-size: 15px; min-width: 120px; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(230, 57, 70, 0.2);">
+                    <i class="bi bi-search" style="margin-right: 5px;"></i> Buscar
+                </button>
+            </form>
+        </div>
+        <?php endif; ?>
 
         <?php
         $buscar = $_GET['buscar'] ?? null;
@@ -180,7 +202,37 @@ include 'includes/header.php';
             $stmt_vistas->execute();
             ?>
 
-            <a href="<?= APP_URL ?>/empresas.php" class="btn-volver">← Volver a empresas</a>
+            <?php
+            $json_ld_schema = [
+                "@context" => "https://schema.org",
+                "@type" => "LocalBusiness",
+                "name" => $fila['nombre'],
+                "description" => $fila['descripcion'] ?? '',
+                "url" => APP_URL . "/negocio/" . $fila['slug'],
+                "telephone" => $numero ? "+51 " . $numero : null,
+                "address" => [
+                    "@type" => "PostalAddress",
+                    "streetAddress" => $fila['direccion'] ?? '',
+                    "addressLocality" => "Pucallpa", 
+                    "addressRegion" => "Ucayali",
+                    "addressCountry" => "PE"
+                ],
+                "image" => $logo ? APP_URL . "/assets/img/" . $logo : null,
+                "priceRange" => "$$"
+            ];
+            
+            $bc_items = [
+                [
+                    "name" => $fila['categoria'], 
+                    "url" => APP_URL . "/rubro/" . $fila['cat_slug']
+                ],
+                [
+                    "name" => $fila['nombre'], 
+                    "url" => APP_URL . "/negocio/" . $fila['slug']
+                ]
+            ];
+            echo renderBreadcrumbs($bc_items);
+            ?>
 
             <div class="perfil-wrapper">
                 <div class="perfil-hero">
@@ -372,7 +424,7 @@ include 'includes/header.php';
                         <?php if (isset($_SESSION['usuario_publico_id'])): ?>
                             <p class="resena-form-titulo">Hola, <?= htmlspecialchars($_SESSION['usuario_publico_nombre']) ?> 👋
                                 Deja tu reseña</p>
-                            <form id="formResena" method="POST" action="empresas.php?empresa=<?= $id_empresa ?>">
+                            <form id="formResena" method="POST" action="<?= APP_URL ?>/empresas.php?empresa=<?= $id_empresa ?>">
                                 <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
                                 <input type="hidden" name="id_empresa" value="<?= $id_empresa ?>">
                                 <div class="form-group">
@@ -396,7 +448,7 @@ include 'includes/header.php';
                                 <p style="color:var(--muted);margin-bottom:16px;font-size:15px;">
                                     Inicia sesión para dejar tu reseña
                                 </p>
-                                <a href="<?= APP_URL ?>/login_usuario.php?redir=<?= urlencode('empresa/' . ($slug_param ?? $id_empresa) . '#resenas') ?>"
+                                <a href="<?= APP_URL ?>/login_usuario.php?redir=<?= urlencode('negocio/' . ($slug_param ?? $id_empresa) . '#resenas') ?>"
                                     class="btn-enviar-resena" style="text-decoration:none;display:inline-block;">
                                     Iniciar sesión
                                 </a>
@@ -483,25 +535,30 @@ include 'includes/header.php';
                 <?php endif;
             }
             ?>
-
+            </div> <!-- Close perfil-wrapper -->
             <?php
         elseif ($resultado && $resultado->num_rows > 0):
-            if ($buscar): ?>
+            $bc_items = [];
+            if ($buscar) {
+                $bc_items[] = ["name" => "Búsqueda", "url" => null];
+            } elseif ($id_categoria) {
+                $bc_items[] = ["name" => "Categorías", "url" => APP_URL . "/categorias.php"];
+                $bc_items[] = ["name" => $cat_nombre ?? 'Categoría', "url" => null];
+            } else {
+                $bc_items[] = ["name" => "Empresas", "url" => null];
+            }
+            echo renderBreadcrumbs($bc_items);
+            ?>
+
+            <?php if ($buscar): ?>
                 <div class="filtro-activo">
                     🔍 Resultados para: "<?= htmlspecialchars($buscar) ?>"
-                    <a href="empresas.php" title="Limpiar">✕</a>
+                    <a href="<?= APP_URL ?>/empresas.php" title="Limpiar">✕</a>
                 </div>
-            <?php elseif ($id_categoria):
-                $id_cat_int = intval($id_categoria);
-                $stmt_cat = $conexion->prepare("SELECT nombre FROM categorias WHERE id_categoria=?");
-                $stmt_cat->bind_param("i", $id_cat_int);
-                $stmt_cat->execute();
-                $cat_res = $stmt_cat->get_result();
-                $cat_nombre = $cat_res ? $cat_res->fetch_assoc()['nombre'] : 'Categoría';
-                ?>
+            <?php elseif ($id_categoria): ?>
                 <div class="filtro-activo">
-                    🏷 Categoría: <?= htmlspecialchars($cat_nombre) ?>
-                    <a href="empresas.php" title="Ver todas">✕</a>
+                    🏷 Categoría: <?= htmlspecialchars($cat_nombre ?? 'Categoría') ?>
+                    <a href="<?= APP_URL ?>/empresas.php" title="Ver todas">✕</a>
                 </div>
             <?php endif; ?>
 
@@ -512,55 +569,55 @@ include 'includes/header.php';
                     renderEmpresaCard($fila, $fotos_arr);
                 endwhile; ?>
             </div>
-        </div>
 
-        <?php
-        if (isset($total_paginas) && $total_paginas > 1 && !$id_empresa):
-            $params_url = [];
-            if (!empty($buscar))
-                $params_url['buscar'] = $buscar;
-            if (!empty($seo_id_categoria) && empty($cat_slug_param))
-                $params_url['id_categoria'] = $seo_id_categoria;
-            if (!empty($seo_id_empresa) && empty($slug_param))
-                $params_url['empresa'] = $seo_id_empresa;
+            <?php
+            if (isset($total_paginas) && $total_paginas > 1 && !$id_empresa):
+                $params_url = [];
+                if (!empty($buscar))
+                    $params_url['buscar'] = $buscar;
+                if (!empty($seo_id_categoria) && empty($cat_slug_param))
+                    $params_url['id_categoria'] = $seo_id_categoria;
+                if (!empty($seo_id_empresa) && empty($slug_param))
+                    $params_url['empresa'] = $seo_id_empresa;
 
-            $query_str = http_build_query($params_url);
-            if (!empty($query_str))
-                $query_str = '&' . $query_str;
-            ?>
+                $query_str = http_build_query($params_url);
+                if (!empty($query_str))
+                    $query_str = '&' . $query_str;
+                ?>
 
-            <div class="paginacion"
-                style="display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 40px; margin-bottom: 20px;">
-                <?php if ($pagina_actual > 1): ?>
-                    <a href="?pagina=<?= $pagina_actual - 1 ?><?= $query_str ?>" class="btn-pag">Anterior</a>
-                <?php endif; ?>
+                <div class="paginacion"
+                    style="display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 40px; margin-bottom: 20px;">
+                    <?php if ($pagina_actual > 1): ?>
+                        <a href="<?= APP_URL ?>/empresas.php?pagina=<?= $pagina_actual - 1 ?><?= $query_str ?>"
+                            class="btn-pag">Anterior</a>
+                    <?php endif; ?>
 
-                <?php
-                for ($p = 1; $p <= $total_paginas; $p++):
+                    <?php
+                    for ($p = 1; $p <= $total_paginas; $p++):
+                        if ($p == 1 || $p == $total_paginas || abs($p - $pagina_actual) <= 2):
+                            ?>
+                            <a href="<?= APP_URL ?>/empresas.php?pagina=<?= $p ?><?= $query_str ?>"
+                                class="btn-pag <?= $p == $pagina_actual ? 'activa' : '' ?>">
+                                <?= $p ?>
+                            </a>
+                        <?php elseif (abs($p - $pagina_actual) == 3): ?>
+                            <span style="display:flex; align-items:flex-end; color: #94a3b8;">...</span>
+                        <?php endif; endfor; ?>
 
-                    if ($p == 1 || $p == $total_paginas || abs($p - $pagina_actual) <= 2):
-                        ?>
-                        <a href="?pagina=<?= $p ?><?= $query_str ?>" class="btn-pag <?= $p == $pagina_actual ? 'activa' : '' ?>">
-                            <?= $p ?>
-                        </a>
-                    <?php elseif (abs($p - $pagina_actual) == 3): ?>
-                        <span style="display:flex; align-items:flex-end; color: #94a3b8;">...</span>
-                    <?php endif; endfor; ?>
+                    <?php if ($pagina_actual < $total_paginas): ?>
+                        <a href="<?= APP_URL ?>/empresas.php?pagina=<?= $pagina_actual + 1 ?><?= $query_str ?>"
+                            class="btn-pag">Siguiente</a>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
 
-                <?php if ($pagina_actual < $total_paginas): ?>
-                    <a href="?pagina=<?= $pagina_actual + 1 ?><?= $query_str ?>" class="btn-pag">Siguiente</a>
-                <?php endif; ?>
+        <?php else: ?>
+            <div class="no-results">
+                <p>😕 No se encontraron empresas<?= $buscar ? ' para "<strong>' . htmlspecialchars($buscar) . '</strong>"' : '' ?>.</p>
+                <br><br>
+                <a href="<?= APP_URL ?>/empresas.php">Ver todas las empresas</a>
             </div>
         <?php endif; ?>
-
-    <?php else: ?>
-        <div class="no-results">
-            <p>😕 No se encontraron
-                empresas<?= $buscar ? ' para "<strong>' . htmlspecialchars($buscar) . '</strong>"' : '' ?>.</p>
-            <br><br>
-            <a href="empresas.php">Ver todas las empresas</a>
-        </div>
-    <?php endif; ?>
 
     </div>
 </section>

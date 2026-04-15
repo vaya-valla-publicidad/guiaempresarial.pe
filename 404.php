@@ -1,7 +1,7 @@
 <?php
 http_response_code(404);
 $seo_title = "Página no encontrada - Guía Empresarial";
-include_once __DIR__ . '/includes/Header.php';
+include_once __DIR__ . '/includes/header.php';
 ?>
 <style>
     .error-page-wrapper {

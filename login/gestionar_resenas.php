@@ -33,7 +33,7 @@ if (!$id_empresa):
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Gestionar Reseñas</title>
-        <link rel="stylesheet" href="/guiaempresarial.pe/assets/css/login.css">
+        <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css">
     </head>
 
     <body>
@@ -48,7 +48,7 @@ if (!$id_empresa):
                             <?php while ($emp = $empresas_q->fetch_assoc()): ?>
                                 <a href="gestionar_resenas.php?empresa=<?= $emp['id_empresa'] ?>" class="empresa-sel-item">
                                     <?php if (!empty($emp['logo'])): ?>
-                                        <img src="/guiaempresarial.pe/assets/img/<?= htmlspecialchars($emp['logo']) ?>"
+                                        <img src="<?= APP_URL ?>/assets/img/<?= htmlspecialchars($emp['logo']) ?>"
                                             class="empresa-sel-logo">
                                     <?php else: ?>
                                         <div class="logo-letra"><?= mb_strtoupper(mb_substr($emp['nombre'], 0, 1)) ?></div>
@@ -121,7 +121,7 @@ if ($total_resenas > 0) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reseñas — <?= htmlspecialchars($fila['nombre']) ?></title>
-    <link rel="stylesheet" href="/guiaempresarial.pe/assets/css/style.css">
+    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
 
@@ -148,7 +148,7 @@ if ($total_resenas > 0) {
                     <div class="perfil-banner"></div>
                     <div class="perfil-hero-body">
                         <?php if ($logo): ?>
-                            <img class="perfil-logo" src="/guiaempresarial.pe/assets/img/<?= $logo ?>"
+                            <img class="perfil-logo" src="<?= APP_URL ?>/assets/img/<?= $logo ?>"
                                 alt="<?= htmlspecialchars($fila['nombre']) ?>">
                         <?php else: ?>
                             <div class="perfil-logo logo-placeholder" style="width:90px;height:90px;font-size:32px;">
@@ -215,7 +215,7 @@ if ($total_resenas > 0) {
                             <p class="perfil-section-label">Galería</p>
                             <div class="perfil-galeria-grid">
                                 <?php foreach ($fotos_arr as $foto): ?>
-                                    <img src="/guiaempresarial.pe/assets/img/empresascarrusel/<?= htmlspecialchars($foto) ?>"
+                                    <img src="<?= APP_URL ?>/assets/img/empresascarrusel/<?= htmlspecialchars($foto) ?>"
                                         alt="Foto" class="perfil-galeria-foto">
                                 <?php endforeach; ?>
                             </div>
