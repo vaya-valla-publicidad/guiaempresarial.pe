@@ -1,6 +1,7 @@
 <?php require_once __DIR__ . '/proteger.php'; ?>
 <?php
 include '../db.php';
+include '../includes/security.php';
 
 $error = "";
 $success = "";
@@ -24,34 +25,53 @@ $usuario = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
 if (!$usuario) {
-    die("Usuario no encontrado");
+    header("Location: admin.php");
+    exit;
 }
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $nombre = trim($_POST['nombre']);
-    $rol_usuario = $_POST['rol'];
-    $pass = $_POST['pass'];
-
-    if (empty($nombre) || empty($rol_usuario)) {
-        $error = "El nombre y el rol son obligatorios.";
+    if (!validarCSRF()) {
+        $error = "Solicitud inválida. Intenta nuevamente.";
     } else {
-        if (!empty($pass)) {
-            $hash = password_hash($pass, PASSWORD_DEFAULT);
-            $stmt = $conexion->prepare("UPDATE usuarios SET nombre=?, rol=?, contraseña_hash=? WHERE id_usuario=?");
-            $stmt->bind_param("sssi", $nombre, $rol_usuario, $hash, $id);
-        } else {
-            $stmt = $conexion->prepare("UPDATE usuarios SET nombre=?, rol=? WHERE id_usuario=?");
-            $stmt->bind_param("ssi", $nombre, $rol_usuario, $id);
-        }
+        $nombre = inputLimpio($_POST['nombre'] ?? '');
+        $rol_usuario = inputLimpio($_POST['rol'] ?? '');
+        $pass = $_POST['pass'] ?? '';
+        $rolesPermitidos = ['admin', 'editor'];
 
-        if ($stmt->execute()) {
-            $success = "Usuario actualizado correctamente ✅";
-            $usuario['nombre'] = $nombre;
-            $usuario['rol'] = $rol_usuario;
+        if (empty($nombre) || empty($rol_usuario)) {
+            $error = "El nombre y el rol son obligatorios.";
+        } elseif (!in_array($rol_usuario, $rolesPermitidos, true)) {
+            $error = "Rol inválido.";
         } else {
-            $error = "Error: " . $stmt->error;
+            if (!empty($pass)) {
+                $hash = password_hash($pass, PASSWORD_DEFAULT);
+                $stmt = $conexion->prepare("UPDATE usuarios SET nombre=?, rol=?, contraseña_hash=? WHERE id_usuario=?");
+                if ($stmt) {
+                    $stmt->bind_param("sssi", $nombre, $rol_usuario, $hash, $id);
+                }
+            } else {
+                $stmt = $conexion->prepare("UPDATE usuarios SET nombre=?, rol=? WHERE id_usuario=?");
+                if ($stmt) {
+                    $stmt->bind_param("ssi", $nombre, $rol_usuario, $id);
+                }
+            }
+
+            if (empty($stmt)) {
+                error_log("Error preparando actualización de usuario ID {$id}: " . $conexion->error);
+                $error = "No se pudo actualizar el usuario. Intenta nuevamente.";
+            } elseif ($stmt->execute()) {
+                $success = "Usuario actualizado correctamente ✅";
+                $usuario['nombre'] = $nombre;
+                $usuario['rol'] = $rol_usuario;
+            } else {
+                error_log("Error ejecutando actualización de usuario ID {$id}: " . $stmt->error);
+                $error = "No se pudo actualizar el usuario. Intenta nuevamente.";
+            }
+
+            if (!empty($stmt)) {
+                $stmt->close();
+            }
         }
-        $stmt->close();
     }
 }
 ?>
@@ -62,6 +82,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editar Usuario</title>
+    <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
     <link rel="stylesheet" href="../assets/css/login.css">
 </head>
 
@@ -79,6 +100,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 <?php endif; ?>
 
                 <form method="post">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(generarTokenCSRF()) ?>">
                     <div class="form-group">
                         <label>Nombre</label>
                         <input type="text" name="nombre" value="<?= htmlspecialchars($usuario['nombre']) ?>" required>

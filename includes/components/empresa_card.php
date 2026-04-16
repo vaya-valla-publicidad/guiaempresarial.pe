@@ -11,7 +11,7 @@ function renderEmpresaCard($fila, $fotos_arr = [])
     $path_img = APP_URL . '/assets/img/';
     $path_galeria = APP_URL . '/assets/img/empresascarrusel/';
 
-    $css_class = 'empresa-item' . ($is_destacada ? ' empresa-destacada' : '');
+    $css_class = 'empresa-item reveal' . ($is_destacada ? ' empresa-destacada' : '');
     ?>
     <div class="<?= $css_class ?>">
         <div class="empresa-info-logo">

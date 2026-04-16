@@ -11,6 +11,7 @@ $rol = $_SESSION['rol'];
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel <?= ucfirst($rol) ?></title>
+    <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
@@ -44,20 +45,133 @@ $rol = $_SESSION['rol'];
             </div>
 
             <style>
-                .stats-dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px; }
-                .stat-box { background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 10px; position: relative; border-left: 5px solid #1B3A57; border-left: 5px solid var(--azul, #1B3A57); transition: 0.3s; }
-                .stat-box:hover { transform: translateY(-5px); box-shadow: 0 10px 15px rgba(0,0,0,0.1); }
-                .stat-box i { font-size: 24px; color: #1B3A57; color: var(--azul, #1B3A57); }
-                .stat-box .stat-title { font-size: 14px; font-weight: 600; color: #64748b; text-transform: uppercase; }
-                .stat-box .stat-value { font-size: 28px; font-weight: 800; color: #1e293b; }
-                .stat-box .stat-footer { font-size: 13px; color: #94a3b8; }
-                .top5-list { list-style: none; padding: 0; margin: 0; }
-                .top5-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
-                .top5-item:last-child { border-bottom: none; }
-                .top5-name { font-weight: 600; font-size: 13px; color: #475569; }
-                .top5-views { background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
-                .btn-reiniciar-vistas { background: #fee2e2; color: #991b1b; padding: 5px 10px; border-radius: 6px; text-decoration: none; font-size: 12px; display: inline-flex; align-items: center; gap: 5px; margin-top: 10px; font-weight: 600; width: fit-content; border: none; cursor: pointer; transition: 0.2s; }
-                .btn-reiniciar-vistas:hover { background: #ef4444; color: #fff; }
+                .stats-dashboard {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+                    gap: 20px;
+                    margin-bottom: 30px;
+                }
+
+                .stat-box {
+                    background: #fff;
+                    padding: 25px;
+                    border-radius: 12px;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    position: relative;
+                    border-left: 5px solid #1B3A57;
+                    border-left: 5px solid var(--azul, #1B3A57);
+                    transition: 0.3s;
+                }
+
+                .stat-box:hover {
+                    transform: translateY(-5px);
+                    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+                }
+
+                .stat-box i {
+                    font-size: 24px;
+                    color: #1B3A57;
+                    color: var(--azul, #1B3A57);
+                }
+
+                .stat-box .stat-title {
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #64748b;
+                    text-transform: uppercase;
+                }
+
+                .stat-box .stat-value {
+                    font-size: 28px;
+                    font-weight: 800;
+                    color: #1e293b;
+                }
+
+                .stat-box .stat-footer {
+                    font-size: 13px;
+                    color: #94a3b8;
+                }
+
+                .top5-list {
+                    list-style: none;
+                    padding: 0;
+                    margin: 0;
+                }
+
+                .top5-item {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 8px 0;
+                    border-bottom: 1px solid #f1f5f9;
+                }
+
+                .top5-item:last-child {
+                    border-bottom: none;
+                }
+
+                .top5-name {
+                    font-weight: 600;
+                    font-size: 13px;
+                    color: #475569;
+                }
+
+                .top5-views {
+                    background: #e0f2fe;
+                    color: #0369a1;
+                    padding: 2px 8px;
+                    border-radius: 999px;
+                    font-size: 11px;
+                    font-weight: 700;
+                }
+
+                .btn-reiniciar-vistas {
+                    background: #fee2e2;
+                    color: #991b1b;
+                    padding: 5px 10px;
+                    border-radius: 6px;
+                    text-decoration: none;
+                    font-size: 12px;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 5px;
+                    margin-top: 10px;
+                    font-weight: 600;
+                    width: fit-content;
+                    border: none;
+                    cursor: pointer;
+                    transition: 0.2s;
+                }
+
+                .btn-reiniciar-vistas:hover {
+                    background: #ef4444;
+                    color: #fff;
+                }
+
+                .btn-orden {
+                    background: #f1f5f9;
+                    border: 1px solid #e2e8f0;
+                    color: #475569;
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-size: 12px;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: all 0.2s;
+                    padding: 0;
+                }
+
+                .btn-orden:hover {
+                    background: #1B3A57;
+                    color: #fff;
+                    border-color: #1B3A57;
+                }
             </style>
 
             <?php
@@ -85,7 +199,8 @@ $rol = $_SESSION['rol'];
                         <?php if ($top5 && $top5->num_rows > 0): ?>
                             <?php while ($t = $top5->fetch_assoc()): ?>
                                 <li class="top5-item">
-                                    <span class="top5-name"><?= htmlspecialchars(mb_strimwidth($t['nombre'], 0, 20, '…')) ?></span>
+                                    <span
+                                        class="top5-name"><?= htmlspecialchars(mb_strimwidth($t['nombre'], 0, 20, '…')) ?></span>
                                     <span class="top5-views"><?= $t['vistas'] ?></span>
                                 </li>
                             <?php endwhile; ?>
@@ -101,7 +216,8 @@ $rol = $_SESSION['rol'];
                     <span class="stat-value"><?= $total_emp ?></span>
                     <span class="stat-footer">Empresas registradas actualmente</span>
                     <div style="margin-top:auto;">
-                         <a href="agregar_empresa.php" class="btn-reiniciar-vistas" style="background:#dcfce7; color:#166534;">
+                        <a href="agregar_empresa.php" class="btn-reiniciar-vistas"
+                            style="background:#dcfce7; color:#166534;">
                             <i class="bi bi-plus-circle"></i> Nuevo registro
                         </a>
                     </div>
@@ -109,11 +225,11 @@ $rol = $_SESSION['rol'];
             </div>
 
             <script>
-            function confirmarReinicio() {
-                if (confirm('⚠️ ¿Estás COMPLETAMENTE SEGURO de reiniciar TODAS las vistas a cero?\n\nEsta acción no se puede deshacer.')) {
-                    location.href = 'reiniciar_vistas.php';
+                function confirmarReinicio() {
+                    if (confirm('⚠️ ¿Estás COMPLETAMENTE SEGURO de reiniciar TODAS las vistas a cero?\n\nEsta acción no se puede deshacer.')) {
+                        location.href = 'reiniciar_vistas.php';
+                    }
                 }
-            }
             </script>
 
             <h2>Administración de Usuarios</h2><br>
@@ -156,17 +272,26 @@ $rol = $_SESSION['rol'];
             <div class="table-wrap">
                 <table>
                     <tr>
-                        <th>ID</th>
+                        <th>Orden</th>
                         <th>Icono</th>
                         <th>Nombre</th>
                         <th>Acciones</th>
                     </tr>
                     <?php
-                    $res_cat = $conexion->query("SELECT * FROM categorias ORDER BY nombre ASC");
+                    $res_cat = $conexion->query("SELECT * FROM categorias ORDER BY orden ASC");
                     while ($cat = $res_cat->fetch_assoc()):
                         ?>
-                        <tr>
-                            <td data-label="ID"><?= $cat['id_categoria'] ?></td>
+                        <tr id="cat-<?= $cat['id_categoria'] ?>">
+                            <td data-label="Orden">
+                                <div style="display:flex; align-items:center; gap:6px;">
+                                    <span
+                                        style="font-weight:700; color:#64748b; min-width:20px;"><?= $cat['orden'] ?></span>
+                                    <button onclick="moverCategoria(<?= $cat['id_categoria'] ?>, 'subir')" class="btn-orden"
+                                        title="Subir">▲</button>
+                                    <button onclick="moverCategoria(<?= $cat['id_categoria'] ?>, 'bajar')" class="btn-orden"
+                                        title="Bajar">▼</button>
+                                </div>
+                            </td>
                             <td data-label="Icono" style="font-size:22px;">
                                 <i class="bi <?= htmlspecialchars($cat['icono'] ?? 'bi-briefcase') ?>"></i>
                             </td>
@@ -210,12 +335,14 @@ $rol = $_SESSION['rol'];
             </div>
 
             <h2>Empresas</h2><br>
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px; margin-bottom:20px;">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px; margin-bottom:20px;">
                 <a href="agregar_empresa.php" class="btn">Agregar Empresa</a>
                 <div class="search-panel" style="position:relative; flex:1; max-width:400px;">
-                    <i class="bi bi-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#aaa;"></i>
-                    <input type="text" id="filtroEmpresa" placeholder="Buscar por nombre o rubro..." 
-                           style="width:100%; padding:10px 15px 10px 40px; border:1px solid #ddd; border-radius:8px; font-size:14px; outline:none; transition:border-color 0.3s;">
+                    <i class="bi bi-search"
+                        style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#aaa;"></i>
+                    <input type="text" id="filtroEmpresa" placeholder="Buscar por nombre o rubro..."
+                        style="width:100%; padding:10px 15px 10px 40px; border:1px solid #ddd; border-radius:8px; font-size:14px; outline:none; transition:border-color 0.3s;">
                 </div>
             </div>
 
@@ -259,9 +386,9 @@ $rol = $_SESSION['rol'];
                             <td data-label="Vistas">
                                 <div style="display:flex; align-items:center; gap:8px;">
                                     <?= number_format($fila['vistas']) ?>
-                                    <a href="reiniciar_vistas.php?id=<?= $fila['id_empresa'] ?>" 
-                                       onclick="return confirm('¿Reiniciar vistas de esta empresa?')" 
-                                       style="font-size:14px; color:#cbd5e1; text-decoration:none;" title="Reiniciar">
+                                    <a href="reiniciar_vistas.php?id=<?= $fila['id_empresa'] ?>"
+                                        onclick="return confirm('¿Reiniciar vistas de esta empresa?')"
+                                        style="font-size:14px; color:#cbd5e1; text-decoration:none;" title="Reiniciar">
                                         <i class="bi bi-arrow-counterclockwise"></i>
                                     </a>
                                 </div>
@@ -277,7 +404,8 @@ $rol = $_SESSION['rol'];
                             <td data-label="Dirección"><?= htmlspecialchars($fila['direccion'] ?? '—') ?></td>
                             <td data-label="Rubro"><?= htmlspecialchars($fila['categoria']) ?></td>
                             <td data-label="Horario">
-                                <?= !empty($fila['horario']) ? htmlspecialchars($fila['horario']) : '—' ?></td>
+                                <?= !empty($fila['horario']) ? htmlspecialchars($fila['horario']) : '—' ?>
+                            </td>
                             <td data-label="Descripción">
                                 <?= !empty($fila['descripcion']) ? htmlspecialchars(mb_strimwidth($fila['descripcion'], 0, 50, '…')) : '—' ?>
                             </td>
@@ -303,7 +431,8 @@ $rol = $_SESSION['rol'];
                     <tr id="noResultsAdmin" style="display:none;">
                         <td colspan="13" style="text-align:center; padding:50px 20px; color:var(--ink-muted);">
                             <div style="font-size: 44px; margin-bottom: 12px; opacity: 0.3;">🔍</div>
-                            <p style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">No se encontraron resultados</p>
+                            <p style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">No se encontraron
+                                resultados</p>
                             <p style="font-size: 13px; opacity: 0.7;">Prueba con un término de búsqueda diferente.</p>
                         </td>
                     </tr>
@@ -376,15 +505,15 @@ $rol = $_SESSION['rol'];
                 });
         }
 
-        document.getElementById('filtroEmpresa')?.addEventListener('keyup', function() {
+        document.getElementById('filtroEmpresa')?.addEventListener('keyup', function () {
             const term = this.value.toLowerCase();
             const rows = document.querySelectorAll('table tr[id^="fila-"]');
             let found = false;
-            
+
             rows.forEach(row => {
                 const nombre = row.querySelector('[data-label="Nombre"]')?.textContent.toLowerCase() || "";
                 const rubro = row.querySelector('[data-label="Rubro"]')?.textContent.toLowerCase() || "";
-                
+
                 if (nombre.includes(term) || rubro.includes(term)) {
                     row.style.display = "";
                     found = true;
@@ -398,6 +527,22 @@ $rol = $_SESSION['rol'];
                 noResults.style.display = found ? "none" : "";
             }
         });
+
+        function moverCategoria(id, dir) {
+            fetch('<?= APP_URL ?>/ajax/reordenar_categoria.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'id=' + id + '&dir=' + dir
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.ok) {
+                        location.reload();
+                    } else {
+                        if (data.error !== 'Ya está en el límite') alert(data.error);
+                    }
+                });
+        }
     </script>
 
 </body>

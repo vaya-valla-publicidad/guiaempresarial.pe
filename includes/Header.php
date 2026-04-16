@@ -57,7 +57,7 @@ if (isset($_SESSION['usuario_publico_id'])) {
   <link rel="manifest" href="<?= APP_URL ?>/manifest.json">
   <meta name="theme-color" content="#0d6efd">
   <script>
-    (function() {
+    (function () {
       const theme = localStorage.getItem('theme');
       if (theme === 'dark') {
         document.documentElement.classList.add('dark-mode');
@@ -67,7 +67,8 @@ if (isset($_SESSION['usuario_publico_id'])) {
   </script>
 </head>
 
-<body class="<?php echo (isset($_COOKIE['theme']) && $_COOKIE['theme'] === 'dark') ? 'dark-mode' : ''; ?>">
+<body
+  class="<?php echo (isset($_COOKIE['theme']) && htmlspecialchars($_COOKIE['theme'], ENT_QUOTES, 'UTF-8') === 'dark') ? 'dark-mode' : ''; ?>">
   <script>
     if (localStorage.getItem('theme') === 'dark') {
       document.body.classList.add('dark-mode');

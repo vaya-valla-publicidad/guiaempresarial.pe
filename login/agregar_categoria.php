@@ -8,17 +8,38 @@ $error = "";
 $success = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $nombre = trim($_POST['nombre']);
-    $icono = trim($_POST['icono']) ?: 'bi-briefcase';
+    $nombre = inputLimpio($_POST['nombre'] ?? '');
+    $icono = inputLimpio($_POST['icono'] ?? '') ?: 'bi-briefcase';
     $slug = generarSlug($nombre);
 
     if (!empty($nombre)) {
+        $slug_base = $slug;
+        $contador = 1;
+        $check = $conexion->prepare("SELECT id_categoria FROM categorias WHERE slug = ?");
+        $check->bind_param("s", $slug);
+        $check->execute();
+        $check->store_result();
+        while ($check->num_rows > 0) {
+            $slug = $slug_base . '-' . $contador;
+            $contador++;
+            $check->close();
+            $check = $conexion->prepare("SELECT id_categoria FROM categorias WHERE slug = ?");
+            $check->bind_param("s", $slug);
+            $check->execute();
+            $check->store_result();
+        }
+        $check->close();
+
         $stmt = $conexion->prepare("INSERT INTO categorias (nombre, icono, slug) VALUES (?, ?, ?)");
         $stmt->bind_param("sss", $nombre, $icono, $slug);
-        if (!$stmt->execute()) {
-            $error = "Error: " . $stmt->error;
-        } else {
-            $success = "Categoría agregada correctamente ✅";
+        try {
+            if (!$stmt->execute()) {
+                $error = "Error: " . $stmt->error;
+            } else {
+                $success = "Categoría agregada correctamente ✅";
+            }
+        } catch (mysqli_sql_exception $e) {
+            $error = "Ya existe una categoría con ese nombre.";
         }
         $stmt->close();
     } else {
@@ -33,10 +54,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agregar Categoría</title>
+    <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
     <link rel="stylesheet" href="../assets/css/login.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
-        /* Expansión forzada de contenedores sin el uso de !important */
         #agregar-categoria-page .panel .form-container,
         #agregar-categoria-page .panel form {
             width: 100%;
@@ -49,7 +70,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             display: flex;
             flex-direction: column;
             align-items: stretch;
-            /* Esto evita que el padre aplaste a los hijos */
+
         }
 
         #agregar-categoria-page #iconos-grid {

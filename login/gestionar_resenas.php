@@ -33,6 +33,7 @@ if (!$id_empresa):
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Gestionar Reseñas</title>
+        <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
         <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css">
     </head>
 
@@ -70,7 +71,9 @@ if (!$id_empresa):
                     <?php endif; ?>
 
                     <br>
-                    <a href="admin.php" class="btn btn-danger">← Volver al Panel</a>
+                    <a href="admin.php" class="btn btn-danger-alt">
+                        <i class="bi bi-arrow-left"></i> Volver al Panel
+                    </a>
                 </div>
             </section>
         </div>
@@ -121,6 +124,7 @@ if ($total_resenas > 0) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reseñas — <?= htmlspecialchars($fila['nombre']) ?></title>
+    <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>

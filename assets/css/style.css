@@ -355,7 +355,7 @@ main {
   align-items: center;
   justify-content: space-between;
   padding: 0 6px;
-  border: 1px solid rgba(0,0,0,0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .slider::before {
@@ -368,7 +368,7 @@ main {
   background: white;
   border-radius: 50%;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   z-index: 2;
 }
 
@@ -805,6 +805,43 @@ main {
 
 .btn-volver:hover {
   color: var(--rojo);
+}
+
+.admin-topbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 28px;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(27, 58, 87, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+.admin-topbar a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1B3A57, #2c3e50);
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 700;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+}
+
+.admin-topbar a:hover {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(52, 152, 219, 0.18);
+}
+
+.admin-topbar span {
+  color: var(--muted);
+  font-size: 14px;
 }
 
 .no-results {
@@ -3385,6 +3422,27 @@ body.dark-mode .auth-footer {
 
 .anim-delay-2 {
   animation-delay: 0.4s;
+}
+
+body {
+  opacity: 1;
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+}
+
+body.page-transitioning {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.reveal.active {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .back-to-top {

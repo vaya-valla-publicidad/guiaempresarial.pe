@@ -7,15 +7,21 @@ $error = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $campos = [
-        'quienes_somos', 'mision', 'vision',
-        'por_que_1_titulo', 'por_que_1_texto',
-        'por_que_2_titulo', 'por_que_2_texto',
-        'por_que_3_titulo', 'por_que_3_texto',
-        'stat_empresas', 'stat_categorias'
+        'quienes_somos',
+        'mision',
+        'vision',
+        'por_que_1_titulo',
+        'por_que_1_texto',
+        'por_que_2_titulo',
+        'por_que_2_texto',
+        'por_que_3_titulo',
+        'por_que_3_texto',
+        'stat_empresas',
+        'stat_categorias'
     ];
     foreach ($campos as $campo) {
         $valor = trim($_POST[$campo] ?? '');
-        
+
         $check = $conexion->prepare("SELECT COUNT(*) as existe FROM sobre_info WHERE clave=?");
         $check->bind_param("s", $campo);
         $check->execute();
@@ -52,6 +58,7 @@ while ($f = $res->fetch_assoc())
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editar Sobre Nosotros</title>
+    <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
     <link rel="stylesheet" href="../assets/css/login.css">
 </head>
 
@@ -122,14 +129,16 @@ while ($f = $res->fetch_assoc())
 
                     <hr style="margin: 30px 0;">
                     <h3 style="margin-bottom:16px;">Contadores (Estadísticas en "Sobre Nosotros")</h3>
-                    <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Estos valores se mostrarán en la web pública. Puedes poner números con símbolos (ej: 100+).</p>
+                    <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Estos valores se mostrarán en la
+                        web pública. Puedes poner números con símbolos (ej: 100+).</p>
 
                     <div class="form-group">
                         <label>Empresas registradas (Texto publico)</label>
                         <div style="display:flex; align-items:center; gap: 15px;">
                             <input type="text" name="stat_empresas" style="flex:1;"
                                 value="<?= htmlspecialchars($info['stat_empresas'] ?? '') ?>" placeholder="Ej: 50+">
-                            <span style="font-size:12px; white-space:nowrap; background:#f1f5f9; padding:10px; border-radius:8px;">
+                            <span
+                                style="font-size:12px; white-space:nowrap; background:#f1f5f9; padding:10px; border-radius:8px;">
                                 📊 Real en sistema: <strong><?= $real_stats['empresas'] ?></strong>
                             </span>
                         </div>
@@ -140,7 +149,8 @@ while ($f = $res->fetch_assoc())
                         <div style="display:flex; align-items:center; gap: 15px;">
                             <input type="text" name="stat_categorias" style="flex:1;"
                                 value="<?= htmlspecialchars($info['stat_categorias'] ?? '') ?>" placeholder="Ej: 15+">
-                            <span style="font-size:12px; white-space:nowrap; background:#f1f5f9; padding:10px; border-radius:8px;">
+                            <span
+                                style="font-size:12px; white-space:nowrap; background:#f1f5f9; padding:10px; border-radius:8px;">
                                 🏷 Real en sistema: <strong><?= $real_stats['categorias'] ?></strong>
                             </span>
                         </div>

@@ -21,12 +21,12 @@ echo renderBreadcrumbs($bc_items);
 
         <div class="categorias-modern">
             <?php
-            $resultado = $conexion->query("SELECT * FROM categorias ORDER BY nombre ASC");
+            $resultado = $conexion->query("SELECT * FROM categorias ORDER BY orden ASC");
             while ($fila = $resultado->fetch_assoc()):
                 $nombre = htmlspecialchars($fila['nombre']);
                 $icono = htmlspecialchars($fila['icono'] ?? 'bi-briefcase');
                 ?>
-                <a href="<?= APP_URL ?>/rubro/<?= $fila['slug'] ?>" class="categoria-card">
+                <a href="<?= APP_URL ?>/rubro/<?= $fila['slug'] ?>" class="categoria-card reveal">
                     <div class="categoria-icono-wrap">
                         <i class="bi <?= $icono ?>"></i>
                     </div>

@@ -157,17 +157,17 @@ $total_slides = count($slides);
         </div>
         <div class="categorias-modern">
             <?php
-            $resultado = $conexion->query("SELECT * FROM categorias LIMIT 5");
+            $resultado = $conexion->query("SELECT * FROM categorias ORDER BY orden ASC LIMIT 5");
             while ($fila = $resultado->fetch_assoc()):
                 $nombre = htmlspecialchars($fila['nombre']);
                 $icono = htmlspecialchars($fila['icono'] ?? 'bi-briefcase');
                 ?>
-                <a href="<?= APP_URL ?>/rubro/<?= htmlspecialchars($fila['slug']) ?>" class="categoria-card">
+                <a href="<?= APP_URL ?>/rubro/<?= htmlspecialchars($fila['slug']) ?>" class="categoria-card reveal">
                     <div class="categoria-icono-wrap"><i class="bi <?= $icono ?>"></i></div>
                     <span class="categoria-nombre"><?= $nombre ?></span>
                 </a>
             <?php endwhile; ?>
-            <a href="<?= APP_URL ?>/categorias.php" class="categoria-card ver-mas-card">
+            <a href="<?= APP_URL ?>/categorias.php" class="categoria-card ver-mas-card reveal">
                 <div class="categoria-icono-wrap"><i class="bi bi-plus-circle"></i></div>
                 <span class="categoria-nombre">Ver más categorías</span>
             </a>
@@ -297,8 +297,8 @@ $total_slides = count($slides);
     });
 
     function limpiarBuscadorTotal() {
-        if(inputBuscar) inputBuscar.value = '';
-        if(resultadosDiv) resultadosDiv.innerHTML = '';
+        if (inputBuscar) inputBuscar.value = '';
+        if (resultadosDiv) resultadosDiv.innerHTML = '';
     }
 
     window.addEventListener('load', limpiarBuscadorTotal);
@@ -313,15 +313,15 @@ $total_slides = count($slides);
         }
     });
 
-    resultadosDiv.addEventListener('click', function(e) {
-        if(e.target.closest('a')) {
+    resultadosDiv.addEventListener('click', function (e) {
+        if (e.target.closest('a')) {
             setTimeout(limpiarBuscadorTotal, 50);
         }
     });
 
     document.addEventListener('click', function (e) {
         if (!e.target.closest('.search-wrapper')) {
-            if(resultadosDiv) resultadosDiv.innerHTML = '';
+            if (resultadosDiv) resultadosDiv.innerHTML = '';
         }
     });
 </script>

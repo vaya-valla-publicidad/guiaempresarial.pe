@@ -2,6 +2,7 @@
 <?php
 include '../db.php';
 include '../includes/slug_helper.php';
+include '../includes/security.php';
 
 $rol = $_SESSION['rol'];
 
@@ -34,104 +35,135 @@ $stmt->bind_param("i", $id);
 $stmt->execute();
 $resultado = $stmt->get_result();
 if ($resultado->num_rows === 0) {
-    die("Empresa no encontrada");
+    header("Location: " . (($rol === 'admin') ? 'admin.php' : 'editor.php'));
+    exit;
 }
 $empresa = $resultado->fetch_assoc();
 $stmt->close();
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
-    $nombre = trim($_POST['nombre']);
-    $telefono = trim($_POST['telefono']);
-    $direccion = trim($_POST['direccion']);
-    $id_categoria = intval($_POST['id_categoria']);
-    $descripcion = trim($_POST['descripcion']) ?: null;
-    $horario = trim($_POST['horario']) ?: null;
-    $ubicacion_link = trim($_POST['ubicacion_link']) ?: null;
-    $link_empresa = trim($_POST['link_empresa']) ?: null;
-    $facebook = trim($_POST['facebook']) ?: null;
-    $logo = $empresa['logo'];
-    $destacada_new = intval($_POST['destacada']);
-    $slug = generarSlug($nombre);
+    if (!validarCSRF()) {
+        $error = "Solicitud inválida. Intenta nuevamente.";
+    } else {
+        $nombre = inputLimpio($_POST['nombre'] ?? '');
+        $telefono = inputLimpio($_POST['telefono'] ?? '');
+        $direccion = inputLimpio($_POST['direccion'] ?? '');
+        $id_categoria = intval($_POST['id_categoria'] ?? 0);
+        $descripcion = inputLimpio($_POST['descripcion'] ?? '') ?: null;
+        $horario = inputLimpio($_POST['horario'] ?? '') ?: null;
+        $ubicacion_link = inputLimpio($_POST['ubicacion_link'] ?? '') ?: null;
+        $link_empresa = inputLimpio($_POST['link_empresa'] ?? '') ?: null;
+        $facebook = inputLimpio($_POST['facebook'] ?? '') ?: null;
+        $logo = $empresa['logo'];
+        $destacada_new = intval($_POST['destacada'] ?? 0);
+        $slug = generarSlug($nombre);
 
 
-    if ($destacada_new === 1 && $empresa['destacada'] == 0) {
-        $total_dest = $conexion->query("SELECT COUNT(*) as total FROM empresas WHERE destacada = 1")->fetch_assoc()['total'];
-        if ($total_dest >= 3) {
-            $error = "Ya hay 3 empresas destacadas. Quita una antes de destacar esta.";
-            $destacada_new = 0;
-        }
-    }
-
-    if (!empty($_FILES['logo']['name'])) {
-        if (!validarImagen($_FILES['logo']['tmp_name'], $_FILES['logo']['name'])) {
-            $error = "El logo debe ser una imagen válida (jpg, jpeg, png, webp, gif).";
-        } else {
-            $nombreArchivo = uniqid() . "_" . basename($_FILES['logo']['name']);
-            $rutaDestino = __DIR__ . "/../assets/img/" . $nombreArchivo;
-            if (move_uploaded_file($_FILES['logo']['tmp_name'], $rutaDestino)) {
-                $logo = $nombreArchivo;
+        if ($destacada_new === 1 && $empresa['destacada'] == 0) {
+            $totalDestResult = $conexion->query("SELECT COUNT(*) as total FROM empresas WHERE destacada = 1");
+            $total_dest = $totalDestResult ? ($totalDestResult->fetch_assoc()['total'] ?? 0) : 0;
+            if ($total_dest >= 3) {
+                $error = "Ya hay 3 empresas destacadas. Quita una antes de destacar esta.";
+                $destacada_new = 0;
             }
         }
-    }
 
-    if (empty($error)) {
-        $stmt = $conexion->prepare(
-            "UPDATE empresas SET nombre=?, telefono=?, direccion=?, id_categoria=?,
-             descripcion=?, horario=?, ubicacion_link=?, link_empresa=?, facebook=?, logo=?, destacada=?, slug=?
-             WHERE id_empresa=?"
-        );
-        $stmt->bind_param(
-            "sssissssssisi",
-            $nombre,
-            $telefono,
-            $direccion,
-            $id_categoria,
-            $descripcion,
-            $horario,
-            $ubicacion_link,
-            $link_empresa,
-            $facebook,
-            $logo,
-            $destacada_new,
-            $slug,
-            $id
-        );
-
-        if ($stmt->execute()) {
-            $stmt->close();
-
-            if (!empty($_FILES['fotos']['name'][0])) {
-                $carpeta = __DIR__ . "/../assets/img/empresascarrusel/";
-                $orden_actual = $conexion->query("SELECT MAX(orden) as max FROM empresa_galeria WHERE id_empresa=$id")->fetch_assoc()['max'] ?? 0;
-                foreach ($_FILES['fotos']['tmp_name'] as $key => $tmp) {
-                    if (empty($_FILES['fotos']['name'][$key]))
-                        continue;
-                    if (!validarImagen($tmp, $_FILES['fotos']['name'][$key]))
-                        continue;
-                    $nombreFoto = uniqid() . "_" . basename($_FILES['fotos']['name'][$key]);
-                    $ruta = $carpeta . $nombreFoto;
-                    if (move_uploaded_file($tmp, $ruta)) {
-                        $orden_actual++;
-                        $stmtFoto = $conexion->prepare("INSERT INTO empresa_galeria (id_empresa, foto, orden) VALUES (?, ?, ?)");
-                        $stmtFoto->bind_param("isi", $id, $nombreFoto, $orden_actual);
-                        $stmtFoto->execute();
-                        $stmtFoto->close();
-                    }
+        if (!empty($_FILES['logo']['name'])) {
+            if (!validarImagen($_FILES['logo']['tmp_name'], $_FILES['logo']['name'])) {
+                $error = "El logo debe ser una imagen válida (jpg, jpeg, png, webp, gif).";
+            } else {
+                $nombreArchivo = uniqid() . "_" . basename($_FILES['logo']['name']);
+                $rutaDestino = __DIR__ . "/../assets/img/" . $nombreArchivo;
+                if (move_uploaded_file($_FILES['logo']['tmp_name'], $rutaDestino)) {
+                    $logo = $nombreArchivo;
+                } else {
+                    $error = "No se pudo guardar el logo. Intenta nuevamente.";
                 }
             }
+        }
 
-            header("Location: editar.php?id=" . $id . "&ok=1");
-            exit;
+        if (empty($error)) {
+            $stmt = $conexion->prepare(
+                "UPDATE empresas SET nombre=?, telefono=?, direccion=?, id_categoria=?,
+                 descripcion=?, horario=?, ubicacion_link=?, link_empresa=?, facebook=?, logo=?, destacada=?, slug=?
+                 WHERE id_empresa=?"
+            );
 
-        } else {
-            $error = "Error: " . $stmt->error;
-            $stmt->close();
+            if (!$stmt) {
+                error_log("Error preparando actualización de empresa ID {$id}: " . $conexion->error);
+                $error = "No se pudo actualizar la empresa. Intenta nuevamente.";
+            } else {
+                $stmt->bind_param(
+                    "sssissssssisi",
+                    $nombre,
+                    $telefono,
+                    $direccion,
+                    $id_categoria,
+                    $descripcion,
+                    $horario,
+                    $ubicacion_link,
+                    $link_empresa,
+                    $facebook,
+                    $logo,
+                    $destacada_new,
+                    $slug,
+                    $id
+                );
+
+                if ($stmt->execute()) {
+                    $stmt->close();
+
+                    if (!empty($_FILES['fotos']['name'][0])) {
+                        $carpeta = __DIR__ . "/../assets/img/empresascarrusel/";
+                        $ordenActualStmt = $conexion->prepare("SELECT MAX(orden) as max FROM empresa_galeria WHERE id_empresa=?");
+                        $orden_actual = 0;
+
+                        if ($ordenActualStmt) {
+                            $ordenActualStmt->bind_param("i", $id);
+                            $ordenActualStmt->execute();
+                            $ordenResult = $ordenActualStmt->get_result();
+                            $orden_actual = $ordenResult ? (int) ($ordenResult->fetch_assoc()['max'] ?? 0) : 0;
+                            $ordenActualStmt->close();
+                        }
+
+                        foreach ($_FILES['fotos']['tmp_name'] as $key => $tmp) {
+                            if (empty($_FILES['fotos']['name'][$key])) {
+                                continue;
+                            }
+                            if (!validarImagen($tmp, $_FILES['fotos']['name'][$key])) {
+                                continue;
+                            }
+                            $nombreFoto = uniqid() . "_" . basename($_FILES['fotos']['name'][$key]);
+                            $ruta = $carpeta . $nombreFoto;
+                            if (move_uploaded_file($tmp, $ruta)) {
+                                $orden_actual++;
+                                $stmtFoto = $conexion->prepare("INSERT INTO empresa_galeria (id_empresa, foto, orden) VALUES (?, ?, ?)");
+                                if ($stmtFoto) {
+                                    $stmtFoto->bind_param("isi", $id, $nombreFoto, $orden_actual);
+                                    $stmtFoto->execute();
+                                    $stmtFoto->close();
+                                } else {
+                                    error_log("Error preparando inserción de foto para empresa ID {$id}: " . $conexion->error);
+                                }
+                            }
+                        }
+                    }
+
+                    header("Location: editar.php?id=" . $id . "&ok=1");
+                    exit;
+
+                } else {
+                    error_log("Error ejecutando actualización de empresa ID {$id}: " . $stmt->error);
+                    $error = "No se pudo actualizar la empresa. Intenta nuevamente.";
+                    $stmt->close();
+                }
+            }
         }
     }
 }
 
-$categorias = $conexion->query("SELECT id_categoria, nombre FROM categorias");
+$categorias = $conexion->query("SELECT id_categoria, nombre FROM categorias ORDER BY orden ASC");
 $mapaQuery = urlencode($empresa['nombre'] . ' ' . $empresa['direccion']);
 $total_destacadas = $conexion->query("SELECT COUNT(*) as total FROM empresas WHERE destacada = 1")->fetch_assoc()['total'];
 ?>
@@ -142,6 +174,7 @@ $total_destacadas = $conexion->query("SELECT COUNT(*) as total FROM empresas WHE
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editar Empresa</title>
+    <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
     <link rel="stylesheet" href="../assets/css/login.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 </head>
@@ -156,6 +189,7 @@ $total_destacadas = $conexion->query("SELECT COUNT(*) as total FROM empresas WHE
             <p style="color:green"><?= htmlspecialchars($success) ?></p><?php endif; ?>
 
         <form method="post" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(generarTokenCSRF()) ?>">
 
             <h3>Logo de la empresa</h3>
             <?php if (!empty($empresa['logo'])): ?>

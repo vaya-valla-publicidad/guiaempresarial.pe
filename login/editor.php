@@ -11,6 +11,7 @@ $rol = $_SESSION['rol'];
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel <?= ucfirst($rol) ?></title>
+    <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
@@ -52,7 +53,7 @@ $rol = $_SESSION['rol'];
                         <th>Acciones</th>
                     </tr>
                     <?php
-                    $res_cat = $conexion->query("SELECT * FROM categorias ORDER BY nombre ASC");
+                    $res_cat = $conexion->query("SELECT * FROM categorias ORDER BY orden ASC");
                     while ($cat = $res_cat->fetch_assoc()):
                         ?>
                         <tr>
@@ -73,7 +74,8 @@ $rol = $_SESSION['rol'];
                     <tr id="noResultsEditor" style="display:none;">
                         <td colspan="13" style="text-align:center; padding:50px 20px; color:var(--ink-muted);">
                             <div style="font-size: 44px; margin-bottom: 12px; opacity: 0.3;">🔍</div>
-                            <p style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">No se encontraron resultados</p>
+                            <p style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">No se encontraron
+                                resultados</p>
                             <p style="font-size: 13px; opacity: 0.7;">Prueba con un término de búsqueda diferente.</p>
                         </td>
                     </tr>
@@ -107,12 +109,14 @@ $rol = $_SESSION['rol'];
             </div>
 
             <h2>Empresas</h2><br>
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px; margin-bottom:20px;">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px; margin-bottom:20px;">
                 <a href="agregar_empresa.php" class="btn">Agregar Empresa</a>
                 <div class="search-panel" style="position:relative; flex:1; max-width:400px;">
-                    <i class="bi bi-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#aaa;"></i>
-                    <input type="text" id="filtroEmpresa" placeholder="Buscar por nombre o rubro..." 
-                           style="width:100%; padding:10px 15px 10px 40px; border:1px solid #ddd; border-radius:8px; font-size:14px; outline:none; transition:border-color 0.3s;">
+                    <i class="bi bi-search"
+                        style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#aaa;"></i>
+                    <input type="text" id="filtroEmpresa" placeholder="Buscar por nombre o rubro..."
+                        style="width:100%; padding:10px 15px 10px 40px; border:1px solid #ddd; border-radius:8px; font-size:14px; outline:none; transition:border-color 0.3s;">
                 </div>
             </div>
 
@@ -156,9 +160,9 @@ $rol = $_SESSION['rol'];
                             <td data-label="Vistas">
                                 <div style="display:flex; align-items:center; gap:8px;">
                                     <?= number_format($fila['vistas']) ?>
-                                    <a href="reiniciar_vistas.php?id=<?= $fila['id_empresa'] ?>" 
-                                       onclick="return confirm('¿Reiniciar vistas de esta empresa?')" 
-                                       style="font-size:14px; color:#cbd5e1; text-decoration:none;" title="Reiniciar">
+                                    <a href="reiniciar_vistas.php?id=<?= $fila['id_empresa'] ?>"
+                                        onclick="return confirm('¿Reiniciar vistas de esta empresa?')"
+                                        style="font-size:14px; color:#cbd5e1; text-decoration:none;" title="Reiniciar">
                                         <i class="bi bi-arrow-counterclockwise"></i>
                                     </a>
                                 </div>
@@ -174,7 +178,8 @@ $rol = $_SESSION['rol'];
                             <td data-label="Dirección"><?= htmlspecialchars($fila['direccion'] ?? '—') ?></td>
                             <td data-label="Rubro"><?= htmlspecialchars($fila['categoria']) ?></td>
                             <td data-label="Horario">
-                                <?= !empty($fila['horario']) ? htmlspecialchars($fila['horario']) : '—' ?></td>
+                                <?= !empty($fila['horario']) ? htmlspecialchars($fila['horario']) : '—' ?>
+                            </td>
                             <td data-label="Descripción">
                                 <?= !empty($fila['descripcion']) ? htmlspecialchars(mb_strimwidth($fila['descripcion'], 0, 50, '…')) : '—' ?>
                             </td>
@@ -266,15 +271,15 @@ $rol = $_SESSION['rol'];
                 });
         }
 
-        document.getElementById('filtroEmpresa')?.addEventListener('keyup', function() {
+        document.getElementById('filtroEmpresa')?.addEventListener('keyup', function () {
             const term = this.value.toLowerCase();
             const rows = document.querySelectorAll('table tr[id^="fila-"]');
             let found = false;
-            
+
             rows.forEach(row => {
                 const nombre = row.querySelector('[data-label="Nombre"]')?.textContent.toLowerCase() || "";
                 const rubro = row.querySelector('[data-label="Rubro"]')?.textContent.toLowerCase() || "";
-                
+
                 if (nombre.includes(term) || rubro.includes(term)) {
                     row.style.display = "";
                     found = true;

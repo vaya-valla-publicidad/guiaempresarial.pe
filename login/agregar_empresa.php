@@ -48,7 +48,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $stmt->bind_param("sssisssssss", $nombre, $telefono, $direccion, $id_categoria, $descripcion, $horario, $ubicacion_link, $link_empresa, $facebook, $logo, $slug);
 
         if (!$stmt->execute()) {
-            $error = "Error SQL: " . $stmt->error;
+            $error = "Ha ocurrido un error al guardar la empresa. Por favor intenta nuevamente.";
+            error_log("SQL Error en agregar_empresa.php: " . $stmt->error);
         } else {
             $id_empresa = $stmt->insert_id;
 
@@ -73,7 +74,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 }
 
-$categorias = $conexion->query("SELECT id_categoria,nombre FROM categorias");
+$categorias = $conexion->query("SELECT id_categoria,nombre FROM categorias ORDER BY orden ASC");
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -82,6 +83,7 @@ $categorias = $conexion->query("SELECT id_categoria,nombre FROM categorias");
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agregar Empresa</title>
+    <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
     <link rel="stylesheet" href="../assets/css/login.css">
 </head>
 

@@ -1,4 +1,5 @@
 <?php
+include __DIR__ . '/../db.php';
 $config_file = __DIR__ . '/../includes/admin_config.php';
 define('ACCESO_PERMITIDO', true);
 
@@ -26,7 +27,6 @@ if (empty($_SESSION['admin_access_granted']) || $_SESSION['admin_access_granted'
     exit();
 }
 
-include '../db.php';
 
 $error = "";
 $max_intentos = 3;
@@ -50,36 +50,53 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) 
     $pass = $_POST['pass'];
 
     $stmt = $conexion->prepare("SELECT id_usuario, nombre, contraseña_hash, rol FROM usuarios WHERE nombre = ?");
-    $stmt->bind_param("s", $usu);
-    $stmt->execute();
-    $resultado = $stmt->get_result();
 
-    if ($resultado->num_rows === 1) {
-        $fila = $resultado->fetch_assoc();
-
-        if (password_verify($pass, $fila['contraseña_hash'])) {
-            session_regenerate_id(true);
-            $_SESSION['usuario'] = $fila['nombre'];
-            $_SESSION['rol'] = $fila['rol'];
-
-            $_SESSION['intentos'] = 0;
-            $_SESSION['ultimo_intento'] = 0;
-
-            if ($fila['rol'] === 'admin') {
-                header("Location: " . APP_URL . "/login/admin.php");
-            } else {
-                header("Location: " . APP_URL . "/login/editor.php");
-            }
-            exit();
-        } else {
-            $_SESSION['intentos']++;
-            $_SESSION['ultimo_intento'] = time();
-            $error = "Credenciales incorrectas.";
-        }
+    if (!$stmt) {
+        error_log("Error preparando login: " . $conexion->error);
+        $error = "No se pudo procesar el inicio de sesión. Intenta nuevamente.";
     } else {
-        $_SESSION['intentos']++;
-        $_SESSION['ultimo_intento'] = time();
-        $error = "Credenciales incorrectas.";
+        $stmt->bind_param("s", $usu);
+
+        if (!$stmt->execute()) {
+            error_log("Error ejecutando login para usuario {$usu}: " . $stmt->error);
+            $error = "No se pudo procesar el inicio de sesión. Intenta nuevamente.";
+        } else {
+            $resultado = $stmt->get_result();
+
+            if (!$resultado) {
+                error_log("Error obteniendo resultado de login para usuario {$usu}: " . $stmt->error);
+                $error = "No se pudo procesar el inicio de sesión. Intenta nuevamente.";
+            } elseif ($resultado->num_rows === 1) {
+                $fila = $resultado->fetch_assoc();
+
+                if (password_verify($pass, $fila['contraseña_hash'])) {
+                    session_regenerate_id(true);
+                    $_SESSION['usuario'] = $fila['nombre'];
+                    $_SESSION['rol'] = $fila['rol'];
+                    $_SESSION['id_usuario'] = (int) $fila['id_usuario'];
+
+                    $_SESSION['intentos'] = 0;
+                    $_SESSION['ultimo_intento'] = 0;
+
+                    if ($fila['rol'] === 'admin') {
+                        header("Location: " . APP_URL . "/login/admin.php");
+                    } else {
+                        header("Location: " . APP_URL . "/login/editor.php");
+                    }
+                    exit();
+                } else {
+                    $_SESSION['intentos']++;
+                    $_SESSION['ultimo_intento'] = time();
+                    $error = "Credenciales incorrectas.";
+                }
+            } else {
+                $_SESSION['intentos']++;
+                $_SESSION['ultimo_intento'] = time();
+                $error = "Credenciales incorrectas.";
+            }
+        }
+
+        $stmt->close();
     }
 }
 ?>
@@ -91,6 +108,7 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inicio de sesión</title>
+    <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css">
 </head>
 
