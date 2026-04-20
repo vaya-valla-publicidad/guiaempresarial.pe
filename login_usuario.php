@@ -5,7 +5,7 @@ include_once 'libs/mailer.php';
 include_once 'includes/security.php';
 
 if (isset($_SESSION['usuario_publico_id'])) {
-  $destino = !empty($_GET['redir']) ? validarRedireccionLocal(urldecode($_GET['redir'])) : 'mi_cuenta.php';
+  $destino = !empty($_GET['redir']) ? validarRedireccionLocal(urldecode($_GET['redir'])) : 'mi_cuenta';
   header("Location: $destino");
   exit;
 }
@@ -49,17 +49,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
         if ($res && $res->num_rows === 1) {
           $u = $res->fetch_assoc();
           if ($u['verificado'] == 0) {
-            header("Location: registro_usuario.php?email=" . urlencode($email));
+            header("Location: registro_usuario?email=" . urlencode($email));
             exit;
           } elseif ($u['password_hash']) {
-            header("Location: login_usuario.php?paso=password&email=" . urlencode($email) . ($redir ? '&redir=' . urlencode($redir) : ''));
+            header("Location: login_usuario?paso=password&email=" . urlencode($email) . ($redir ? '&redir=' . urlencode($redir) : ''));
             exit;
           } else {
-            header("Location: login_usuario.php?paso=codigo&email=" . urlencode($email) . ($redir ? '&redir=' . urlencode($redir) : ''));
+            header("Location: login_usuario?paso=codigo&email=" . urlencode($email) . ($redir ? '&redir=' . urlencode($redir) : ''));
             exit;
           }
         } else {
-          header("Location: registro_usuario.php?email=" . urlencode($email));
+          header("Location: registro_usuario?email=" . urlencode($email));
           exit;
         }
       }
@@ -99,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
             $stmt_insert = $conexion->prepare("INSERT INTO sesiones_usuario (id_usuario_publico, ip, dispositivo) VALUES (?, ?, ?)");
             $stmt_insert->bind_param("iss", $u['id'], $ip, $disp);
             $stmt_insert->execute();
-            $destino = $redir ? urldecode($redir) : 'mi_cuenta.php';
+            $destino = $redir ? urldecode($redir) : 'mi_cuenta';
             header("Location: $destino");
             exit;
           } else {
@@ -153,7 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
             $stmt_insert = $conexion->prepare("INSERT INTO sesiones_usuario (id_usuario_publico, ip, dispositivo) VALUES (?, ?, ?)");
             $stmt_insert->bind_param("iss", $u['id'], $ip, $disp);
             $stmt_insert->execute();
-            $destino = $redir ? urldecode($redir) : 'mi_cuenta.php';
+            $destino = $redir ? urldecode($redir) : 'mi_cuenta';
             header("Location: $destino");
             exit;
           } else {
@@ -221,7 +221,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
           enviarCorreo($email, $nombre_u, $asunto, $mensaje);
         }
 
-        header("Location: login_usuario.php?paso=codigo&email=" . urlencode($email) . ($redir ? '&redir=' . urlencode($redir) : ''));
+        header("Location: login_usuario?paso=codigo&email=" . urlencode($email) . ($redir ? '&redir=' . urlencode($redir) : ''));
         exit;
       }
     }
@@ -269,7 +269,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
       <?php endif; ?>
 
       <?php if ($paso === 'email'): ?>
-        <a href="index.php" class="log-home-link">
+        <a href="index" class="log-home-link">
           <i class="bi bi-arrow-left"></i> Volver al inicio
         </a>
 
@@ -291,13 +291,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
         </form>
 
         <div class="log-footer-link" style="margin-top:24px;">
-          ¿Primera vez aquí? <a href="registro_usuario.php">Crea tu cuenta gratis</a>
+          ¿Primera vez aquí? <a href="registro_usuario">Crea tu cuenta gratis</a>
         </div>
 
       <?php elseif ($paso === 'password'): ?>
         <div style="display:flex; gap:10px; margin-bottom:28px;">
-          <a href="index.php" class="log-back"><i class="bi bi-house"></i> Inicio</a>
-          <a href="login_usuario.php<?= $redir ? '?redir=' . urlencode($redir) : '' ?>" class="log-back">
+          <a href="index" class="log-back"><i class="bi bi-house"></i> Inicio</a>
+          <a href="login_usuario<?= $redir ? '?redir=' . urlencode($redir) : '' ?>" class="log-back">
             <i class="bi bi-arrow-left"></i> Volver
           </a>
         </div>
@@ -307,7 +307,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
         <div class="log-email-badge">
           <i class="bi bi-envelope-fill"></i>
           <?= htmlspecialchars($email_param) ?>
-          <a href="login_usuario.php<?= $redir ? '?redir=' . urlencode($redir) : '' ?>">✕</a>
+          <a href="login_usuario<?= $redir ? '?redir=' . urlencode($redir) : '' ?>">✕</a>
         </div>
 
         <form method="POST">
@@ -344,8 +344,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
 
       <?php elseif ($paso === 'codigo'): ?>
         <div style="display:flex; gap:10px; margin-bottom:28px;">
-          <a href="index.php" class="log-back"><i class="bi bi-house"></i> Inicio</a>
-          <a href="login_usuario.php<?= $redir ? '?redir=' . urlencode($redir) : '' ?>" class="log-back">
+          <a href="index" class="log-back"><i class="bi bi-house"></i> Inicio</a>
+          <a href="login_usuario<?= $redir ? '?redir=' . urlencode($redir) : '' ?>" class="log-back">
             <i class="bi bi-arrow-left"></i> Volver
           </a>
         </div>

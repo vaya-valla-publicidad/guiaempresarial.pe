@@ -792,6 +792,7 @@ body {
     border: 1px solid #e2e8f0;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
     transition: transform 0.2s ease;
+    touch-action: none; /* Mejor soporte para móviles */
 }
 
 .foto-item:hover {
@@ -862,7 +863,31 @@ body {
     cursor: pointer;
     margin-bottom: 30px;
     width: auto;
-    display: inline-block;
+    display: none; /* Oculto por defecto */
+}
+
+/* Utilidad para mostrar botones cuando hay cambios */
+.btn-save-order.visible,
+.btn-guardar-orden.visible {
+    display: inline-flex !important;
+    animation: fadeInScale 0.3s ease forwards;
+}
+
+@keyframes fadeInScale {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* Feedback visual para drag-and-drop */
+.sortable-ghost {
+    opacity: 0.4;
+    border: 2px dashed #3b82f6 !important;
+    background: #eff6ff !important;
+}
+
+.sortable-chosen {
+    border: 2px solid #3b82f6 !important;
+    box-shadow: 0 15px 30px rgba(59, 130, 246, 0.2) !important;
 }
 
 .banner-manager {
@@ -916,6 +941,7 @@ body {
     overflow: hidden;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
     border: 1px solid #e2e8f0;
+    touch-action: none; /* Mejor soporte para móviles */
 }
 
 .banner-card-img {
@@ -1090,8 +1116,6 @@ body {
 
 .panel .btn,
 .login-btn,
-.btn-file-select,
-.btn-upload,
 .btn-save-order {
     border-radius: 10px;
     padding: 10px 22px;
@@ -1103,6 +1127,13 @@ body {
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     cursor: pointer;
     border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-save-order {
+    display: none; /* Oculto por defecto en banner manager */
 }
 
 .panel .btn,

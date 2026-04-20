@@ -52,7 +52,7 @@ if ($slug_param) {
             $seo_image = APP_URL . "/assets/img/" . $emp_seo['logo'];
         }
     } else {
-        header("Location: " . APP_URL . "/404.php", true, 302);
+        header("Location: " . APP_URL . "/404", true, 302);
         exit;
     }
 } elseif ($cat_slug_param) {
@@ -66,7 +66,7 @@ if ($slug_param) {
         $cat_nombre = $cat_seo['nombre'];
         $seo_title = "Empresas en " . $cat_nombre . " - Guía Empresarial";
     } else {
-        header("Location: " . APP_URL . "/404.php", true, 302);
+        header("Location: " . APP_URL . "/404", true, 302);
         exit;
     }
 }
@@ -84,7 +84,7 @@ include 'includes/header.php';
         <?php if (!$id_empresa): ?>
             <div class="search-listing-wrapper"
                 style="margin-bottom: 40px; max-width: 600px; margin-left: auto; margin-right: auto;">
-                <form action="<?= APP_URL ?>/empresas.php" method="GET" class="search-form"
+                <form action="<?= APP_URL ?>/empresas" method="GET" class="search-form"
                     style="display: flex; gap: 10px; background: white; padding: 6px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid var(--borde);">
                     <div style="position: relative; flex: 1; display: flex; align-items: center;">
                         <i class="bi bi-search"
@@ -93,7 +93,7 @@ include 'includes/header.php';
                             placeholder="¿Qué estás buscando hoy?"
                             style="width: 100%; border: none; padding: 12px 40px 12px 45px; border-radius: 8px; outline: none; font-size: 16px;">
                         <?php if (!empty($_GET['buscar'])): ?>
-                            <a href="<?= APP_URL ?>/empresas.php"
+                            <a href="<?= APP_URL ?>/empresas"
                                 style="position: absolute; right: 10px; color: var(--muted); font-size: 20px; text-decoration: none; display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; transition: background 0.2s;"
                                 onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='transparent'">
                                 <i class="bi bi-x"></i>
@@ -184,7 +184,7 @@ include 'includes/header.php';
         }
 
         if ($id_empresa && (!$resultado || $resultado->num_rows === 0)) {
-            header("Location: " . APP_URL . "/404.php", true, 302);
+            header("Location: " . APP_URL . "/404", true, 302);
             exit;
         }
 
@@ -393,15 +393,78 @@ include 'includes/header.php';
                     $stmt_prom->execute();
                     $sum_q = $stmt_prom->get_result();
                     $promedio = round($sum_q->fetch_assoc()['prom'], 1);
-                    while ($r = $resenas_q->fetch_assoc())
-                        $resenas_arr[] = $r;
-                }
+                        while ($r = $resenas_q->fetch_assoc()) {
+                            $r['likes'] = 0;
+                            $r['dislikes'] = 0;
+                            $r['my_vote'] = '';
+                            $resenas_arr[] = $r;
+                        }
+                    }
+
+                    $usuario_tiene_resena = false;
+                    if (isset($_SESSION['usuario_publico_id'])) {
+                        $usuario_publico_actual = intval($_SESSION['usuario_publico_id']);
+                        foreach ($resenas_arr as $rr) {
+                            if (intval($rr['id_usuario_publico']) === $usuario_publico_actual) {
+                                $usuario_tiene_resena = true;
+                                break;
+                            }
+                        }
+                    }
+                    $my_votes = [];
+
+                    if (count($resenas_arr) > 0) {
+                        $resenas_ids = array_column($resenas_arr, 'id_resena');
+                        $placeholders = implode(',', array_fill(0, count($resenas_ids), '?'));
+                        $types = str_repeat('i', count($resenas_ids));
+
+                        $sql = "SELECT id_resena, SUM(tipo = 'like') AS likes, SUM(tipo = 'dislike') AS dislikes FROM resena_votos WHERE id_resena IN ($placeholders) GROUP BY id_resena";
+                        $stmt_votes = $conexion->prepare($sql);
+                        $bindParams = array_merge([$types], $resenas_ids);
+                        $tmp = [];
+                        foreach ($bindParams as $key => $value) {
+                            $tmp[$key] = &$bindParams[$key];
+                        }
+                        call_user_func_array([$stmt_votes, 'bind_param'], $tmp);
+                        $stmt_votes->execute();
+                        $votes_q = $stmt_votes->get_result();
+                        $votes_data = [];
+                        while ($vote = $votes_q->fetch_assoc()) {
+                            $votes_data[intval($vote['id_resena'])] = $vote;
+                        }
+
+                        if (isset($_SESSION['usuario_publico_id'])) {
+                            $sql = "SELECT id_resena, tipo FROM resena_votos WHERE id_resena IN ($placeholders) AND id_usuario_publico = ?";
+                            $stmt_my = $conexion->prepare($sql);
+                            $bindParams = array_merge([$types . 'i'], $resenas_ids, [$usuario_publico_actual]);
+                            $tmp = [];
+                            foreach ($bindParams as $key => $value) {
+                                $tmp[$key] = &$bindParams[$key];
+                            }
+                            call_user_func_array([$stmt_my, 'bind_param'], $tmp);
+                            $stmt_my->execute();
+                            $my_q = $stmt_my->get_result();
+                            $my_votes = [];
+                            while ($my = $my_q->fetch_assoc()) {
+                                $my_votes[intval($my['id_resena'])] = $my['tipo'];
+                            }
+                        }
+
+                        foreach ($resenas_arr as &$rr) {
+                            $idr = intval($rr['id_resena']);
+                            if (isset($votes_data[$idr])) {
+                                $rr['likes'] = intval($votes_data[$idr]['likes']);
+                                $rr['dislikes'] = intval($votes_data[$idr]['dislikes']);
+                            }
+                            if (!empty($my_votes[$idr])) {
+                                $rr['my_vote'] = $my_votes[$idr];
+                            }
+                        }
+                        unset($rr);
+                    }
                 ?>
 
-                <div class="perfil-resenas" id="resenas">
-                    <p class="perfil-section-label">Reseñas</p>
-
-                    <div id="resenaAlertContainer">
+                <div id="resenaAlertContainer">
                         <?php if ($resena_msg === 'ok'): ?>
                             <div class="resena-alerta resena-alerta-ok">✅ ¡Reseña enviada con éxito!</div>
                         <?php elseif ($resena_msg === 'mala'): ?>
@@ -429,11 +492,15 @@ include 'includes/header.php';
 
                     <div class="resena-form-wrapper">
                         <?php if (isset($_SESSION['usuario_publico_id'])): ?>
-                            <p class="resena-form-titulo">Hola, <?= htmlspecialchars($_SESSION['usuario_publico_nombre']) ?> 👋
-                                Deja tu reseña</p>
-                            <form id="formResena" method="POST" action="<?= APP_URL ?>/empresas.php?empresa=<?= $id_empresa ?>">
+                            <?php if ($usuario_tiene_resena): ?>
+                                <div id="resenaEditHint" class="resena-alerta resena-alerta-info">Ya tienes tu reseña enviada. Presiona <strong>Editar</strong> en tu comentario para actualizarla.</div>
+                            <?php endif; ?>
+                            <form id="formResena" method="POST" action="<?= APP_URL ?>/empresas.php?empresa=<?= $id_empresa ?>" style="<?= $usuario_tiene_resena ? 'display:none;' : '' ?>">
                                 <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
                                 <input type="hidden" name="id_empresa" value="<?= $id_empresa ?>">
+                                <input type="hidden" name="id_resena" id="idResena" value="">
+                                <p class="resena-form-titulo" id="resenaFormTitulo" data-default-text="Hola, <?= htmlspecialchars($_SESSION['usuario_publico_nombre']) ?> 👋 Deja tu reseña">Hola, <?= htmlspecialchars($_SESSION['usuario_publico_nombre']) ?> 👋
+                                    Deja tu reseña</p>
                                 <div class="form-group">
                                     <label>Calificación</label>
                                     <div class="estrellas-input" id="estrellasInput">
@@ -448,7 +515,10 @@ include 'includes/header.php';
                                     <textarea name="comentario" id="resenaComentario" rows="3"
                                         placeholder="Cuéntanos tu experiencia..." required maxlength="500"></textarea>
                                 </div>
-                                <button type="submit" class="btn-enviar-resena" id="btnEnviarResena">Enviar reseña</button>
+                                <div class="resena-form-actions">
+                                    <button type="submit" class="btn-enviar-resena" id="btnEnviarResena">Enviar reseña</button>
+                                    <button type="button" class="btn-cancelar-edicion" id="btnCancelarEdicion" style="display:none;">Cancelar</button>
+                                </div>
                             </form>
                         <?php else: ?>
                             <div style="text-align:center;padding:20px 0;">
@@ -472,13 +542,17 @@ include 'includes/header.php';
                             <?php foreach ($resenas_arr as $r):
                                 $es_anonimo = ($r['visibilidad_resenas'] ?? 'publico') === 'anonimo';
                                 $nombre_mostrar = $es_anonimo ? 'Usuario Anónimo' : htmlspecialchars($r['nombre_autor']);
-                                $letra_avatar = $es_anonimo ? '👤' : mb_strtoupper(mb_substr($r['nombre_autor'], 0, 1));
+                                $avatar_class = 'resena-avatar' . ($es_anonimo ? ' anonimo' : '');
+                                $avatar_content = $es_anonimo ? '' : mb_strtoupper(mb_substr($r['nombre_autor'], 0, 1));
                                 ?>
-                                <div class="resena-item">
+                                <div class="resena-item" data-resena-id="<?= intval($r['id_resena']) ?>">
                                     <div class="resena-header">
-                                        <div class="resena-avatar"><?= $letra_avatar ?></div>
+                                        <div class="<?= $avatar_class ?>"><?= $avatar_content ?></div>
                                         <div>
                                             <strong><?= $nombre_mostrar ?></strong>
+                                            <?php if (isset($_SESSION['usuario_publico_id']) && intval($_SESSION['usuario_publico_id']) === intval($r['id_usuario_publico'])): ?>
+                                                <span class="resena-badge resena-badge-propia">Tu reseña</span>
+                                            <?php endif; ?>
                                             <div class="estrellas-display small">
                                                 <?php for ($i = 1; $i <= 5; $i++): ?>
                                                     <span
@@ -487,8 +561,23 @@ include 'includes/header.php';
                                             </div>
                                         </div>
                                         <span class="resena-fecha"><?= date('d/m/Y', strtotime($r['fecha'])) ?></span>
+                                        <?php if (isset($_SESSION['usuario_publico_id']) && intval($_SESSION['usuario_publico_id']) === intval($r['id_usuario_publico'])): ?>
+                                            <button type="button" class="btn-editar-resena" data-id="<?= intval($r['id_resena']) ?>" data-estrellas="<?= intval($r['estrellas']) ?>">Editar</button>
+                                        <?php endif; ?>
                                     </div>
                                     <p class="resena-comentario"><?= nl2br(htmlspecialchars($r['comentario'])) ?></p>
+                                    <div class="resena-votos">
+                                        <?php if (isset($_SESSION['usuario_publico_id']) && intval($_SESSION['usuario_publico_id']) !== intval($r['id_usuario_publico'])): ?>
+                                            <button type="button" class="btn-resena-voto btn-voto-like <?= $r['my_vote'] === 'like' ? 'activo' : '' ?>" data-resena-id="<?= intval($r['id_resena']) ?>" data-tipo="like">
+                                                👍 <span class="votos-like-count"><?= intval($r['likes']) ?></span>
+                                            </button>
+                                            <button type="button" class="btn-resena-voto btn-voto-dislike <?= $r['my_vote'] === 'dislike' ? 'activo' : '' ?>" data-resena-id="<?= intval($r['id_resena']) ?>" data-tipo="dislike">
+                                                👎 <span class="votos-dislike-count"><?= intval($r['dislikes']) ?></span>
+                                            </button>
+                                        <?php elseif (isset($_SESSION['usuario_publico_id'])): ?>
+                                            <span class="votos-summary">👍 <?= intval($r['likes']) ?> · 👎 <?= intval($r['dislikes']) ?></span>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
                             <?php endforeach; ?>
                         </div>
@@ -549,7 +638,7 @@ include 'includes/header.php';
             if ($buscar) {
                 $bc_items[] = ["name" => "Búsqueda", "url" => null];
             } elseif ($id_categoria) {
-                $bc_items[] = ["name" => "Categorías", "url" => APP_URL . "/categorias.php"];
+                $bc_items[] = ["name" => "Categorías", "url" => APP_URL . "/categorias"];
                 $bc_items[] = ["name" => $cat_nombre ?? 'Categoría', "url" => null];
             } else {
                 $bc_items[] = ["name" => "Empresas", "url" => null];
@@ -560,12 +649,12 @@ include 'includes/header.php';
         <?php if ($buscar): ?>
             <div class="filtro-activo">
                 🔍 Resultados para: "<?= htmlspecialchars($buscar) ?>"
-                <a href="<?= APP_URL ?>/empresas.php" title="Limpiar">✕</a>
+                <a href="<?= APP_URL ?>/empresas" title="Limpiar">✕</a>
             </div>
         <?php elseif ($id_categoria): ?>
             <div class="filtro-activo">
                 🏷 Categoría: <?= htmlspecialchars($cat_nombre ?? 'Categoría') ?>
-                <a href="<?= APP_URL ?>/empresas.php" title="Ver todas">✕</a>
+                <a href="<?= APP_URL ?>/empresas" title="Ver todas">✕</a>
             </div>
         <?php endif; ?>
 
@@ -595,7 +684,7 @@ include 'includes/header.php';
             <div class="paginacion"
                 style="display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 40px; margin-bottom: 20px;">
                 <?php if ($pagina_actual > 1): ?>
-                    <a href="<?= APP_URL ?>/empresas.php?pagina=<?= $pagina_actual - 1 ?><?= $query_str ?>"
+                    <a href="<?= APP_URL ?>/empresas?pagina=<?= $pagina_actual - 1 ?><?= $query_str ?>"
                         class="btn-pag">Anterior</a>
                 <?php endif; ?>
 
@@ -603,7 +692,7 @@ include 'includes/header.php';
                 for ($p = 1; $p <= $total_paginas; $p++):
                     if ($p == 1 || $p == $total_paginas || abs($p - $pagina_actual) <= 2):
                         ?>
-                        <a href="<?= APP_URL ?>/empresas.php?pagina=<?= $p ?><?= $query_str ?>"
+                        <a href="<?= APP_URL ?>/empresas?pagina=<?= $p ?><?= $query_str ?>"
                             class="btn-pag <?= $p == $pagina_actual ? 'activa' : '' ?>">
                             <?= $p ?>
                         </a>
@@ -612,7 +701,7 @@ include 'includes/header.php';
                     <?php endif; endfor; ?>
 
                 <?php if ($pagina_actual < $total_paginas): ?>
-                    <a href="<?= APP_URL ?>/empresas.php?pagina=<?= $pagina_actual + 1 ?><?= $query_str ?>"
+                    <a href="<?= APP_URL ?>/empresas?pagina=<?= $pagina_actual + 1 ?><?= $query_str ?>"
                         class="btn-pag">Siguiente</a>
                 <?php endif; ?>
             </div>
@@ -623,7 +712,7 @@ include 'includes/header.php';
             <p>😕 No se encontraron
                 empresas<?= $buscar ? ' para "<strong>' . htmlspecialchars($buscar) . '</strong>"' : '' ?>.</p>
             <br><br>
-            <a href="<?= APP_URL ?>/empresas.php">Ver todas las empresas</a>
+            <a href="<?= APP_URL ?>/empresas">Ver todas las empresas</a>
         </div>
     <?php endif; ?>
 
@@ -652,6 +741,9 @@ include 'includes/header.php';
     (function () {
         const starsInput = document.getElementById('estrellasInput');
         const starsValue = document.getElementById('estrellasValor');
+        const resenaEditHint = document.getElementById('resenaEditHint');
+        const csrfToken = '<?= generarTokenCSRF() ?>';
+        let usuarioTieneResena = <?= isset($usuario_tiene_resena) && $usuario_tiene_resena ? 'true' : 'false' ?>;
         if (!starsInput) return;
         const btns = starsInput.querySelectorAll('.estrella-btn');
         btns.forEach((btn, index) => {
@@ -670,7 +762,108 @@ include 'includes/header.php';
 
 
         const form = document.getElementById('formResena');
+        const idResenaInput = document.getElementById('idResena');
+        const cancelEditBtn = document.getElementById('btnCancelarEdicion');
+        const resenaFormTitulo = document.getElementById('resenaFormTitulo');
+
+        function restablecerEstrellas(valor) {
+            starsValue.value = valor;
+            btns.forEach((b, i) => b.classList.toggle('activa', i < valor));
+        }
+
+        function mostrarFormulario() {
+            const form = document.getElementById('formResena');
+            if (!form) return;
+            form.style.display = 'block';
+            if (resenaEditHint) {
+                resenaEditHint.style.display = 'none';
+            }
+        }
+
+        function resetEditMode() {
+            if (!form) return;
+            idResenaInput.value = '';
+            if (cancelEditBtn) cancelEditBtn.style.display = 'none';
+            form.reset();
+            restablecerEstrellas(0);
+            btns.forEach(b => b.classList.remove('activa'));
+            document.getElementById('btnEnviarResena').innerText = 'Enviar reseña';
+            if (resenaFormTitulo) {
+                resenaFormTitulo.innerText = resenaFormTitulo.dataset.defaultText || 'Enviar reseña';
+            }
+            if (usuarioTieneResena && form) {
+                form.style.display = 'none';
+                if (resenaEditHint) {
+                    resenaEditHint.style.display = 'block';
+                }
+            }
+        }
+
+        function activarModoEdicion(resenaId, estrellas, comentario) {
+            mostrarFormulario();
+            idResenaInput.value = resenaId;
+            restablecerEstrellas(parseInt(estrellas, 10) || 0);
+            document.getElementById('resenaComentario').value = comentario;
+            if (cancelEditBtn) cancelEditBtn.style.display = 'inline-flex';
+            document.getElementById('btnEnviarResena').innerText = 'Actualizar reseña';
+            if (resenaFormTitulo) {
+                resenaFormTitulo.innerText = 'Edita tu reseña';
+            }
+            document.getElementById('resenaComentario').focus();
+        }
+
         if (!form) return;
+
+        document.addEventListener('click', function (event) {
+            const button = event.target.closest('.btn-editar-resena');
+            if (!button) return;
+            const id = button.dataset.id;
+            const estrellas = button.dataset.estrellas;
+            const item = button.closest('.resena-item');
+            const comentario = item ? item.querySelector('.resena-comentario').textContent.trim() : '';
+            activarModoEdicion(id, estrellas, comentario);
+        });
+
+        document.addEventListener('click', function (event) {
+            const voteButton = event.target.closest('.btn-resena-voto');
+            if (!voteButton) return;
+            const resenaId = voteButton.dataset.resenaId;
+            const tipo = voteButton.dataset.tipo;
+            const alertBox = document.getElementById('resenaAlertContainer');
+            const body = new URLSearchParams();
+            body.append('csrf_token', csrfToken);
+            body.append('id_resena', resenaId);
+            body.append('tipo', tipo);
+
+            fetch('<?= APP_URL ?>/ajax/resena_vote.php', {
+                method: 'POST',
+                body
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success) {
+                        alertBox.innerHTML = `<div class="resena-alerta resena-alerta-error">❌ ${data.error}</div>`;
+                        return;
+                    }
+                    const item = document.querySelector(`.resena-item[data-resena-id="${resenaId}"]`);
+                    if (!item) return;
+                    const likeCount = item.querySelector('.votos-like-count');
+                    const dislikeCount = item.querySelector('.votos-dislike-count');
+                    const likeBtn = item.querySelector('.btn-voto-like');
+                    const dislikeBtn = item.querySelector('.btn-voto-dislike');
+                    if (likeCount) likeCount.textContent = data.likes;
+                    if (dislikeCount) dislikeCount.textContent = data.dislikes;
+                    if (likeBtn) likeBtn.classList.toggle('activo', data.my_vote === 'like');
+                    if (dislikeBtn) dislikeBtn.classList.toggle('activo', data.my_vote === 'dislike');
+                })
+                .catch(() => {
+                    alertBox.innerHTML = '<div class="resena-alerta resena-alerta-error">❌ Error al conectar con el servidor.</div>';
+                });
+        });
+
+        if (cancelEditBtn) {
+            cancelEditBtn.addEventListener('click', resetEditMode);
+        }
 
         form.addEventListener('submit', function (e) {
             e.preventDefault();
@@ -699,20 +892,48 @@ include 'includes/header.php';
                     btn.innerHTML = 'Enviar reseña';
 
                     if (data.success) {
-                        alertBox.innerHTML = '<div class="resena-alerta resena-alerta-ok">✅ ¡Tu reseña se ha publicado con éxito!</div>';
+                        alertBox.innerHTML = `<div class="resena-alerta resena-alerta-ok">✅ ${data.updated ? 'Tu reseña se ha actualizado con éxito!' : '¡Tu reseña se ha publicado con éxito!'}</div>`;
                         form.reset();
+                        idResenaInput.value = '';
+                        cancelEditBtn.style.display = 'none';
                         starsValue.value = '';
                         btns.forEach(b => b.classList.remove('activa'));
 
+                        if (!data.updated) {
+                            usuarioTieneResena = true;
+                        }
+
+                        if (usuarioTieneResena && form) {
+                            form.style.display = 'none';
+                            if (resenaEditHint) {
+                                resenaEditHint.style.display = 'block';
+                            }
+                        }
 
                         const lista = document.querySelector('.resenas-lista');
                         const emptyState = document.querySelector('.empty-reviews-premium');
+                        const existingItem = document.querySelector(`.resena-item[data-resena-id="${data.id_resena}"]`);
 
-                        if (emptyState) emptyState.remove();
+                        if (existingItem) {
+                            const starsSmall = existingItem.querySelector('.estrellas-display.small');
+                            if (starsSmall) {
+                                starsSmall.innerHTML = `${'★'.repeat(data.estrellas)}${'☆'.repeat(5 - data.estrellas)}`;
+                            }
+                            const comentarioText = existingItem.querySelector('.resena-comentario');
+                            if (comentarioText) {
+                                comentarioText.innerHTML = data.comentario;
+                            }
+                            const editarBtn = existingItem.querySelector('.btn-editar-resena');
+                            if (editarBtn) {
+                                editarBtn.dataset.estrellas = data.estrellas;
+                            }
+                        } else {
+                            if (emptyState) emptyState.remove();
 
-                        const item = document.createElement('div');
-                        item.className = 'resena-item nuevo';
-                        item.innerHTML = `
+                            const item = document.createElement('div');
+                            item.className = 'resena-item nuevo';
+                            item.setAttribute('data-resena-id', data.id_resena);
+                            item.innerHTML = `
                         <div class="resena-header">
                             <div class="resena-avatar">${data.letra}</div>
                             <div>
@@ -722,20 +943,20 @@ include 'includes/header.php';
                                 </div>
                             </div>
                             <span class="resena-fecha">${data.fecha}</span>
+                            <button type="button" class="btn-editar-resena" data-id="${data.id_resena}" data-estrellas="${data.estrellas}">Editar</button>
                         </div>
                         <p class="resena-comentario">${data.comentario}</p>
                     `;
-
-                        if (lista) {
-                            lista.prepend(item);
-                        } else {
-                            const nuevaLista = document.createElement('div');
-                            nuevaLista.className = 'resenas-lista';
-                            nuevaLista.appendChild(item);
-                            form.closest('.resena-form-wrapper').after(nuevaLista);
+                            if (lista) {
+                                lista.prepend(item);
+                            } else {
+                                const nuevaLista = document.createElement('div');
+                                nuevaLista.className = 'resenas-lista';
+                                nuevaLista.appendChild(item);
+                                form.closest('.resena-form-wrapper').after(nuevaLista);
+                            }
+                            setTimeout(() => item.classList.add('visible'), 10);
                         }
-
-                        setTimeout(() => item.classList.add('visible'), 10);
                     } else {
                         alertBox.innerHTML = `<div class="resena-alerta resena-alerta-error">❌ ${data.error}</div>`;
                     }

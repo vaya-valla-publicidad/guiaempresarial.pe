@@ -36,9 +36,9 @@ if ($accion === 'subir') {
     $stmt = $conexion->prepare("INSERT INTO banner_carrusel (imagen, orden, activo, tiempo_ms) VALUES (?, ?, 1, ?)");
     $stmt->bind_param("sii", $nombre, $sig_orden, $tiempo);
     $stmt->execute();
-    echo json_encode(['ok' => true, 'id' => $stmt->insert_id]);
+    $id_nuevo = $stmt->insert_id;
     $stmt->close();
-    echo json_encode(['ok' => true, 'id' => $conexion->insert_id]);
+    echo json_encode(['ok' => true, 'id' => $id_nuevo]);
     exit;
 }
 

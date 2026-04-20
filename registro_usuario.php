@@ -5,7 +5,7 @@ include_once 'libs/mailer.php';
 include_once 'includes/security.php';
 
 if (isset($_SESSION['usuario_publico_id'])) {
-  header('Location: mi_cuenta.php');
+  header('Location: mi_cuenta');
   exit;
 }
 
@@ -68,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
           $mensaje = "Hola $nombre,\n\nTu código de verificación es: $codigo\n\nVálido por 10 minutos.\n\nSi no solicitaste esto, ignora este correo.";
           enviarCorreo($email, $nombre, $asunto, $mensaje);
 
-          header("Location: registro_usuario.php?paso=verificar&email=" . urlencode($email));
+          header("Location: registro_usuario?paso=verificar&email=" . urlencode($email));
           exit;
         }
       }
@@ -113,10 +113,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
             $_SESSION['usuario_publico_foto'] = $u['foto_perfil'];
             $_SESSION['pub_intentos_otp'] = 0;
             if ($is_ajax) {
-              echo json_encode(['success' => true, 'redirect' => 'mi_cuenta.php']);
+              echo json_encode(['success' => true, 'redirect' => 'mi_cuenta']);
               exit;
             }
-            header('Location: mi_cuenta.php');
+            header('Location: mi_cuenta');
             exit;
           } else {
             $_SESSION['pub_intentos_otp']++;
@@ -247,7 +247,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
 
       <?php if ($paso === 'registro'): ?>
 
-        <a href="index.php" class="reg-home-link">
+        <a href="index" class="reg-home-link">
           <i class="bi bi-arrow-left"></i> Volver al inicio
         </a>
 
@@ -302,15 +302,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
           Al registrarte aceptas nuestros <a href="#">Términos</a> y <a href="#">Política de privacidad</a>.
         </p>
         <div class="reg-footer-link">
-          ¿Ya tienes cuenta? <a href="login_usuario.php">Inicia sesión</a>
+          ¿Ya tienes cuenta? <a href="login_usuario">Inicia sesión</a>
         </div>
 
       <?php elseif ($paso === 'verificar'): ?>
         <div style="display:flex; gap:10px; margin-bottom:28px;">
-          <a href="index.php" class="reg-back-btn">
+          <a href="index" class="reg-back-btn">
             <i class="bi bi-house"></i> Inicio
           </a>
-          <a href="registro_usuario.php" class="reg-back-btn">
+          <a href="registro_usuario" class="reg-back-btn">
             <i class="bi bi-arrow-left"></i> Volver al registro
           </a>
         </div>
@@ -435,7 +435,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
         otpGroup.style.opacity = '0.7';
         otpGroup.style.pointerEvents = 'none';
 
-        fetch('registro_usuario.php', { method: 'POST', body: formData })
+        fetch('registro_usuario', { method: 'POST', body: formData })
           .then(r => r.json())
           .then(data => {
             if (data.success) {

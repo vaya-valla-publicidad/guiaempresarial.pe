@@ -80,10 +80,10 @@ if (isset($_SESSION['usuario_publico_id'])) {
   <header class="main-header">
     <div class="nav-container">
 
-      <div class="brand">
+      <a href="<?= APP_URL ?>/" class="brand" style="text-decoration:none;">
         <img src="<?= APP_URL ?>/assets/img/image.png" alt="Guía Empresarial" class="logo">
         <span class="brand-name">GUÍA EMPRESARIAL</span>
-      </div>
+      </a>
 
       <button class="nav-toggle" id="nav-toggle" aria-label="Abrir menú">
         <i class="bi bi-list"></i>
@@ -95,12 +95,12 @@ if (isset($_SESSION['usuario_publico_id'])) {
           session_start();
         ?>
         <nav class="nav-links">
-          <a href="<?= APP_URL ?>/index.php" class="nav-link">Inicio</a>
-          <a href="<?= APP_URL ?>/index.php#empresas" class="nav-link">Empresas</a>
-          <a href="<?= APP_URL ?>/index.php#categorias" class="nav-link">Categorías</a>
-          <a href="<?= APP_URL ?>/index.php#contacto" class="nav-link">Contacto</a>
+          <a href="<?= APP_URL ?>/" class="nav-link">Inicio</a>
+          <a href="<?= APP_URL ?>/?jump=empresas" class="nav-link" onclick="return handleNavClick(event, 'empresas')">Empresas</a>
+          <a href="<?= APP_URL ?>/?jump=categorias" class="nav-link" onclick="return handleNavClick(event, 'categorias')">Categorías</a>
+          <a href="<?= APP_URL ?>/?jump=contacto" class="nav-link" onclick="return handleNavClick(event, 'contacto')">Contacto</a>
           <?php if (isset($_SESSION['usuario_publico_id'])): ?>
-            <a href="<?= APP_URL ?>/mi_cuenta.php" class="nav-link" style="display:flex;align-items:center;gap:8px;">
+            <a href="<?= APP_URL ?>/mi_cuenta" class="nav-link" style="display:flex;align-items:center;gap:8px;">
               <?php if (!empty($_SESSION['usuario_publico_foto'])): ?>
                 <img src="<?= APP_URL ?>/assets/img/avatars/<?= htmlspecialchars($_SESSION['usuario_publico_foto']) ?>"
                   alt="Foto perfil" style="width:24px;height:24px;border-radius:50%;object-fit:cover;">
@@ -111,7 +111,7 @@ if (isset($_SESSION['usuario_publico_id'])) {
             </a>
 
           <?php else: ?>
-            <a href="<?= APP_URL ?>/login_usuario.php" class="nav-link">Ingresar</a>
+            <a href="<?= APP_URL ?>/login_usuario" class="nav-link">Ingresar</a>
           <?php endif; ?>
         </nav>
         <label class="theme-switch" for="toggle-theme">
@@ -158,5 +158,46 @@ if (isset($_SESSION['usuario_publico_id'])) {
 
       document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', cerrarMenu);
+      });
+
+      // Lógica de navegación limpia por secciones
+      function handleNavClick(e, targetId) {
+        // Evitar que otros scripts (como el de transiciones) intercepten este click
+        e.stopImmediatePropagation();
+        
+        const isHomePage = window.location.pathname === '/' || 
+                           window.location.pathname.endsWith('/index') || 
+                           window.location.pathname.includes('/guiaempresarial.pe/') && (window.location.pathname.split('/').pop() === '' || window.location.pathname.split('/').pop() === 'index');
+        
+        const section = document.getElementById(targetId);
+
+        if (section) {
+          e.preventDefault();
+          cerrarMenu();
+          section.scrollIntoView({ behavior: 'smooth' });
+          // Limpiar URL si hay parámetros
+          if (window.location.search.includes('jump=')) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+          return false;
+        }
+        return true;
+      }
+
+      // Manejar el salto al cargar la página
+      window.addEventListener('load', () => {
+        const params = new URLSearchParams(window.location.search);
+        const jumpId = params.get('jump');
+        if (jumpId) {
+          const section = document.getElementById(jumpId);
+          if (section) {
+            // Un pequeño delay permite que las imágenes y el layout se estabilicen
+            setTimeout(() => {
+              section.scrollIntoView({ behavior: 'smooth' });
+              // Limpiar URL para que se vea profesional
+              window.history.replaceState({}, document.title, window.location.pathname);
+            }, 300);
+          }
+        }
       });
     </script>

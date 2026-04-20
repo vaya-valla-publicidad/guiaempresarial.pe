@@ -321,12 +321,18 @@ $total_destacadas = $conexion->query("SELECT COUNT(*) as total FROM empresas WHE
                 ghostClass: 'sortable-ghost',
                 chosenClass: 'sortable-chosen',
                 onEnd: function () {
-                    document.querySelectorAll('.foto-item').forEach((el, i) => {
-                        el.querySelector('.orden-badge').textContent = i + 1;
-                    });
                     const btn = document.getElementById('btn-orden');
-                    btn.style.background = '#e67e22';
-                    btn.textContent = '💾 Guardar orden (hay cambios)';
+                    if (btn) btn.classList.add('visible');
+                    
+                    document.querySelectorAll('.foto-item').forEach((el, i) => {
+                        const badge = el.querySelector('.orden-badge');
+                        if (badge) badge.textContent = i + 1;
+                    });
+                    
+                    if (btn) {
+                        btn.style.background = '#e67e22';
+                        btn.textContent = '💾 Guardar orden (hay cambios)';
+                    }
                 }
             });
         }

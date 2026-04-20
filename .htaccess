@@ -1,4 +1,6 @@
+ErrorDocument 403 /guiaempresarial.pe/403.php
 ErrorDocument 404 /guiaempresarial.pe/404.php
+ErrorDocument 500 /guiaempresarial.pe/500.php
 
 Options +FollowSymLinks -Indexes -MultiViews
 ServerSignature Off
@@ -21,11 +23,23 @@ ServerSignature Off
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteBase /guiaempresarial.pe/
-    
+    DirectoryIndex index.php
+
+    # Redirigir /index a la raíz /
+    RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s(.*)/index(\.php)? [NC]
+    RewriteRule ^ %1/ [R=301,L]
+
     RewriteRule ^negocio/([^/]+)/?$ empresas.php?slug=$1 [L,QSA]
-    
     RewriteRule ^rubro/([^/]+)/?$ empresas.php?cat_slug=$1 [L,QSA]
+
+    # Ocultar extensión .php: Si se pide .php manualmente, redireccionar a la versión limpia
+    RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s([^.]+)\.php [NC]
+    RewriteRule ^ %1 [R=301,L]
+
+    # Mapeo interno: Si se pide un archivo sin extensión, servir el .php si existe
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME}\.php -f
+    RewriteRule ^([^\.]+)$ $1.php [NC,L]
 
     # Redirección de archivos no encontrados
     RewriteCond %{REQUEST_FILENAME} !-f

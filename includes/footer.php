@@ -12,8 +12,8 @@
             <a href="https://www.facebook.com/guiaempresarios" target="_blank" rel="noopener noreferrer">
                 Facebook
             </a>
-            <a href="<?= APP_URL ?>/contacto.php">Contacto</a>
-            <a href="<?= APP_URL ?>/sobre.php">Sobre Nosotros</a>
+            <a href="<?= APP_URL ?>/contacto">Contacto</a>
+            <a href="<?= APP_URL ?>/sobre">Sobre Nosotros</a>
             <a href="https://wa.me/51987226299" target="_blank" rel="noopener noreferrer">
                 WhatsApp
             </a>
@@ -76,20 +76,31 @@
     const links = document.querySelectorAll('.nav-link');
 
     function activarLink() {
-        const hash = window.location.hash;
+        const path = window.location.pathname;
+        const params = new URLSearchParams(window.location.search);
+        const jumpId = params.get('jump');
+
         links.forEach(link => {
             link.classList.remove('active');
+            const href = link.getAttribute('href');
 
-            if (hash && link.getAttribute('href').includes(hash)) {
+            if (jumpId && href.includes('jump=' + jumpId)) {
                 link.classList.add('active');
-            } else if (!hash && link.getAttribute('href') === 'index.php') {
+            } else if (!jumpId && (path === '/' || path.endsWith('/index') || path.includes('/guiaempresarial.pe') && (path.split('/').pop() === '' || path.split('/').pop() === 'index')) && (href === '<?= APP_URL ?>/' || href === '<?= APP_URL ?>')) {
+                link.classList.add('active');
+            } else if (href !== '<?= APP_URL ?>/' && href !== '<?= APP_URL ?>' && href.includes(path) && path !== '/') {
                 link.classList.add('active');
             }
         });
     }
 
     activarLink();
-    window.addEventListener('hashchange', activarLink);
+    // También activar al hacer clic en los links de salto
+    links.forEach(link => {
+        link.addEventListener('click', () => {
+            setTimeout(activarLink, 100);
+        });
+    });
 </script>
 
 <script>
@@ -142,7 +153,7 @@
 
                     if (data.accion === 'quitado') {
 
-                        if (window.location.pathname.includes('mi_cuenta.php')) {
+                        if (window.location.pathname.includes('mi_cuenta')) {
                             const card = btn.closest('.empresa-item');
                             if (card) {
                                 card.style.opacity = '0';
@@ -229,11 +240,20 @@
 
                 if (url &&
                     !url.startsWith('#') &&
+                    !url.includes('jump=') &&
                     !url.startsWith('javascript') &&
                     !url.startsWith('mailto') &&
                     !url.startsWith('tel') &&
                     target !== '_blank' &&
                     this.hostname === window.location.hostname) {
+
+                    try {
+                        const currentUrl = new URL(window.location.href);
+                        const linkUrl = new URL(this.href);
+                        if (currentUrl.pathname === linkUrl.pathname && linkUrl.hash) {
+                            return; // No animar si es un ancla en la misma página
+                        }
+                    } catch(err) {}
 
                     e.preventDefault();
                     document.body.classList.add('page-transitioning');
@@ -244,6 +264,12 @@
                 }
             });
         });
+    });
+
+    window.addEventListener('pageshow', function (event) {
+        if (document.body.classList.contains('page-transitioning')) {
+            document.body.classList.remove('page-transitioning');
+        }
     });
 </script>
 </body>

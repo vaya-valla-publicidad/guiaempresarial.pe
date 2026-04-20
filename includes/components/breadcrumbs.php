@@ -2,18 +2,17 @@
 function renderBreadcrumbs($items = []) {
     if (empty($items)) return '';
 
-    $schema_items = [];
     $schema_items[] = [
         "@type" => "ListItem",
         "position" => 1,
         "name" => "Inicio",
-        "item" => APP_URL . "/index.php"
+        "item" => APP_URL . "/"
     ];
 
     $html = '<nav class="breadcrumb-nav" aria-label="Breadcrumb">';
     $html .= '<div class="container">';
     $html .= '<ul>';
-    $html .= '<li><a href="' . APP_URL . '/index.php"><i class="bi bi-house-door"></i> Inicio</a></li>';
+    $html .= '<li><a href="' . APP_URL . '/"><i class="bi bi-house-door"></i> Inicio</a></li>';
 
     foreach ($items as $index => $item) {
         $pos = $index + 2;

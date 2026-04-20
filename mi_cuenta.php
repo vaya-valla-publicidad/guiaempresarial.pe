@@ -5,7 +5,7 @@ include 'includes/security.php';
 include_once 'includes/components/empresa_card.php';
 
 if (!isset($_SESSION['usuario_publico_id'])) {
-  header('Location: login_usuario.php');
+  header('Location: login_usuario');
   exit;
 }
 
@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
       $stmt_del_u->bind_param("i", $id_u);
       $stmt_del_u->execute();
       session_destroy();
-      header('Location: index.php');
+      header('Location: index');
       exit;
     }
 
@@ -163,6 +163,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_eliminar_resena'
     exit;
   }
   $id_r = intval($_POST['ajax_eliminar_resena']);
+  $stmt_del_votes = $conexion->prepare("DELETE FROM resena_votos WHERE id_resena = ?");
+  $stmt_del_votes->bind_param("i", $id_r);
+  $stmt_del_votes->execute();
   $stmt_del = $conexion->prepare("DELETE FROM resenas WHERE id_resena = ? AND id_usuario_publico = ?");
   $stmt_del->bind_param("ii", $id_r, $id_u);
   $res = $stmt_del->execute();
@@ -217,7 +220,7 @@ include 'includes/header.php';
       </div>
       <div class="mc-header-sub" id="mc-header-sub">Configure su presencia y datos de cuenta</div>
     </div>
-    <a href="logout_usuario.php" class="mc-logout">Cerrar sesión</a>
+    <a href="logout_usuario" class="mc-logout">Cerrar sesión</a>
   </header>
 
   <div class="mc-mobile-nav">
@@ -386,7 +389,7 @@ include 'includes/header.php';
                 </div>
                 <p class="mc-resena-texto"><?= nl2br(htmlspecialchars($r['comentario'])) ?></p>
                 <div class="mc-resena-acciones">
-                  <a href="empresas.php?empresa=<?= $r['id_empresa'] ?>" class="mc-btn-ghost mc-btn-sm">Ver empresa</a>
+                  <a href="empresas?empresa=<?= $r['id_empresa'] ?>" class="mc-btn-ghost mc-btn-sm">Ver empresa</a>
                   <button type="button" class="mc-btn-ghost mc-btn-sm mc-btn-danger mc-btn-eliminar"
                     onclick="eliminarResenaAjax(this, <?= $r['id_resena'] ?>)">Eliminar</button>
                 </div>
@@ -401,7 +404,7 @@ include 'includes/header.php';
           <div class="mc-empty">
             <i class="bi bi-heart" style="font-size: 40px; margin-bottom: 10px;"></i>
             <p>No tienes empresas en favoritos todavía.</p>
-            <a href="empresas.php" class="mc-btn-primary mc-btn-sm"
+            <a href="empresas" class="mc-btn-primary mc-btn-sm"
               style="margin-top:10px; text-decoration:none;">Explorar empresas</a>
           </div>
         <?php else: ?>
@@ -512,7 +515,7 @@ include 'includes/header.php';
     btn.style.opacity = '0.7';
     btn.style.cursor = 'not-allowed';
 
-    fetch('mi_cuenta.php', {
+    fetch('mi_cuenta', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: 'ajax_eliminar_resena=' + id_resena + '&csrf_token=' + window.csrfToken

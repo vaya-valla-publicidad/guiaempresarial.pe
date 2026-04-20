@@ -9,7 +9,7 @@ $json_ld_schema = [
         "@context" => "https://schema.org",
         "@type" => "Organization",
         "name" => "Guía Empresarial",
-        "url" => APP_URL . "/index.php",
+        "url" => APP_URL . "/",
         "logo" => APP_URL . "/assets/img/image.png",
         "sameAs" => [
             "https://www.facebook.com/guiaempresarios"
@@ -28,10 +28,10 @@ $json_ld_schema = [
         "@context" => "https://schema.org",
         "@type" => "WebSite",
         "name" => "Guía Empresarial",
-        "url" => APP_URL . "/index.php",
+        "url" => APP_URL . "/",
         "potentialAction" => [
             "@type" => "SearchAction",
-            "target" => APP_URL . "/empresas.php?buscar={search_term_string}",
+            "target" => APP_URL . "/empresas?buscar={search_term_string}",
             "query-input" => "required name=search_term_string"
         ]
     ]
@@ -132,7 +132,7 @@ $total_slides = count($slides);
                     JOIN categorias c ON e.id_categoria = c.id_categoria
                     LEFT JOIN empresa_galeria g ON e.id_empresa = g.id_empresa
                     GROUP BY e.id_empresa
-                    ORDER BY e.vistas DESC LIMIT 4";
+                    ORDER BY e.vistas DESC LIMIT 3";
         $res_vistas = $conexion->query($sql_vistas);
         if ($res_vistas && $res_vistas->num_rows > 0):
             echo '<div class="empresas-list">';
@@ -144,7 +144,7 @@ $total_slides = count($slides);
         endif;
         ?>
         <div class="ver-mas-empresas">
-            <a href="<?= APP_URL ?>/empresas.php" class="btn-ver-mas">Ver más empresas →</a>
+            <a href="<?= APP_URL ?>/empresas" class="btn-ver-mas">Ver más empresas →</a>
         </div>
     </div>
 </section>
@@ -167,7 +167,7 @@ $total_slides = count($slides);
                     <span class="categoria-nombre"><?= $nombre ?></span>
                 </a>
             <?php endwhile; ?>
-            <a href="<?= APP_URL ?>/categorias.php" class="categoria-card ver-mas-card reveal">
+                <a href="<?= APP_URL ?>/categorias" class="categoria-card ver-mas-card reveal">
                 <div class="categoria-icono-wrap"><i class="bi bi-plus-circle"></i></div>
                 <span class="categoria-nombre">Ver más categorías</span>
             </a>
@@ -287,7 +287,7 @@ $total_slides = count($slides);
                 </div>
             `;
             buscarTimer = setTimeout(() => {
-                fetch('<?= APP_URL ?>/buscar.php?q=' + encodeURIComponent(q))
+                fetch('<?= APP_URL ?>/buscar?q=' + encodeURIComponent(q))
                     .then(r => r.text())
                     .then(d => { resultadosDiv.innerHTML = d; });
             }, 350);
@@ -301,15 +301,29 @@ $total_slides = count($slides);
         if (resultadosDiv) resultadosDiv.innerHTML = '';
     }
 
-    window.addEventListener('load', limpiarBuscadorTotal);
-    window.addEventListener('pageshow', limpiarBuscadorTotal);
+    window.addEventListener('pageshow', function (event) {
+        if (!inputBuscar || !resultadosDiv) return;
+
+        const q = inputBuscar.value.trim();
+        if (q.length === 0) {
+            resultadosDiv.innerHTML = '';
+            return;
+        }
+
+        if (resultadosDiv.innerHTML.trim() === '') {
+            fetch('<?= APP_URL ?>/buscar.php?q=' + encodeURIComponent(q))
+                .then(r => r.text())
+                .then(d => { resultadosDiv.innerHTML = d; })
+                .catch(() => { resultadosDiv.innerHTML = ''; });
+        }
+    });
 
     formBuscar.addEventListener('submit', function (e) {
         e.preventDefault();
         const q = inputBuscar.value.trim();
         if (q.length > 0) {
             limpiarBuscadorTotal();
-            window.location.href = '<?= APP_URL ?>/empresas.php?buscar=' + encodeURIComponent(q);
+            window.location.href = '<?= APP_URL ?>/empresas?buscar=' + encodeURIComponent(q);
         }
     });
 

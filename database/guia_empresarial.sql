@@ -59,8 +59,8 @@ CREATE TABLE `empresas` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 INSERT INTO `empresas` (`id_empresa`, `logo`, `nombre`, `slug`, `email`, `telefono`, `direccion`, `id_categoria`, `fecha_registro`, `horario`, `descripcion`, `ubicacion_link`, `link_empresa`, `vistas`, `destacada`, `facebook`) VALUES
-(12, '69b2e6c81a9ce_RosalRestaurant.jpg', 'El Rosal Restaurant', 'el-rosal-restaurant', NULL, '977411702', 'Jr. Salaverry (8va cuadra), Huacho', 2, '2026-03-09 17:12:50', 'de 12 a 10 pm', 'La tradición de Huacho en tu paladar desde 1960. 🥘✨', 'https://www.google.com/maps/place/El+Rosal/@-11.1101762,-77.6124137,17z/data=!3m1!4b1!4m6!3m5!1s0x9106df0b73d6425f:0x6e3e28e69603d472!8m2!3d-11.1101762!4d-77.6124137!16s%2Fg%2F11bwpd_yh9?entry=ttu&g_ep=EgoyMDI2MDMwOC4wIKXMDSoASAFQAw%3D%3D', NULL, 0, 1, 'https://www.facebook.com/ELROSALRESTAURANT'),
-(13, '69b2eb9d7814f_chifaespaña.jpg', 'Chifa España', 'chifa-espana', NULL, '937 245 536', 'Av. 28 de Julio 544 – Huacho', 2, '2026-03-12 16:36:45', NULL, '¡EL AUTENTICO SABOR ORIENTAL TE ESPERA AQUI!', 'https://www.google.com/maps/place/Chifa+Espa%C3%B1a/@-11.1075533,-77.6095983,19z/data=!4m6!3m5!1s0x9106df7536dc3f1b:0x75454f4e78f60660!8m2!3d-11.1073572!4d-77.6095098!16s%2Fg%2F1tjs5_st?entry=ttu&g_ep=EgoyMDI2MDMxMS4wIKXMDSoASAFQAw%3D%3D', NULL, 0, 1, 'https://www.facebook.com/chifaespana544'),
+(12, '69b2e6c81a9ce_RosalRestaurant.jpg', 'El Rosal Restaurant', 'el-rosal-restaurant', NULL, '977411702', 'Jr. Salaverry (8va cuadra), Huacho', 2, '2026-03-09 17:12:50', 'de 12 a 10 pm', 'La tradición de Huacho en tu paladar desde 1960. 🥘✨', 'https://www.google.com/maps/place/El+Rosal/@-11.1101762,-77.6124137,17z/data=!3m1!4b1!4m6!3m5!1s0x9106df0b73d6425f:0x6e3e28e69603d472!8m2!3d-11.1101762!4d-77.6124137!16s%2Fg%2F11bwpd_yh9?entry=ttu&g_ep=EgoyMDI2MDMwOC4wIKXMDSoASAFQAw%3D%3D', NULL, 18, 1, 'https://www.facebook.com/ELROSALRESTAURANT'),
+(13, '69b2eb9d7814f_chifaespaña.jpg', 'Chifa España', 'chifa-espana', NULL, '937 245 536', 'Av. 28 de Julio 544 – Huacho', 2, '2026-03-12 16:36:45', NULL, '¡EL AUTENTICO SABOR ORIENTAL TE ESPERA AQUI!', 'https://www.google.com/maps/place/Chifa+Espa%C3%B1a/@-11.1075533,-77.6095983,19z/data=!4m6!3m5!1s0x9106df7536dc3f1b:0x75454f4e78f60660!8m2!3d-11.1073572!4d-77.6095098!16s%2Fg%2F1tjs5_st?entry=ttu&g_ep=EgoyMDI2MDMxMS4wIKXMDSoASAFQAw%3D%3D', NULL, 7, 1, 'https://www.facebook.com/chifaespana544'),
 (14, '69b82b6ce767e_lachutana.jpg', 'La Chutana-Lubricentro', 'la-chutana-lubricentro', NULL, '994337831', 'Av. Cruz Blanca 1890 Santa María, Huaura, Peru, 15138', 8, '2026-03-16 16:10:20', NULL, 'En La Chutana Lubricentro engreimos a tu fierro con productos de la mejor calidad y productos :)', 'https://www.google.com/maps/place/Av.+Cruz+Blanca+1890,+Huacho+15137/@-11.0985195,-77.5959335,17z/data=!3m1!4b1!4m5!3m4!1s0x9106df907e002ea1:0x3e3fe5d41e672a7e!8m2!3d-11.0985195!4d-77.5959335?entry=ttu&g_ep=EgoyMDI2MDMxMS4wIKXMDSoASAFQAw%3D%3D', NULL, 0, 0, 'https://www.facebook.com/lachutana.huacho'),
 (15, '69c2b957bfeb7_Odontologia.jpg', 'Cruzado Odontologia Especializada', 'cruzado-odontologia-especializada', NULL, '945 651 054', 'Prologación Miguel Grau 162 - 2do piso, Huacho, Peru', 11, '2026-03-24 16:18:09', NULL, 'Instalaciones modernas, alta calidad de equipos e insumos que en combinación con la ética profesional, brinda atención óptima y segura.', 'https://www.google.com/maps/place/Cruzado+Odontolog%C3%ADa+Especializada/@-11.1080604,-77.604148,18z/data=!4m6!3m5!1s0x9106df557a2f5c59:0x5c3aa558e2691d18!8m2!3d-11.1080578!4d-77.6043518!16s%2Fg%2F11fk1b8y7c?entry=ttu&g_ep=EgoyMDI2MDMxOC4xIKXMDSoASAFQAw%3D%3D', NULL, 0, 1, 'https://www.facebook.com/cruzadoodontologia');
 
@@ -112,8 +112,13 @@ CREATE TABLE `resenas` (
   `id_usuario_publico` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
-INSERT INTO `resenas` (`id_resena`, `id_empresa`, `nombre_autor`, `estrellas`, `comentario`, `fecha`, `id_usuario_publico`) VALUES
-(21, 12, 'ejemplo', 5, 'ea', '2026-04-16 11:44:11', 16);
+CREATE TABLE `resena_votos` (
+  `id_voto` int(11) NOT NULL,
+  `id_resena` int(11) NOT NULL,
+  `id_usuario_publico` int(11) NOT NULL,
+  `tipo` enum('like','dislike') NOT NULL,
+  `fecha` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
 CREATE TABLE `sesiones_usuario` (
   `id` int(11) NOT NULL,
@@ -135,7 +140,11 @@ INSERT INTO `sesiones_usuario` (`id`, `id_usuario_publico`, `ip`, `dispositivo`,
 (9, 16, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-09 09:34:47'),
 (10, 16, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-10 23:17:36'),
 (11, 16, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-15 10:45:05'),
-(12, 16, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-16 11:04:39');
+(12, 16, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-16 11:04:39'),
+(13, 18, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-17 11:40:28'),
+(14, 16, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-17 11:41:12'),
+(15, 16, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-17 11:52:42'),
+(16, 16, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-17 11:57:56');
 
 CREATE TABLE `sobre_info` (
   `id` int(11) NOT NULL,
@@ -182,7 +191,8 @@ CREATE TABLE `usuarios_publicos` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `usuarios_publicos` (`id`, `nombre`, `email`, `password_hash`, `foto_perfil`, `fecha_registro`, `codigo_verificacion`, `codigo_expira`, `verificado`, `visibilidad_resenas`) VALUES
-(16, 'ejemplo', 'ejemplo@gmail.com', '$2y$10$GhBJu/KcKykF9YG57qmFIuDcGZcUZzkcDQypBfYtDjrt480.IZMAy', NULL, '2026-04-07 14:16:46', NULL, NULL, 1, 'publico');
+(16, 'ejemplo', 'ejemplo@gmail.com', '$2y$10$GhBJu/KcKykF9YG57qmFIuDcGZcUZzkcDQypBfYtDjrt480.IZMAy', NULL, '2026-04-07 14:16:46', NULL, NULL, 1, 'anonimo'),
+(20, 'ejemplo2', 'ejemplo2@gmail.com', '$2y$10$8PJH4mMhz6H9HZLpevV1DOsfNuiuUQV.KKCVGxeVgwM3sDbmGgVma', NULL, '2026-04-17 16:56:00', NULL, NULL, 1, 'publico');
 
 
 ALTER TABLE `banner_carrusel`
@@ -211,6 +221,12 @@ ALTER TABLE `favoritos`
 ALTER TABLE `resenas`
   ADD PRIMARY KEY (`id_resena`),
   ADD KEY `id_empresa` (`id_empresa`),
+  ADD KEY `id_usuario_publico` (`id_usuario_publico`);
+
+ALTER TABLE `resena_votos`
+  ADD PRIMARY KEY (`id_voto`),
+  ADD UNIQUE KEY `resena_usuario` (`id_resena`,`id_usuario_publico`),
+  ADD KEY `id_resena` (`id_resena`),
   ADD KEY `id_usuario_publico` (`id_usuario_publico`);
 
 ALTER TABLE `sesiones_usuario`
@@ -243,13 +259,16 @@ ALTER TABLE `empresa_galeria`
   MODIFY `id_foto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
 
 ALTER TABLE `favoritos`
-  MODIFY `id_favorito` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id_favorito` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 ALTER TABLE `resenas`
-  MODIFY `id_resena` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+  MODIFY `id_resena` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
+
+ALTER TABLE `resena_votos`
+  MODIFY `id_voto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 ALTER TABLE `sesiones_usuario`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 ALTER TABLE `sobre_info`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
@@ -258,7 +277,7 @@ ALTER TABLE `usuarios`
   MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 ALTER TABLE `usuarios_publicos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 
 ALTER TABLE `empresas`
@@ -274,6 +293,9 @@ ALTER TABLE `favoritos`
 ALTER TABLE `resenas`
   ADD CONSTRAINT `resenas_ibfk_1` FOREIGN KEY (`id_empresa`) REFERENCES `empresas` (`id_empresa`) ON DELETE CASCADE,
   ADD CONSTRAINT `resenas_ibfk_2` FOREIGN KEY (`id_usuario_publico`) REFERENCES `usuarios_publicos` (`id`) ON DELETE SET NULL;
+
+ALTER TABLE `resena_votos`
+  ADD CONSTRAINT `fk_resena_votos_resenas` FOREIGN KEY (`id_resena`) REFERENCES `resenas` (`id_resena`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

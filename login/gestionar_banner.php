@@ -286,20 +286,26 @@ document.getElementById('banner-grid').addEventListener('change', async e => {
 });
 
 Sortable.create(document.getElementById('banner-grid'), {
-  animation: 200,
+  animation: 250,
   ghostClass: 'sortable-ghost',
   chosenClass: 'sortable-chosen',
-  filter: 'input, button, label',
+  dragClass: 'sortable-drag',
+  forceFallback: true, // Mejor soporte en algunos navegadores
+  fallbackOnBody: true,
+  swapThreshold: 0.65,
+  // Grabbable everywhere except specific controls
+  filter: 'input, button, label, .slider-sw, .card-controls, .time-control',
   preventOnFilter: false,
   onEnd: () => {
     renumerarOrden();
-    document.getElementById('btn-guardar-orden').classList.add('visible');
+    const btn = document.getElementById('btn-guardar-orden');
+    if (btn) btn.classList.add('visible');
   }
 });
 
 function renumerarOrden() {
   document.querySelectorAll('.banner-card').forEach((c, i) => {
-    const b = c.querySelector('.card-orden');
+    const b = c.querySelector('.banner-card-header');
     if (b) b.textContent = '#' + (i + 1);
   });
 }

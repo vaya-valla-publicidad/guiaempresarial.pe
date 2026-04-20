@@ -5,6 +5,10 @@
 if (isset($_GET['eliminar'])) {
     $id_resena = intval($_GET['eliminar']);
     $id_emp_back = intval($_GET['empresa'] ?? 0);
+    $stmt_votes = $conexion->prepare("DELETE FROM resena_votos WHERE id_resena = ?");
+    $stmt_votes->bind_param("i", $id_resena);
+    $stmt_votes->execute();
+    $stmt_votes->close();
     $stmt = $conexion->prepare("DELETE FROM resenas WHERE id_resena = ?");
     $stmt->bind_param("i", $id_resena);
     $stmt->execute();
