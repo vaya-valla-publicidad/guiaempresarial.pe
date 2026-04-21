@@ -5,6 +5,12 @@ include '../db.php';
 header('Content-Type: application/json');
 
 $accion = $_POST['accion'] ?? '';
+require_once __DIR__ . '/../includes/security.php';
+
+if (!validarCSRF($_POST['csrf_token'] ?? '')) {
+    echo json_encode(['ok' => false, 'error' => 'Error de seguridad (CSRF). Recargue la página e intente de nuevo.']);
+    exit;
+}
 
 if ($accion === 'subir') {
     if (empty($_FILES['imagen']) || $_FILES['imagen']['error'] !== UPLOAD_ERR_OK) {

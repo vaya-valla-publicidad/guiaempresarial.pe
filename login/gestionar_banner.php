@@ -12,7 +12,7 @@ $banners = $conexion->query("SELECT * FROM banner_carrusel ORDER BY orden ASC, i
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gestionar Banner – Panel <?= ucfirst($rol) ?></title>
 <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
-<link rel="stylesheet" href="/guiaempresarial.pe/assets/css/login.css">
+<link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 </head>
@@ -93,7 +93,7 @@ $panel_url = ($rol === 'admin') ? 'admin.php' : 'editor.php';
         <div class="banner-card-header">#<?= $pos++ ?></div>
 
         <div class="banner-card-img">
-          <img src="/guiaempresarial.pe/assets/img/banner/<?= htmlspecialchars($b['imagen']) ?>"
+          <img src="<?= APP_URL ?>/assets/img/banner/<?= htmlspecialchars($b['imagen']) ?>"
                alt="banner"
                onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
           <div class="img-placeholder" style="display:none;"><i class="bi bi-image"></i></div>
@@ -118,7 +118,7 @@ $panel_url = ($rol === 'admin') ? 'admin.php' : 'editor.php';
               </label>
               <span class="estado-label"><?= $b['activo'] ? 'Activa' : 'Inactiva' ?></span>
             </div>
-            <button class="btn-del btn-eliminar" data-id="<?= $b['id_banner'] ?>" title="Eliminar">
+            <button class="btn-del btn-eliminar" data-id="<?= $b['id_banner'] ?>" title="Eliminar" onclick="eliminarImagen(<?= $b['id_banner'] ?>)">
               <i class="bi bi-trash3"></i>
             </button>
           </div>
@@ -138,15 +138,23 @@ $panel_url = ($rol === 'admin') ? 'admin.php' : 'editor.php';
 </div>
 <div id="toast"></div>
 
+<script src="<?= APP_URL ?>/assets/js/toast.js"></script>
 <script>
 const ACTIONS_URL = 'banner_actions.php';
 
-function toast(msg, error = false) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'show' + (error ? ' error' : '');
-  clearTimeout(t._tid);
-  t._tid = setTimeout(() => t.className = '', 3200);
+function eliminarImagen(id) {
+    customConfirm('¿Eliminar esta imagen del banner?', () => {
+        const fd = new FormData();
+        fd.append('accion', 'eliminar');
+        fd.append('id', id);
+        fd.append('csrf_token', '<?= generarTokenCSRF() ?>');
+        fetch(ACTIONS_URL, { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+            if(data.ok) location.reload();
+            else showToast(data.error, 'error');
+        });
+    });
 }
 
 let selectedFile = null;
@@ -154,8 +162,8 @@ let selectedFile = null;
 function setFile(file) {
   if (!file) return;
   const allowed = ['image/jpeg','image/png','image/webp','image/gif'];
-  if (!allowed.includes(file.type)) { toast('Formato no permitido. Usa JPG, PNG, WEBP o GIF.', true); return; }
-  if (file.size > 5 * 1024 * 1024) { toast('El archivo supera los 5 MB.', true); return; }
+  if (!allowed.includes(file.type)) { showToast('Formato no permitido. Usa JPG, PNG, WEBP o GIF.', 'error'); return; }
+  if (file.size > 5 * 1024 * 1024) { showToast('El archivo supera los 5 MB.', 'error'); return; }
 
   selectedFile = file;
 
@@ -212,13 +220,14 @@ document.getElementById('btn-subir').addEventListener('click', async () => {
   fd.append('accion',    'subir');
   fd.append('imagen',    selectedFile);
   fd.append('tiempo_ms', inpTiempo.value * 1000);
+  fd.append('csrf_token', '<?= generarTokenCSRF() ?>');
 
   try {
     const r = await fetch(ACTIONS_URL, { method: 'POST', body: fd });
     const d = await r.json();
-    if (d.ok) { toast('✅ Imagen agregada al banner.'); setTimeout(() => location.reload(), 800); }
-    else       toast(d.error || 'Error al subir.', true);
-  } catch { toast('Error de conexión.', true); }
+    if (d.ok) { showToast('✅ Imagen agregada al banner.'); setTimeout(() => location.reload(), 800); }
+    else       showToast(d.error || 'Error al subir.', 'error');
+  } catch { showToast('Error de conexión.', 'error'); }
   finally {
     btn.disabled = false;
     btn.innerHTML = '<i class="bi bi-plus-circle"></i> Agregar al banner';
@@ -242,29 +251,14 @@ document.getElementById('banner-grid').addEventListener('click', async e => {
     const ms  = rng ? rng.value * 1000 : 5000;
     const fd  = new FormData();
     fd.append('accion', 'set_tiempo'); fd.append('id', id); fd.append('tiempo_ms', ms);
+    fd.append('csrf_token', '<?= generarTokenCSRF() ?>');
     const r = await fetch(ACTIONS_URL, { method: 'POST', body: fd });
     const d = await r.json();
     if (d.ok) {
       btnT.textContent = 'Guardado ✓'; btnT.classList.add('saved');
-      toast('⏱ Tiempo guardado.');
+      showToast('⏱ Tiempo guardado.');
       setTimeout(() => { btnT.textContent = 'Guardar tiempo'; btnT.classList.remove('saved'); }, 2500);
-    } else toast(d.error || 'Error.', true);
-    return;
-  }
-
-  const btnD = e.target.closest('.btn-eliminar');
-  if (btnD) {
-    if (!confirm('¿Eliminar esta imagen del banner?')) return;
-    const id = btnD.dataset.id;
-    const fd = new FormData();
-    fd.append('accion', 'eliminar'); fd.append('id', id);
-    const r = await fetch(ACTIONS_URL, { method: 'POST', body: fd });
-    const d = await r.json();
-    if (d.ok) {
-      document.querySelector(`.banner-card[data-id="${id}"]`)?.remove();
-      renumerarOrden();
-      toast('🗑 Imagen eliminada.');
-    } else toast(d.error || 'Error.', true);
+    } else showToast(d.error || 'Error.', 'error');
     return;
   }
 });
@@ -274,6 +268,7 @@ document.getElementById('banner-grid').addEventListener('change', async e => {
   const id = e.target.dataset.id;
   const fd = new FormData();
   fd.append('accion', 'toggle_activo'); fd.append('id', id);
+  fd.append('csrf_token', '<?= generarTokenCSRF() ?>');
   const r = await fetch(ACTIONS_URL, { method: 'POST', body: fd });
   const d = await r.json();
   if (d.ok) {
@@ -281,8 +276,8 @@ document.getElementById('banner-grid').addEventListener('change', async e => {
     const label = card?.querySelector('.estado-label');
     card?.classList.toggle('inactivo', d.activo === 0);
     if (label) label.textContent = d.activo ? 'Activa' : 'Inactiva';
-    toast(d.activo ? '✅ Imagen activada.' : '⏸ Imagen desactivada.');
-  } else toast(d.error || 'Error.', true);
+    showToast(d.activo ? '✅ Imagen activada.' : '⏸ Imagen desactivada.');
+  } else showToast(d.error || 'Error.', 'error');
 });
 
 Sortable.create(document.getElementById('banner-grid'), {
@@ -290,10 +285,9 @@ Sortable.create(document.getElementById('banner-grid'), {
   ghostClass: 'sortable-ghost',
   chosenClass: 'sortable-chosen',
   dragClass: 'sortable-drag',
-  forceFallback: true, // Mejor soporte en algunos navegadores
+  forceFallback: true,
   fallbackOnBody: true,
   swapThreshold: 0.65,
-  // Grabbable everywhere except specific controls
   filter: 'input, button, label, .slider-sw, .card-controls, .time-control',
   preventOnFilter: false,
   onEnd: () => {
@@ -314,14 +308,14 @@ document.getElementById('btn-guardar-orden').addEventListener('click', async () 
   const ids = [...document.querySelectorAll('.banner-card')].map(c => c.dataset.id);
   const fd  = new FormData();
   fd.append('accion', 'reordenar'); fd.append('ids', JSON.stringify(ids));
+  fd.append('csrf_token', '<?= generarTokenCSRF() ?>');
   const r = await fetch(ACTIONS_URL, { method: 'POST', body: fd });
   const d = await r.json();
   if (d.ok) {
-    toast('✅ Orden guardado.');
+    showToast('✅ Orden guardado.');
     document.getElementById('btn-guardar-orden').classList.remove('visible');
-  } else toast(d.error || 'Error.', true);
+  } else showToast(d.error || 'Error.', 'error');
 });
 </script>
-
 </body>
 </html>

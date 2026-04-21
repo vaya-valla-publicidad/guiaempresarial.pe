@@ -78,7 +78,7 @@ $total_slides = count($slides);
         <p class="hero-subtitle anim-up anim-delay-1">Descubre, conecta y potencia empresas de tu región</p>
         <p class="hero-tagline anim-up anim-delay-1">Visibilidad real para negocios reales</p>
         <div class="search-wrapper anim-up anim-delay-2">
-            <form id="formBuscar" class="search-form">
+            <form id="formBuscar" class="search-form" onsubmit="if(typeof startBar === 'function') startBar();">
                 <div class="search-box">
                     <input type="text" id="buscar" name="q" placeholder="Buscar empresas, productos o servicios..."
                         autocomplete="off" spellcheck="false" class="search-input">
@@ -167,7 +167,7 @@ $total_slides = count($slides);
                     <span class="categoria-nombre"><?= $nombre ?></span>
                 </a>
             <?php endwhile; ?>
-                <a href="<?= APP_URL ?>/categorias" class="categoria-card ver-mas-card reveal">
+            <a href="<?= APP_URL ?>/categorias" class="categoria-card ver-mas-card reveal">
                 <div class="categoria-icono-wrap"><i class="bi bi-plus-circle"></i></div>
                 <span class="categoria-nombre">Ver más categorías</span>
             </a>

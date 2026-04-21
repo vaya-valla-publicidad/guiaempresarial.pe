@@ -187,7 +187,8 @@ $rol = $_SESSION['rol'];
                     <span class="stat-title">Impacto Global</span>
                     <span class="stat-value"><?= number_format($total_visitas) ?></span>
                     <span class="stat-footer">Visitas totales en la plataforma</span>
-                    <button onclick="confirmarReinicio()" class="btn-reiniciar-vistas">
+                    <button onclick="customConfirm('¿Reiniciar TODAS las vistas a cero?', () => reiniciarVistas())"
+                        class="btn-reiniciar-vistas">
                         <i class="bi bi-arrow-counterclockwise"></i> Reiniciar todas las vistas
                     </button>
                 </div>
@@ -224,13 +225,7 @@ $rol = $_SESSION['rol'];
                 </div>
             </div>
 
-            <script>
-                function confirmarReinicio() {
-                    if (confirm('⚠️ ¿Estás COMPLETAMENTE SEGURO de reiniciar TODAS las vistas a cero?\n\nEsta acción no se puede deshacer.')) {
-                        location.href = 'reiniciar_vistas.php';
-                    }
-                }
-            </script>
+
 
             <h2>Administración de Usuarios</h2><br>
             <a href="agregar.php" class="btn">Agregar Usuario</a>
@@ -386,11 +381,12 @@ $rol = $_SESSION['rol'];
                             <td data-label="Vistas">
                                 <div style="display:flex; align-items:center; gap:8px;">
                                     <?= number_format($fila['vistas']) ?>
-                                    <a href="reiniciar_vistas.php?id=<?= $fila['id_empresa'] ?>"
-                                        onclick="return confirm('¿Reiniciar vistas de esta empresa?')"
-                                        style="font-size:14px; color:#cbd5e1; text-decoration:none;" title="Reiniciar">
+                                    <button
+                                        onclick="customConfirm('¿Reiniciar vistas de esta empresa?', () => reiniciarVistas(<?= $fila['id_empresa'] ?>))"
+                                        style="font-size:14px; color:#cbd5e1; text-decoration:none; background:none; border:none; cursor:pointer; padding:0;"
+                                        title="Reiniciar">
                                         <i class="bi bi-arrow-counterclockwise"></i>
-                                    </a>
+                                    </button>
                                 </div>
                             </td>
                             <td data-label="Logo">
@@ -429,11 +425,12 @@ $rol = $_SESSION['rol'];
                         </tr>
                     <?php endwhile; ?>
                     <tr id="noResultsAdmin" style="display:none;">
-                        <td colspan="13" style="text-align:center; padding:50px 20px; color:var(--ink-muted);">
-                            <div style="font-size: 44px; margin-bottom: 12px; opacity: 0.3;">🔍</div>
-                            <p style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">No se encontraron
-                                resultados</p>
-                            <p style="font-size: 13px; opacity: 0.7;">Prueba con un término de búsqueda diferente.</p>
+                        <td colspan="13">
+                            <div class="empty-state">
+                                <i class="bi bi-search empty-icon"></i>
+                                <h3>Sin coincidencias</h3>
+                                <p>Prueba con un nombre o rubro diferente.</p>
+                            </div>
                         </td>
                     </tr>
                 </table>
@@ -443,66 +440,94 @@ $rol = $_SESSION['rol'];
         </section>
     </div>
 
+    <script src="<?= APP_URL ?>/assets/js/toast.js"></script>
     <script>
         const csrfToken = '<?php echo $_SESSION['csrf_token'] ?? ''; ?>';
 
-        function toggleDestacada(id, accion) {
-            if (accion === 'destacar' && !confirm('¿Destacar esta empresa?')) return;
-            if (accion === 'quitar' && !confirm('¿Quitar de destacadas?')) return;
-            fetch('toggle_destacada.php', {
+        function confirmarReinicio() {
+            customConfirm('⚠️ ¿Estás COMPLETAMENTE SEGURO de reiniciar TODAS las vistas a cero?\n\nEsta acción no se puede deshacer.', () => {
+                reiniciarVistas();
+            });
+        }
+
+        function reiniciarVistas(id = null) {
+            const fd = new FormData();
+            if (id) fd.append('id', id);
+            fd.append('csrf_token', csrfToken);
+
+            fetch('reiniciar_vistas.php', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'id=' + id + '&accion=' + accion + '&csrf_token=' + csrfToken
+                body: fd
             })
                 .then(r => r.json())
                 .then(data => {
-                    if (!data.ok) { alert(data.error); return; }
-                    location.reload();
-                });
+                    if (data.ok) {
+                        location.reload();
+                    } else {
+                        showToast(data.error, 'error');
+                    }
+                })
+                .catch(err => showToast('Error de conexión con el servidor.', 'error'));
+        }
+
+        function toggleDestacada(id, accion) {
+            let msg = accion === 'destacar' ? '¿Destacar esta empresa?' : '¿Quitar de destacadas?';
+            customConfirm(msg, () => {
+                fetch('toggle_destacada.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'id=' + id + '&accion=' + accion + '&csrf_token=' + csrfToken
+                })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (!data.ok) { showToast(data.error, 'error'); return; }
+                        location.reload();
+                    });
+            });
         }
 
         function eliminarRegistro(tipo, id, btn) {
-            if (!confirm('¿Estás seguro de eliminar permanentemente este registro?')) return;
+            customConfirm('¿Estás seguro de eliminar permanentemente este registro?', () => {
+                let archivo = '';
+                if (tipo === 'usuario') archivo = 'eliminar_usuario.php';
+                if (tipo === 'empresa') archivo = 'eliminar.php';
+                if (tipo === 'categoria') archivo = 'eliminar_categoria.php';
 
-            let archivo = '';
-            if (tipo === 'usuario') archivo = 'eliminar_usuario.php';
-            if (tipo === 'empresa') archivo = 'eliminar.php';
-            if (tipo === 'categoria') archivo = 'eliminar_categoria.php';
+                btn.disabled = true;
+                btn.innerText = 'Borrando...';
+                btn.style.opacity = '0.7';
 
-            btn.disabled = true;
-            btn.innerText = 'Borrando...';
-            btn.style.opacity = '0.7';
+                fetch(archivo, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'id=' + id + '&csrf_token=' + csrfToken
+                })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (!data.ok) {
+                            showToast(data.error || 'Error desconocido al borrar', 'error');
+                            btn.disabled = false;
+                            btn.innerText = 'Eliminar';
+                            btn.style.opacity = '1';
+                            return;
+                        }
 
-            fetch(archivo, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'id=' + id + '&csrf_token=' + csrfToken
-            })
-                .then(r => r.json())
-                .then(data => {
-                    if (!data.ok) {
-                        alert(data.error || 'Error desconocido al borrar');
+                        let fila = btn.closest('tr');
+                        if (fila) {
+                            fila.style.transition = "opacity 0.3s ease";
+                            fila.style.opacity = '0';
+                            setTimeout(() => fila.remove(), 300);
+                        } else {
+                            location.reload();
+                        }
+                    })
+                    .catch(e => {
+                        showToast('Error de red al intentar eliminar.', 'error');
                         btn.disabled = false;
                         btn.innerText = 'Eliminar';
                         btn.style.opacity = '1';
-                        return;
-                    }
-
-                    let fila = btn.closest('tr');
-                    if (fila) {
-                        fila.style.transition = "opacity 0.3s ease";
-                        fila.style.opacity = '0';
-                        setTimeout(() => fila.remove(), 300);
-                    } else {
-                        location.reload();
-                    }
-                })
-                .catch(e => {
-                    alert('Error de red al intentar eliminar.');
-                    btn.disabled = false;
-                    btn.innerText = 'Eliminar';
-                    btn.style.opacity = '1';
-                });
+                    });
+            });
         }
 
         document.getElementById('filtroEmpresa')?.addEventListener('keyup', function () {
@@ -539,12 +564,11 @@ $rol = $_SESSION['rol'];
                     if (data.ok) {
                         location.reload();
                     } else {
-                        if (data.error !== 'Ya está en el límite') alert(data.error);
+                        if (data.error !== 'Ya está en el límite') showToast(data.error, 'error');
                     }
                 });
         }
     </script>
-
 </body>
 
 </html>

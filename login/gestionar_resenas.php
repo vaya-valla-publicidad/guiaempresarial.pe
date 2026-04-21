@@ -2,9 +2,16 @@
 <?php include '../db.php'; ?>
 
 <?php
-if (isset($_GET['eliminar'])) {
-    $id_resena = intval($_GET['eliminar']);
-    $id_emp_back = intval($_GET['empresa'] ?? 0);
+require_once __DIR__ . '/../includes/security.php';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminar'])) {
+    if (!validarCSRF($_POST['csrf_token'] ?? '')) {
+        header('Content-Type: application/json');
+        echo json_encode(['ok' => false, 'error' => 'Token CSRF inválido.']);
+        exit;
+    }
+    $id_resena = intval($_POST['eliminar']);
+    $id_emp_back = intval($_POST['empresa'] ?? 0);
     $stmt_votes = $conexion->prepare("DELETE FROM resena_votos WHERE id_resena = ?");
     $stmt_votes->bind_param("i", $id_resena);
     $stmt_votes->execute();
@@ -13,6 +20,12 @@ if (isset($_GET['eliminar'])) {
     $stmt->bind_param("i", $id_resena);
     $stmt->execute();
     $stmt->close();
+
+    if (!empty($_POST['ajax'])) {
+        header('Content-Type: application/json');
+        echo json_encode(['ok' => true]);
+        exit;
+    }
     header("Location: gestionar_resenas.php?empresa=$id_emp_back&ok=1#resenas");
     exit;
 }
@@ -281,11 +294,11 @@ if ($total_resenas > 0) {
                                         <span class="resena-fecha"><?= date('d/m/Y', strtotime($r['fecha'])) ?></span>
                                     </div>
                                     <p class="resena-comentario"><?= nl2br(htmlspecialchars($r['comentario'])) ?></p>
-                                    <a href="gestionar_resenas.php?empresa=<?= $id_empresa ?>&eliminar=<?= $r['id_resena'] ?>"
-                                        class="btn btn-danger" onclick="return confirm('¿Eliminar esta reseña?')"
+                                    <button class="btn btn-danger"
+                                        onclick="eliminarResena(<?= $r['id_resena'] ?>, <?= $id_empresa ?>, this)"
                                         style="font-size:11px !important; padding: 6px 15px !important; margin-top: 10px;">
                                         <i class="bi bi-trash3"></i> Eliminar reseña
-                                    </a>
+                                    </button>
                                 </div>
                             <?php endforeach; ?>
                         </div>
@@ -297,6 +310,52 @@ if ($total_resenas > 0) {
             </div>
         </div>
     </section>
+
+    <script src="<?= APP_URL ?>/assets/js/toast.js"></script>
+    <script>
+        function eliminarResena(idResena, idEmpresa, btn) {
+            customConfirm('¿Seguro que deseas eliminar esta reseña permanentemente?', () => {
+                btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Eliminando...';
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+
+                const fd = new FormData();
+                fd.append('eliminar', idResena);
+                fd.append('empresa', idEmpresa);
+                fd.append('ajax', '1');
+                fd.append('csrf_token', '<?= generarTokenCSRF() ?>');
+
+                fetch('gestionar_resenas.php', {
+                    method: 'POST',
+                    body: fd
+                })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.ok) {
+                            const resenaDiv = btn.closest('.resena-item');
+                            if (resenaDiv) {
+                                resenaDiv.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                                resenaDiv.style.opacity = '0';
+                                resenaDiv.style.transform = 'translateX(30px)';
+                                setTimeout(() => resenaDiv.remove(), 400);
+                            }
+                            showToast('Reseña eliminada correctamente.', 'success');
+                        } else {
+                            showToast(data.error || 'No se pudo eliminar la reseña.', 'error');
+                            btn.innerHTML = '<i class="bi bi-trash3"></i> Eliminar reseña';
+                            btn.disabled = false;
+                            btn.style.opacity = '1';
+                        }
+                    })
+                    .catch(err => {
+                        showToast('Error de conexión con el servidor.', 'error');
+                        btn.innerHTML = '<i class="bi bi-trash3"></i> Eliminar reseña';
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                    });
+            });
+        }
+    </script>
 
 </body>
 

@@ -75,6 +75,23 @@ if (isset($_SESSION['usuario_publico_id'])) {
     }
   </script>
 
+  <div id="topbar"></div>
+  <style>
+    #topbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 3px;
+      width: 0%;
+      background: var(--primario);
+      border-radius: 0 2px 2px 0;
+      z-index: 9999;
+      opacity: 0;
+      transition: width 0.3s ease, opacity 0.5s ease;
+      pointer-events: none;
+    }
+  </style>
+
   <div class="nav-overlay" id="nav-overlay"></div>
 
   <header class="main-header">
@@ -96,9 +113,12 @@ if (isset($_SESSION['usuario_publico_id'])) {
         ?>
         <nav class="nav-links">
           <a href="<?= APP_URL ?>/" class="nav-link">Inicio</a>
-          <a href="<?= APP_URL ?>/?jump=empresas" class="nav-link" onclick="return handleNavClick(event, 'empresas')">Empresas</a>
-          <a href="<?= APP_URL ?>/?jump=categorias" class="nav-link" onclick="return handleNavClick(event, 'categorias')">Categorías</a>
-          <a href="<?= APP_URL ?>/?jump=contacto" class="nav-link" onclick="return handleNavClick(event, 'contacto')">Contacto</a>
+          <a href="<?= APP_URL ?>/?jump=empresas" class="nav-link"
+            onclick="return handleNavClick(event, 'empresas')">Empresas</a>
+          <a href="<?= APP_URL ?>/?jump=categorias" class="nav-link"
+            onclick="return handleNavClick(event, 'categorias')">Categorías</a>
+          <a href="<?= APP_URL ?>/?jump=contacto" class="nav-link"
+            onclick="return handleNavClick(event, 'contacto')">Contacto</a>
           <?php if (isset($_SESSION['usuario_publico_id'])): ?>
             <a href="<?= APP_URL ?>/mi_cuenta" class="nav-link" style="display:flex;align-items:center;gap:8px;">
               <?php if (!empty($_SESSION['usuario_publico_foto'])): ?>
@@ -160,22 +180,21 @@ if (isset($_SESSION['usuario_publico_id'])) {
         link.addEventListener('click', cerrarMenu);
       });
 
-      // Lógica de navegación limpia por secciones
       function handleNavClick(e, targetId) {
-        // Evitar que otros scripts (como el de transiciones) intercepten este click
+
         e.stopImmediatePropagation();
-        
-        const isHomePage = window.location.pathname === '/' || 
-                           window.location.pathname.endsWith('/index') || 
-                           window.location.pathname.includes('/guiaempresarial.pe/') && (window.location.pathname.split('/').pop() === '' || window.location.pathname.split('/').pop() === 'index');
-        
+
+        const isHomePage = window.location.pathname === '/' ||
+          window.location.pathname.endsWith('/index') ||
+          window.location.pathname.includes('/guiaempresarial.pe/') && (window.location.pathname.split('/').pop() === '' || window.location.pathname.split('/').pop() === 'index');
+
         const section = document.getElementById(targetId);
 
         if (section) {
           e.preventDefault();
           cerrarMenu();
           section.scrollIntoView({ behavior: 'smooth' });
-          // Limpiar URL si hay parámetros
+
           if (window.location.search.includes('jump=')) {
             window.history.replaceState({}, document.title, window.location.pathname);
           }
@@ -184,17 +203,16 @@ if (isset($_SESSION['usuario_publico_id'])) {
         return true;
       }
 
-      // Manejar el salto al cargar la página
       window.addEventListener('load', () => {
         const params = new URLSearchParams(window.location.search);
         const jumpId = params.get('jump');
         if (jumpId) {
           const section = document.getElementById(jumpId);
           if (section) {
-            // Un pequeño delay permite que las imágenes y el layout se estabilicen
+
             setTimeout(() => {
               section.scrollIntoView({ behavior: 'smooth' });
-              // Limpiar URL para que se vea profesional
+
               window.history.replaceState({}, document.title, window.location.pathname);
             }, 300);
           }

@@ -71,12 +71,13 @@ $rol = $_SESSION['rol'];
                             </td>
                         </tr>
                     <?php endwhile; ?>
-                    <tr id="noResultsEditor" style="display:none;">
-                        <td colspan="13" style="text-align:center; padding:50px 20px; color:var(--ink-muted);">
-                            <div style="font-size: 44px; margin-bottom: 12px; opacity: 0.3;">🔍</div>
-                            <p style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">No se encontraron
-                                resultados</p>
-                            <p style="font-size: 13px; opacity: 0.7;">Prueba con un término de búsqueda diferente.</p>
+                    <tr id="noResultsCatEditor" style="display:none;">
+                        <td colspan="13">
+                            <div class="empty-state">
+                                <i class="bi bi-folder-x empty-icon"></i>
+                                <h3>Tabla vacía</h3>
+                                <p>Aún no hay registros en esta sección.</p>
+                            </div>
                         </td>
                     </tr>
                 </table>
@@ -160,11 +161,10 @@ $rol = $_SESSION['rol'];
                             <td data-label="Vistas">
                                 <div style="display:flex; align-items:center; gap:8px;">
                                     <?= number_format($fila['vistas']) ?>
-                                    <a href="reiniciar_vistas.php?id=<?= $fila['id_empresa'] ?>"
-                                        onclick="return confirm('¿Reiniciar vistas de esta empresa?')"
-                                        style="font-size:14px; color:#cbd5e1; text-decoration:none;" title="Reiniciar">
-                                        <i class="bi bi-arrow-counterclockwise"></i>
-                                    </a>
+                                    <button
+                                        onclick="customConfirm('¿Reiniciar vistas de esta empresa?', () => reiniciarVistas(<?= $fila['id_empresa'] ?>))"
+                                        class="btn btn-warning" style="font-size: 12px; padding: 6px 12px;">
+                                        <i class="bi bi-arrow-counterclockwise"></i> 0 Vistas </button>
                                 </div>
                             </td>
                             <td data-label="Logo">
@@ -203,9 +203,12 @@ $rol = $_SESSION['rol'];
                         </tr>
                     <?php endwhile; ?>
                     <tr id="noResultsEditor" style="display:none;">
-                        <td colspan="13" style="text-align:center; padding:30px; color:#aaa;">
-                            <i class="bi bi-search" style="font-size:24px; display:block; margin-bottom:10px;"></i>
-                            No se encontraron empresas que coincidan con la búsqueda.
+                        <td colspan="13">
+                            <div class="empty-state">
+                                <i class="bi bi-search empty-icon"></i>
+                                <h3>Sin coincidencias</h3>
+                                <p>Prueba con un nombre o rubro diferente.</p>
+                            </div>
                         </td>
                     </tr>
                 </table>
@@ -215,60 +218,95 @@ $rol = $_SESSION['rol'];
         </section>
     </div>
 
+    <script src="<?= APP_URL ?>/assets/js/toast.js"></script>
     <script>
-        function toggleDestacada(id, accion) {
-            if (accion === 'destacar' && !confirm('¿Destacar esta empresa?')) return;
-            if (accion === 'quitar' && !confirm('¿Quitar de destacadas?')) return;
-            fetch('toggle_destacada.php', {
+        const csrfToken = '<?= $_SESSION['csrf_token'] ?? '' ?>';
+
+        function reiniciarVistas(id = null) {
+            const fd = new FormData();
+            if (id) fd.append('id', id);
+            fd.append('csrf_token', csrfToken);
+
+            fetch('reiniciar_vistas.php', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'id=' + id + '&accion=' + accion
+                body: fd
             })
                 .then(r => r.json())
                 .then(data => {
-                    if (!data.ok) { alert(data.error); return; }
-                    location.reload();
-                });
+                    if (data.ok) {
+                        location.reload();
+                    } else {
+                        showToast(data.error, 'error');
+                    }
+                })
+                .catch(err => showToast('Error de conexión con el servidor.', 'error'));
+        }
+
+        function toggleDestacada(id, accion) {
+            let msg = accion === 'destacar' ? '¿Destacar esta empresa?' : '¿Quitar de destacadas?';
+            customConfirm(msg, () => {
+                const fd = new FormData();
+                fd.append('id', id);
+                fd.append('accion', accion);
+                fd.append('csrf_token', csrfToken);
+
+                fetch('toggle_destacada.php', {
+                    method: 'POST',
+                    body: fd
+                })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (!data.ok) { showToast(data.error, 'error'); return; }
+                        location.reload();
+                    });
+            });
         }
 
         function eliminarRegistro(tipo, id, btn) {
-            if (!confirm('¿Estás seguro de eliminar permanentemente este registro?')) return;
+            customConfirm('¿Estás seguro de eliminar permanentemente este registro?', () => {
+                let archivo = '';
 
-            let archivo = '';
+                if (tipo === 'empresa') archivo = 'eliminar.php';
+                if (tipo === 'categoria') archivo = 'eliminar_categoria.php';
 
-            if (tipo === 'empresa') archivo = 'eliminar.php';
-            if (tipo === 'categoria') archivo = 'eliminar_categoria.php';
+                btn.disabled = true;
+                btn.innerText = 'Borrando...';
+                btn.style.opacity = '0.7';
 
-            btn.disabled = true;
-            btn.innerText = 'Borrando...';
-            btn.style.opacity = '0.7';
+                const fd = new FormData();
+                fd.append('id', id);
+                fd.append('csrf_token', csrfToken);
 
-            fetch(archivo + '?id=' + id)
-                .then(r => r.json())
-                .then(data => {
-                    if (!data.ok) {
-                        alert(data.error || 'Error desconocido al borrar');
+                fetch(archivo, {
+                    method: 'POST',
+                    body: fd
+                })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (!data.ok) {
+                            showToast(data.error || 'Error desconocido al borrar', 'error');
+                            btn.disabled = false;
+                            btn.innerText = 'Eliminar';
+                            btn.style.opacity = '1';
+                            return;
+                        }
+
+                        let fila = btn.closest('tr');
+                        if (fila) {
+                            fila.style.transition = "opacity 0.3s ease";
+                            fila.style.opacity = '0';
+                            setTimeout(() => fila.remove(), 300);
+                        } else {
+                            location.reload();
+                        }
+                    })
+                    .catch(e => {
+                        showToast('Error de red al intentar eliminar.', 'error');
                         btn.disabled = false;
                         btn.innerText = 'Eliminar';
                         btn.style.opacity = '1';
-                        return;
-                    }
-
-                    let fila = btn.closest('tr');
-                    if (fila) {
-                        fila.style.transition = "opacity 0.3s ease";
-                        fila.style.opacity = '0';
-                        setTimeout(() => fila.remove(), 300);
-                    } else {
-                        location.reload();
-                    }
-                })
-                .catch(e => {
-                    alert('Error de red al intentar eliminar.');
-                    btn.disabled = false;
-                    btn.innerText = 'Eliminar';
-                    btn.style.opacity = '1';
-                });
+                    });
+            });
         }
 
         document.getElementById('filtroEmpresa')?.addEventListener('keyup', function () {

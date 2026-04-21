@@ -251,9 +251,9 @@
                         const currentUrl = new URL(window.location.href);
                         const linkUrl = new URL(this.href);
                         if (currentUrl.pathname === linkUrl.pathname && linkUrl.hash) {
-                            return; // No animar si es un ancla en la misma página
+                            return;
                         }
-                    } catch(err) {}
+                    } catch (err) { }
 
                     e.preventDefault();
                     document.body.classList.add('page-transitioning');
@@ -271,6 +271,55 @@
             document.body.classList.remove('page-transitioning');
         }
     });
+</script>
+
+<script>
+    const topbar = document.getElementById('topbar');
+    let timer_topbar, width = 0, fake;
+
+    function startBar() {
+        if (!topbar) return;
+        width = 0;
+        topbar.style.opacity = '1';
+        topbar.style.width = '0%';
+        topbar.style.transition = 'width 0.3s ease, opacity 0.5s ease';
+
+        fake = setInterval(() => {
+            const increment = width < 30 ? 8 : width < 60 ? 4 : width < 80 ? 1.5 : 0;
+            width = Math.min(width + increment, 85);
+            topbar.style.width = width + '%';
+        }, 200);
+    }
+
+    function finishBar() {
+        if (!topbar) return;
+        clearInterval(fake);
+        topbar.style.transition = 'width 0.2s ease, opacity 0.5s ease 0.3s';
+        topbar.style.width = '100%';
+        setTimeout(() => { topbar.style.opacity = '0'; }, 400);
+        setTimeout(() => { topbar.style.width = '0%'; }, 900);
+    }
+
+    document.addEventListener('click', (e) => {
+        const link = e.target.closest('a');
+        if (!link) return;
+
+        const href = link.getAttribute('href');
+        if (!href) return;
+
+        const isExternal = link.hostname && link.hostname !== location.hostname;
+        const isAnchor = href.startsWith('#');
+        const isJS = href.startsWith('javascript');
+        const isBlank = link.target === '_blank';
+
+        if (isExternal || isAnchor || isJS || isBlank) return;
+
+        startBar();
+    });
+
+    window.addEventListener('popstate', startBar);
+
+    window.addEventListener('pageshow', finishBar);
 </script>
 </body>
 

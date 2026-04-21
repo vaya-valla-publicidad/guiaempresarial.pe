@@ -175,7 +175,7 @@ $total_destacadas = $conexion->query("SELECT COUNT(*) as total FROM empresas WHE
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editar Empresa</title>
     <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
-    <link rel="stylesheet" href="../assets/css/login.css">
+    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 </head>
 
@@ -194,7 +194,7 @@ $total_destacadas = $conexion->query("SELECT COUNT(*) as total FROM empresas WHE
             <h3>Logo de la empresa</h3>
             <?php if (!empty($empresa['logo'])): ?>
                 <div style="position:relative;display:inline-block;margin-bottom:15px;">
-                    <img src="../assets/img/<?= htmlspecialchars($empresa['logo']) ?>"
+                    <img src="<?= APP_URL ?>/assets/img/<?= htmlspecialchars($empresa['logo']) ?>"
                         style="width:120px;height:120px;object-fit:cover;border-radius:12px;border:3px solid #fff;box-shadow:0 5px 15px rgba(0,0,0,0.1);">
                     <a href="javascript:void(0)" onclick="eliminarFoto(<?= $id ?>,'logo',this.parentElement)"
                         class="btn-borrar" style="position:absolute;top:-10px;right:-10px;">✕</a>
@@ -225,7 +225,8 @@ $total_destacadas = $conexion->query("SELECT COUNT(*) as total FROM empresas WHE
                     while ($foto = $fotos->fetch_assoc()): ?>
                         <div class="foto-item" data-id="<?= $foto['id_foto'] ?>">
                             <span class="orden-badge"><?= $pos++ ?></span>
-                            <img src="../assets/img/empresascarrusel/<?= htmlspecialchars($foto['foto']) ?>" alt="Foto">
+                            <img src="<?= APP_URL ?>/assets/img/empresascarrusel/<?= htmlspecialchars($foto['foto']) ?>"
+                                alt="Foto">
                             <button type="button" class="btn-borrar"
                                 onclick="eliminarFoto(<?= $foto['id_foto'] ?>,'galeria',this.parentElement)">X</button>
                         </div>
@@ -323,12 +324,12 @@ $total_destacadas = $conexion->query("SELECT COUNT(*) as total FROM empresas WHE
                 onEnd: function () {
                     const btn = document.getElementById('btn-orden');
                     if (btn) btn.classList.add('visible');
-                    
+
                     document.querySelectorAll('.foto-item').forEach((el, i) => {
                         const badge = el.querySelector('.orden-badge');
                         if (badge) badge.textContent = i + 1;
                     });
-                    
+
                     if (btn) {
                         btn.style.background = '#e67e22';
                         btn.textContent = '💾 Guardar orden (hay cambios)';
@@ -363,11 +364,11 @@ $total_destacadas = $conexion->query("SELECT COUNT(*) as total FROM empresas WHE
                             btn.disabled = false;
                         }, 2000);
                     } else {
-                        alert('Error al guardar: ' + (data.error || 'desconocido'));
+                        showToast('Error al guardar: ' + (data.error || 'desconocido'), 'error');
                         btn.disabled = false;
                     }
                 })
-                .catch(() => { alert('Error de conexión'); btn.disabled = false; });
+                .catch(() => { showToast('Error de conexión', 'error'); btn.disabled = false; });
         }
 
         function buscarMapa() {
@@ -381,18 +382,20 @@ $total_destacadas = $conexion->query("SELECT COUNT(*) as total FROM empresas WHE
         });
 
         function eliminarFoto(id, tipo, elemento) {
-            if (!confirm('¿Eliminar esta imagen?')) return;
-            fetch('eliminar_foto.php?id=' + id + '&tipo=' + tipo, {
-                headers: { 'X-CSRF-TOKEN': '<?= htmlspecialchars($_SESSION['csrf_token']) ?>' }
-            })
-                .then(r => r.text())
-                .then(data => {
-                    if (data.trim() === 'ok') elemento.remove();
-                    else alert('No se pudo eliminar: ' + data);
-                });
+            customConfirm('¿Eliminar esta imagen?', () => {
+                fetch('eliminar_foto.php?id=' + id + '&tipo=' + tipo, {
+                    headers: { 'X-CSRF-TOKEN': '<?= htmlspecialchars($_SESSION['csrf_token']) ?>' }
+                })
+                    .then(r => r.text())
+                    .then(data => {
+                        if (data.trim() === 'ok') elemento.remove();
+                        else showToast('No se pudo eliminar: ' + data, 'error');
+                    }); -
+            });
         }
 
     </script>
+    <script src="<?= APP_URL ?>/assets/js/toast.js"></script>
 </body>
 
 </html>

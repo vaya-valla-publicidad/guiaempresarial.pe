@@ -792,7 +792,8 @@ body {
     border: 1px solid #e2e8f0;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
     transition: transform 0.2s ease;
-    touch-action: none; /* Mejor soporte para móviles */
+    touch-action: none;
+    /* Mejor soporte para móviles */
 }
 
 .foto-item:hover {
@@ -863,7 +864,8 @@ body {
     cursor: pointer;
     margin-bottom: 30px;
     width: auto;
-    display: none; /* Oculto por defecto */
+    display: none;
+    /* Oculto por defecto */
 }
 
 /* Utilidad para mostrar botones cuando hay cambios */
@@ -874,8 +876,102 @@ body {
 }
 
 @keyframes fadeInScale {
-    from { opacity: 0; transform: scale(0.9); }
-    to { opacity: 1; transform: scale(1); }
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes float {
+    0% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-8px);
+    }
+
+    100% {
+        transform: translateY(0);
+    }
+}
+
+#toast-container {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    pointer-events: none;
+}
+
+.toast {
+    background: #ffffff;
+    padding: 15px 25px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transform: translateX(120%);
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    pointer-events: auto;
+    font-weight: 600;
+    color: #2c3e50;
+    border-left: 5px solid;
+}
+
+.toast.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.toast-success {
+    border-left-color: #10b981;
+}
+
+.toast-success i {
+    color: #10b981;
+    font-size: 20px;
+}
+
+.toast-error {
+    border-left-color: #ef4444;
+}
+
+.toast-error i {
+    color: #ef4444;
+    font-size: 20px;
+}
+
+.toast-info {
+    border-left-color: #3b82f6;
+}
+
+.toast-info i {
+    color: #3b82f6;
+    font-size: 20px;
+}
+
+@media (max-width: 768px) {
+    #toast-container {
+        bottom: 20px;
+        right: 20px;
+        left: 20px;
+    }
+
+    .toast {
+        width: 100%;
+        box-sizing: border-box;
+    }
 }
 
 /* Feedback visual para drag-and-drop */
@@ -941,7 +1037,8 @@ body {
     overflow: hidden;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
     border: 1px solid #e2e8f0;
-    touch-action: none; /* Mejor soporte para móviles */
+    touch-action: none;
+    /* Mejor soporte para móviles */
 }
 
 .banner-card-img {
@@ -1133,7 +1230,8 @@ body {
 }
 
 .btn-save-order {
-    display: none; /* Oculto por defecto en banner manager */
+    display: none;
+    /* Oculto por defecto en banner manager */
 }
 
 .panel .btn,
@@ -1814,3 +1912,59 @@ body {
     color: #64748b;
     margin-top: 20px;
 }
+
+ . e m p t y - s t a t e    {
+               p a d d i n g :    6 0 p x   2 0 p x ;
+               t e x t - a l i g n :    c e n t e r ;
+               d i s p l a y :    f l e x ;
+               f l e x - d i r e c t i o n :    c o l u m n ;
+               a l i g n - i t e m s :    c e n t e r ;
+               j u s t i f y - c o n t e n t :    c e n t e r ;
+               g a p :    1 2 p x ;
+       
+}
+
+     . e m p t y - i c o n    {
+               f o n t - s i z e :    5 0 p x ;
+               c o l o r :    # c b d 5 e 1 ;
+               m a r g i n - b o t t o m :    5 p x ;
+               a n i m a t i o n :    f l o a t   3 s   e a s e - i n - o u t   i n f i n i t e ;
+       
+}
+
+     . e m p t y - s t a t e   h 3    {
+               m a r g i n :    0 ;
+               f o n t - s i z e :    1 8 p x ;
+               f o n t - w e i g h t :    7 0 0 ;
+               c o l o r :    # 3 3 4 1 5 5 ;
+       
+}
+
+     . e m p t y - s t a t e   p    {
+               m a r g i n :    0 ;
+               f o n t - s i z e :    1 4 p x ;
+               c o l o r :    # 6 4 7 4 8 b ;
+               m a x - w i d t h :    2 5 0 p x ;
+       
+}
+
+     @ k e y f r a m e s   f l o a t    {
+               0 %    {
+           t r a n s f o r m :    t r a n s l a t e Y ( 0 ) ;
+           
+    }
+
+               5 0 %    {
+           t r a n s f o r m :    t r a n s l a t e Y ( - 8 p x ) ;
+           
+    }
+
+               1 0 0 %    {
+           t r a n s f o r m :    t r a n s l a t e Y ( 0 ) ;
+           
+    }
+
+       
+}
+
+       
