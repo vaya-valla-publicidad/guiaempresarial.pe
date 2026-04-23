@@ -112,7 +112,52 @@ if (!function_exists('subirImagenSegura')) {
         if (isset($config['redimensionar']) && $config['redimensionar']) {
             redimensionarImagen($rutaDestino, $config['ancho_max'], $config['alto_max']);
         }
+        if (isset($config['webp']) && $config['webp']) {
+            $nuevaRuta = convertirAWebp($rutaDestino);
+            if ($nuevaRuta) {
+                $nombreArchivo = basename($nuevaRuta);
+            }
+        }
         return ['success' => true, 'nombre' => $nombreArchivo, 'error' => null];
+    }
+}
+
+if (!function_exists('convertirAWebp')) {
+    function convertirAWebp($ruta, $calidad = 80)
+    {
+        if (!function_exists('imagewebp')) {
+            return false;
+        }
+        $info = getimagesize($ruta);
+        if (!$info) {
+            return false;
+        }
+        $tipo = $info[2];
+        $imagen = null;
+        switch ($tipo) {
+            case IMAGETYPE_JPEG:
+                $imagen = imagecreatefromjpeg($ruta);
+                break;
+            case IMAGETYPE_PNG:
+                $imagen = imagecreatefrompng($ruta);
+                imagepalettetotruecolor($imagen);
+                imagealphablending($imagen, true);
+                imagesavealpha($imagen, true);
+                break;
+            case IMAGETYPE_WEBP:
+                return $ruta;
+        }
+        if (!$imagen) {
+            return false;
+        }
+        $nuevaRuta = preg_replace('/\.(jpg|jpeg|png)$/i', '.webp', $ruta);
+        if (imagewebp($imagen, $nuevaRuta, $calidad)) {
+            imagedestroy($imagen);
+            unlink($ruta);
+            return $nuevaRuta;
+        }
+        imagedestroy($imagen);
+        return false;
     }
 }
 

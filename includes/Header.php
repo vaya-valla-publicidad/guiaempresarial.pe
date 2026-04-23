@@ -65,6 +65,63 @@ if (isset($_SESSION['usuario_publico_id'])) {
     })();
     window.csrfToken = '<?php echo function_exists('generarTokenCSRF') ? generarTokenCSRF() : ""; ?>';
   </script>
+  <script src="<?= APP_URL ?>/assets/js/toast.js"></script>
+  <style>
+    #toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 100000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toast {
+      min-width: 280px;
+      background: #fff;
+      color: #1b3a57;
+      padding: 16px 20px;
+      border-radius: 16px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transform: translateX(120%);
+      transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      border-left: 5px solid #1b3a57;
+    }
+
+    .toast.show {
+      transform: translateX(0);
+    }
+
+    .toast-success {
+      border-left-color: #2ecc71;
+    }
+
+    .toast-error {
+      border-left-color: #e74c3c;
+    }
+
+    .toast i {
+      font-size: 20px;
+    }
+
+    .toast-success i {
+      color: #2ecc71;
+    }
+
+    .toast-error i {
+      color: #e74c3c;
+    }
+
+    body.dark-mode .toast {
+      background: #374151;
+      color: #f3f4f6;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+    }
+  </style>
 </head>
 
 <body
@@ -75,20 +132,20 @@ if (isset($_SESSION['usuario_publico_id'])) {
     }
   </script>
 
-  <div id="topbar"></div>
+  <div id="nprogress-bar"></div>
   <style>
-    #topbar {
+    #nprogress-bar {
       position: fixed;
       top: 0;
       left: 0;
       height: 3px;
       width: 0%;
-      background: var(--primario);
-      border-radius: 0 2px 2px 0;
-      z-index: 9999;
-      opacity: 0;
-      transition: width 0.3s ease, opacity 0.5s ease;
+      background: var(--grad-main);
+      z-index: 10001;
+      opacity: 1;
+      transition: width 0.3s ease, opacity 0.4s ease;
       pointer-events: none;
+      box-shadow: 0 0 10px rgba(230, 57, 70, 0.4);
     }
   </style>
 
@@ -152,11 +209,12 @@ if (isset($_SESSION['usuario_publico_id'])) {
       const navToggle = document.getElementById('nav-toggle');
       const navActions = document.getElementById('nav-actions');
       const navOverlay = document.getElementById('nav-overlay');
-      const toggleIcon = navToggle.querySelector('i');
+      const toggleIcon = navToggle ? navToggle.querySelector('i') : null;
 
       window.csrfToken = '<?php echo function_exists('generarTokenCSRF') ? generarTokenCSRF() : ""; ?>';
 
       function abrirMenu() {
+        if (!navActions || !navOverlay || !toggleIcon) return;
         navActions.classList.add('open');
         navOverlay.classList.add('open');
         toggleIcon.className = 'bi bi-x';
@@ -164,37 +222,33 @@ if (isset($_SESSION['usuario_publico_id'])) {
       }
 
       function cerrarMenu() {
+        if (!navActions || !navOverlay || !toggleIcon) return;
         navActions.classList.remove('open');
         navOverlay.classList.remove('open');
         toggleIcon.className = 'bi bi-list';
         document.body.style.overflow = '';
       }
 
-      navToggle.addEventListener('click', () => {
-        navActions.classList.contains('open') ? cerrarMenu() : abrirMenu();
-      });
+      if (navToggle) {
+        navToggle.addEventListener('click', () => {
+          navActions.classList.contains('open') ? cerrarMenu() : abrirMenu();
+        });
+      }
 
-      navOverlay.addEventListener('click', cerrarMenu);
+      if (navOverlay) {
+        navOverlay.addEventListener('click', cerrarMenu);
+      }
 
       document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', cerrarMenu);
       });
 
       function handleNavClick(e, targetId) {
-
-        e.stopImmediatePropagation();
-
-        const isHomePage = window.location.pathname === '/' ||
-          window.location.pathname.endsWith('/index') ||
-          window.location.pathname.includes('/guiaempresarial.pe/') && (window.location.pathname.split('/').pop() === '' || window.location.pathname.split('/').pop() === 'index');
-
         const section = document.getElementById(targetId);
-
         if (section) {
           e.preventDefault();
           cerrarMenu();
           section.scrollIntoView({ behavior: 'smooth' });
-
           if (window.location.search.includes('jump=')) {
             window.history.replaceState({}, document.title, window.location.pathname);
           }
@@ -209,13 +263,59 @@ if (isset($_SESSION['usuario_publico_id'])) {
         if (jumpId) {
           const section = document.getElementById(jumpId);
           if (section) {
-
             setTimeout(() => {
               section.scrollIntoView({ behavior: 'smooth' });
-
               window.history.replaceState({}, document.title, window.location.pathname);
             }, 300);
           }
         }
       });
+
+      const bar = document.getElementById('nprogress-bar');
+
+      function startProgress() {
+        if (!bar) return;
+        bar.style.opacity = '1';
+        bar.style.transition = 'none';
+        bar.style.width = '0%';
+        requestAnimationFrame(() => {
+          bar.style.transition = 'width 0.4s cubic-bezier(0.1, 0.5, 0.5, 1)';
+          bar.style.width = '70%';
+        });
+      }
+
+      function finishProgress() {
+        if (!bar) return;
+        bar.style.transition = 'width 0.2s ease-out';
+        bar.style.width = '100%';
+        setTimeout(() => {
+          bar.style.opacity = '0';
+          setTimeout(() => {
+            bar.style.width = '0%';
+          }, 400);
+        }, 200);
+      }
+
+      document.addEventListener('click', e => {
+        const a = e.target.closest('a');
+        if (a && a.href && !a.target && a.href !== '#' &&
+          new URL(a.href).origin === location.origin &&
+          !a.hasAttribute('download') &&
+          !a.href.includes('mailto:') &&
+          !a.href.includes('tel:')) {
+          startProgress();
+        }
+      });
+
+      window.addEventListener('pageshow', (event) => {
+        finishProgress();
+      });
+
+      window.addEventListener('beforeunload', () => {
+        startProgress();
+      });
     </script>
+  </main>
+</body>
+
+</html>

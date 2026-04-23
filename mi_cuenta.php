@@ -26,12 +26,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
       $stmt_del_r = $conexion->prepare("DELETE FROM resenas WHERE id_usuario_publico = ?");
       $stmt_del_r->bind_param("i", $id_u);
       $stmt_del_r->execute();
+
+      $stmt_del_f = $conexion->prepare("DELETE FROM favoritos WHERE id_usuario_publico = ?");
+      $stmt_del_f->bind_param("i", $id_u);
+      $stmt_del_f->execute();
+
+      $stmt_del_v = $conexion->prepare("DELETE FROM resena_votos WHERE id_usuario_publico = ?");
+      $stmt_del_v->bind_param("i", $id_u);
+      $stmt_del_v->execute();
+
       if (!empty($u['foto_perfil']) && file_exists('assets/img/avatars/' . $u['foto_perfil'])) {
         unlink('assets/img/avatars/' . $u['foto_perfil']);
       }
+
       $stmt_del_u = $conexion->prepare("DELETE FROM usuarios_publicos WHERE id = ?");
       $stmt_del_u->bind_param("i", $id_u);
       $stmt_del_u->execute();
+
       session_destroy();
       header('Location: index');
       exit;
@@ -185,24 +196,16 @@ include 'includes/header.php';
 
 <div class="mc-page">
 
-  <?php if ($error): ?>
-    <div class="mc-alerta mc-alerta-error">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10" />
-        <line x1="12" y1="8" x2="12" y2="12" />
-        <line x1="12" y1="16" x2="12.01" y2="16" />
-      </svg>
-      <?= htmlspecialchars($error) ?>
-    </div>
-  <?php endif; ?>
-  <?php if ($exito): ?>
-    <div class="mc-alerta mc-alerta-ok">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polyline points="20 6 9 17 4 12" />
-      </svg>
-      <?= htmlspecialchars($exito) ?>
-    </div>
-  <?php endif; ?>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      <?php if ($error): ?>
+        if (typeof showToast === 'function') showToast('<?= addslashes($error) ?>', 'error');
+      <?php endif; ?>
+      <?php if ($exito): ?>
+        if (typeof showToast === 'function') showToast('<?= addslashes($exito) ?>', 'success');
+      <?php endif; ?>
+    });
+  </script>
 
   <header class="mc-header">
     <div class="mc-header-avatar">
@@ -211,6 +214,7 @@ include 'includes/header.php';
       <?php else: ?>
         <span><?= mb_strtoupper(mb_substr($u['nombre'], 0, 1)) ?></span>
       <?php endif; ?>
+      <div class="mc-avatar-aura"></div>
     </div>
     <div class="mc-header-text">
       <div class="mc-header-title">
@@ -331,6 +335,8 @@ include 'includes/header.php';
                 </button>
               </div>
             </div>
+          <?php else: ?>
+            <input type="hidden" name="actual" value="bypass">
           <?php endif; ?>
           <div class="mc-field">
             <label>Nueva contraseña</label>
@@ -404,8 +410,8 @@ include 'includes/header.php';
           <div class="mc-empty">
             <i class="bi bi-heart" style="font-size: 40px; margin-bottom: 10px;"></i>
             <p>No tienes empresas en favoritos todavía.</p>
-            <a href="empresas" class="mc-btn-primary mc-btn-sm"
-              style="margin-top:10px; text-decoration:none;">Explorar empresas</a>
+            <a href="empresas" class="mc-btn-primary mc-btn-sm" style="margin-top:10px; text-decoration:none;">Explorar
+              empresas</a>
           </div>
         <?php else: ?>
           <div class="empresas-list" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
@@ -448,11 +454,10 @@ include 'includes/header.php';
           <h3>Eliminar cuenta</h3>
           <p>Eliminar tu cuenta eliminará permanentemente tu perfil y todo el contenido asociado. Esta acción no se
             puede revertir.</p>
-          <form method="POST"
-            onsubmit="return confirm('¿Seguro que deseas borrar tu cuenta? Esta acción no se puede deshacer.');">
+          <form method="POST" id="form-borrar-cuenta">
             <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
             <input type="hidden" name="accion" value="borrar_cuenta">
-            <button type="submit" class="mc-btn-delete">Eliminar cuenta</button>
+            <button type="button" class="mc-btn-delete" onclick="confirmarBorrarCuenta()">Eliminar cuenta</button>
           </form>
         </div>
 
@@ -463,6 +468,15 @@ include 'includes/header.php';
 </div>
 
 <script>
+  function confirmarBorrarCuenta() {
+    if (typeof window.customConfirm === 'function') {
+      window.customConfirm('¿Seguro que deseas borrar tu cuenta? Esta acción no se puede deshacer y perderás todas tus reseñas y favoritos.', () => {
+        document.getElementById('form-borrar-cuenta').submit();
+      });
+    } else if (confirm('¿Seguro que deseas borrar tu cuenta? Esta acción no se puede deshacer.')) {
+      document.getElementById('form-borrar-cuenta').submit();
+    }
+  }
   const mcPanels = {
     perfil: { label: 'Editar perfil', sub: 'Configure su presencia y datos de cuenta' },
     password: { label: 'Contraseña', sub: 'Administre su contraseña de acceso' },
@@ -471,15 +485,43 @@ include 'includes/header.php';
     privacidad: { label: 'Privacidad y seguridad', sub: 'Administre su configuración de privacidad' },
   };
 
-  function mcSwitch(id) {
+  function mcSwitch(id, updateHash = true) {
+    const panel = document.getElementById('mc-panel-' + id);
+    const nav = document.getElementById('mcnav-' + id);
+    if (!panel || !nav) return;
+
     document.querySelectorAll('.mc-panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.mc-nav-link').forEach(a => a.classList.remove('active'));
-    document.getElementById('mc-panel-' + id).classList.add('active');
-    document.getElementById('mcnav-' + id).classList.add('active');
-    document.getElementById('mc-header-section').textContent = mcPanels[id].label;
-    document.getElementById('mc-header-sub').textContent = mcPanels[id].sub;
+
+    panel.classList.add('active');
+    nav.classList.add('active');
+
+    if (mcPanels[id]) {
+      document.getElementById('mc-header-section').textContent = mcPanels[id].label;
+      document.getElementById('mc-header-sub').textContent = mcPanels[id].sub;
+    }
+
     document.querySelector('.mc-mobile-select').value = id;
+
+    if (updateHash) {
+      history.pushState(null, null, '#' + id);
+    }
   }
+
+  // Manejar Hash inicial y cambios
+  window.addEventListener('load', () => {
+    const hash = window.location.hash.replace('#', '');
+    if (hash && mcPanels[hash]) {
+      mcSwitch(hash, false);
+    }
+  });
+
+  window.addEventListener('hashchange', () => {
+    const hash = window.location.hash.replace('#', '');
+    if (hash && mcPanels[hash]) {
+      mcSwitch(hash, false);
+    }
+  });
 
   function togglePw(inputId, iconId) {
     const input = document.getElementById(inputId);

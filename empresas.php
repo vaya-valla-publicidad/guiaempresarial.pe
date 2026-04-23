@@ -243,13 +243,22 @@ include 'includes/header.php';
 
             <div class="perfil-wrapper">
                 <div class="perfil-hero">
-                    <div class="perfil-banner"></div>
+                    <?php
+                    $banner_style = "";
+                    if (count($fotos_arr) > 0) {
+                        $banner_img = APP_URL . "/assets/img/empresascarrusel/" . htmlspecialchars($fotos_arr[0]);
+                        $banner_style = "style=\"background-image: url('$banner_img'); background-size: cover; background-position: center; filter: blur(40px) brightness(0.7); opacity: 0.6;\"";
+                    }
+                    ?>
+                    <div class="perfil-banner">
+                        <div class="perfil-banner-overlay" <?= $banner_style ?>></div>
+                    </div>
                     <div class="perfil-hero-body">
                         <?php if ($logo): ?>
                             <img class="perfil-logo" src="<?= APP_URL ?>/assets/img/<?= $logo ?>"
                                 alt="<?= htmlspecialchars($fila['nombre']) ?>">
                         <?php else: ?>
-                            <div class="perfil-logo logo-placeholder" style="width:90px;height:90px;font-size:32px;">
+                            <div class="perfil-logo logo-placeholder" style="width:120px;height:120px;font-size:48px;">
                                 <?= mb_strtoupper(mb_substr($fila['nombre'], 0, 1)) ?>
                             </div>
                         <?php endif; ?>
@@ -285,6 +294,10 @@ include 'includes/header.php';
                                             📘 Facebook
                                         </a>
                                     <?php endif; ?>
+                                    <button onclick="compartirNegocio()" class="btn-accion"
+                                        style="background: #64748b; color: white;">
+                                        <i class="bi bi-share-fill" style="margin-right: 5px;"></i> Compartir
+                                    </button>
                                 </div>
                             </div>
                             <?php if (!empty($fila['descripcion'])): ?>
@@ -370,6 +383,19 @@ include 'includes/header.php';
                     <?php endif; ?>
                 </div>
 
+                <script>
+                    function compartirNegocio() {
+                        const url = window.location.href;
+                        navigator.clipboard.writeText(url).then(() => {
+                            if (typeof showToast === 'function') {
+                                showToast('Enlace copiado al portapapeles', 'success');
+                            } else {
+                                alert('Enlace copiado al portapapeles');
+                            }
+                        });
+                    }
+                </script>
+
                 <?php if (!empty($fila['descripcion'])): ?>
                     <div class="perfil-descripcion">
                         <p class="perfil-section-label">Descripción</p>
@@ -393,244 +419,255 @@ include 'includes/header.php';
                     $stmt_prom->execute();
                     $sum_q = $stmt_prom->get_result();
                     $promedio = round($sum_q->fetch_assoc()['prom'], 1);
-                        while ($r = $resenas_q->fetch_assoc()) {
-                            $r['likes'] = 0;
-                            $r['dislikes'] = 0;
-                            $r['my_vote'] = '';
-                            $resenas_arr[] = $r;
+                    while ($r = $resenas_q->fetch_assoc()) {
+                        $r['likes'] = 0;
+                        $r['dislikes'] = 0;
+                        $r['my_vote'] = '';
+                        $resenas_arr[] = $r;
+                    }
+                }
+
+                $usuario_tiene_resena = false;
+                if (isset($_SESSION['usuario_publico_id'])) {
+                    $usuario_publico_actual = intval($_SESSION['usuario_publico_id']);
+                    foreach ($resenas_arr as $rr) {
+                        if (intval($rr['id_usuario_publico']) === $usuario_publico_actual) {
+                            $usuario_tiene_resena = true;
+                            break;
                         }
                     }
+                }
+                $my_votes = [];
 
-                    $usuario_tiene_resena = false;
+                if (count($resenas_arr) > 0) {
+                    $resenas_ids = array_column($resenas_arr, 'id_resena');
+                    $placeholders = implode(',', array_fill(0, count($resenas_ids), '?'));
+                    $types = str_repeat('i', count($resenas_ids));
+
+                    $sql = "SELECT id_resena, SUM(tipo = 'like') AS likes, SUM(tipo = 'dislike') AS dislikes FROM resena_votos WHERE id_resena IN ($placeholders) GROUP BY id_resena";
+                    $stmt_votes = $conexion->prepare($sql);
+                    $bindParams = array_merge([$types], $resenas_ids);
+                    $tmp = [];
+                    foreach ($bindParams as $key => $value) {
+                        $tmp[$key] = &$bindParams[$key];
+                    }
+                    call_user_func_array([$stmt_votes, 'bind_param'], $tmp);
+                    $stmt_votes->execute();
+                    $votes_q = $stmt_votes->get_result();
+                    $votes_data = [];
+                    while ($vote = $votes_q->fetch_assoc()) {
+                        $votes_data[intval($vote['id_resena'])] = $vote;
+                    }
+
                     if (isset($_SESSION['usuario_publico_id'])) {
-                        $usuario_publico_actual = intval($_SESSION['usuario_publico_id']);
-                        foreach ($resenas_arr as $rr) {
-                            if (intval($rr['id_usuario_publico']) === $usuario_publico_actual) {
-                                $usuario_tiene_resena = true;
-                                break;
-                            }
-                        }
-                    }
-                    $my_votes = [];
-
-                    if (count($resenas_arr) > 0) {
-                        $resenas_ids = array_column($resenas_arr, 'id_resena');
-                        $placeholders = implode(',', array_fill(0, count($resenas_ids), '?'));
-                        $types = str_repeat('i', count($resenas_ids));
-
-                        $sql = "SELECT id_resena, SUM(tipo = 'like') AS likes, SUM(tipo = 'dislike') AS dislikes FROM resena_votos WHERE id_resena IN ($placeholders) GROUP BY id_resena";
-                        $stmt_votes = $conexion->prepare($sql);
-                        $bindParams = array_merge([$types], $resenas_ids);
+                        $sql = "SELECT id_resena, tipo FROM resena_votos WHERE id_resena IN ($placeholders) AND id_usuario_publico = ?";
+                        $stmt_my = $conexion->prepare($sql);
+                        $bindParams = array_merge([$types . 'i'], $resenas_ids, [$usuario_publico_actual]);
                         $tmp = [];
                         foreach ($bindParams as $key => $value) {
                             $tmp[$key] = &$bindParams[$key];
                         }
-                        call_user_func_array([$stmt_votes, 'bind_param'], $tmp);
-                        $stmt_votes->execute();
-                        $votes_q = $stmt_votes->get_result();
-                        $votes_data = [];
-                        while ($vote = $votes_q->fetch_assoc()) {
-                            $votes_data[intval($vote['id_resena'])] = $vote;
+                        call_user_func_array([$stmt_my, 'bind_param'], $tmp);
+                        $stmt_my->execute();
+                        $my_q = $stmt_my->get_result();
+                        $my_votes = [];
+                        while ($my = $my_q->fetch_assoc()) {
+                            $my_votes[intval($my['id_resena'])] = $my['tipo'];
                         }
-
-                        if (isset($_SESSION['usuario_publico_id'])) {
-                            $sql = "SELECT id_resena, tipo FROM resena_votos WHERE id_resena IN ($placeholders) AND id_usuario_publico = ?";
-                            $stmt_my = $conexion->prepare($sql);
-                            $bindParams = array_merge([$types . 'i'], $resenas_ids, [$usuario_publico_actual]);
-                            $tmp = [];
-                            foreach ($bindParams as $key => $value) {
-                                $tmp[$key] = &$bindParams[$key];
-                            }
-                            call_user_func_array([$stmt_my, 'bind_param'], $tmp);
-                            $stmt_my->execute();
-                            $my_q = $stmt_my->get_result();
-                            $my_votes = [];
-                            while ($my = $my_q->fetch_assoc()) {
-                                $my_votes[intval($my['id_resena'])] = $my['tipo'];
-                            }
-                        }
-
-                        foreach ($resenas_arr as &$rr) {
-                            $idr = intval($rr['id_resena']);
-                            if (isset($votes_data[$idr])) {
-                                $rr['likes'] = intval($votes_data[$idr]['likes']);
-                                $rr['dislikes'] = intval($votes_data[$idr]['dislikes']);
-                            }
-                            if (!empty($my_votes[$idr])) {
-                                $rr['my_vote'] = $my_votes[$idr];
-                            }
-                        }
-                        unset($rr);
                     }
+
+                    foreach ($resenas_arr as &$rr) {
+                        $idr = intval($rr['id_resena']);
+                        if (isset($votes_data[$idr])) {
+                            $rr['likes'] = intval($votes_data[$idr]['likes']);
+                            $rr['dislikes'] = intval($votes_data[$idr]['dislikes']);
+                        }
+                        if (!empty($my_votes[$idr])) {
+                            $rr['my_vote'] = $my_votes[$idr];
+                        }
+                    }
+                    unset($rr);
+                }
                 ?>
 
                 <div id="resenaAlertContainer">
-                        <?php if ($resena_msg === 'ok'): ?>
-                            <div class="resena-alerta resena-alerta-ok">✅ ¡Reseña enviada con éxito!</div>
-                        <?php elseif ($resena_msg === 'mala'): ?>
-                            <div class="resena-alerta resena-alerta-error">⚠️ Tu reseña contiene palabras no permitidas.</div>
-                        <?php elseif ($resena_msg === 'error'): ?>
-                            <div class="resena-alerta resena-alerta-error">❌ Por favor completa todos los campos y selecciona
-                                estrellas.</div>
-                        <?php endif; ?>
-                    </div>
+                    <?php if ($resena_msg === 'ok'): ?>
+                        <div class="resena-alerta resena-alerta-ok">✅ ¡Reseña enviada con éxito!</div>
+                    <?php elseif ($resena_msg === 'mala'): ?>
+                        <div class="resena-alerta resena-alerta-error">⚠️ Tu reseña contiene palabras no permitidas.</div>
+                    <?php elseif ($resena_msg === 'error'): ?>
+                        <div class="resena-alerta resena-alerta-error">❌ Por favor completa todos los campos y selecciona
+                            estrellas.</div>
+                    <?php endif; ?>
+                </div>
 
-                    <?php if ($total_resenas > 0): ?>
-                        <div class="resenas-promedio">
-                            <span class="resenas-prom-numero"><?= $promedio ?></span>
-                            <div>
-                                <div class="estrellas-display">
+                <?php if ($total_resenas > 0): ?>
+                    <div class="resenas-promedio">
+                        <span class="resenas-prom-numero"><?= $promedio ?></span>
+                        <div>
+                            <div class="estrellas-display">
+                                <?php for ($i = 1; $i <= 5; $i++): ?>
+                                    <span class="<?= $i <= round($promedio) ? 'estrella-llena' : 'estrella-vacia' ?>">★</span>
+                                <?php endfor; ?>
+                            </div>
+                            <span class="resenas-total"><?= $total_resenas ?>
+                                reseña<?= $total_resenas > 1 ? 's' : '' ?></span>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <div class="resena-form-wrapper">
+                    <?php if (isset($_SESSION['usuario_publico_id'])): ?>
+                        <?php if ($usuario_tiene_resena): ?>
+                            <div id="resenaEditHint" class="resena-alerta resena-alerta-info">Ya tienes tu reseña enviada. Presiona
+                                <strong>Editar</strong> en tu comentario para actualizarla.</div>
+                        <?php endif; ?>
+                        <form id="formResena" method="POST" action="<?= APP_URL ?>/empresas.php?empresa=<?= $id_empresa ?>"
+                            style="<?= $usuario_tiene_resena ? 'display:none;' : '' ?>">
+                            <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
+                            <input type="hidden" name="id_empresa" value="<?= $id_empresa ?>">
+                            <input type="hidden" name="id_resena" id="idResena" value="">
+                            <p class="resena-form-titulo" id="resenaFormTitulo"
+                                data-default-text="Hola, <?= htmlspecialchars($_SESSION['usuario_publico_nombre']) ?> 👋 Deja tu reseña">
+                                Hola, <?= htmlspecialchars($_SESSION['usuario_publico_nombre']) ?> 👋
+                                Deja tu reseña</p>
+                            <div class="form-group">
+                                <label>Calificación</label>
+                                <div class="estrellas-input" id="estrellasInput">
                                     <?php for ($i = 1; $i <= 5; $i++): ?>
-                                        <span class="<?= $i <= round($promedio) ? 'estrella-llena' : 'estrella-vacia' ?>">★</span>
+                                        <span class="estrella-btn" data-valor="<?= $i ?>">★</span>
                                     <?php endfor; ?>
                                 </div>
-                                <span class="resenas-total"><?= $total_resenas ?>
-                                    reseña<?= $total_resenas > 1 ? 's' : '' ?></span>
+                                <input type="hidden" name="estrellas" id="estrellasValor" required>
                             </div>
-                        </div>
-                    <?php endif; ?>
-
-                    <div class="resena-form-wrapper">
-                        <?php if (isset($_SESSION['usuario_publico_id'])): ?>
-                            <?php if ($usuario_tiene_resena): ?>
-                                <div id="resenaEditHint" class="resena-alerta resena-alerta-info">Ya tienes tu reseña enviada. Presiona <strong>Editar</strong> en tu comentario para actualizarla.</div>
-                            <?php endif; ?>
-                            <form id="formResena" method="POST" action="<?= APP_URL ?>/empresas.php?empresa=<?= $id_empresa ?>" style="<?= $usuario_tiene_resena ? 'display:none;' : '' ?>">
-                                <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
-                                <input type="hidden" name="id_empresa" value="<?= $id_empresa ?>">
-                                <input type="hidden" name="id_resena" id="idResena" value="">
-                                <p class="resena-form-titulo" id="resenaFormTitulo" data-default-text="Hola, <?= htmlspecialchars($_SESSION['usuario_publico_nombre']) ?> 👋 Deja tu reseña">Hola, <?= htmlspecialchars($_SESSION['usuario_publico_nombre']) ?> 👋
-                                    Deja tu reseña</p>
-                                <div class="form-group">
-                                    <label>Calificación</label>
-                                    <div class="estrellas-input" id="estrellasInput">
-                                        <?php for ($i = 1; $i <= 5; $i++): ?>
-                                            <span class="estrella-btn" data-valor="<?= $i ?>">★</span>
-                                        <?php endfor; ?>
-                                    </div>
-                                    <input type="hidden" name="estrellas" id="estrellasValor" required>
-                                </div>
-                                <div class="form-group">
-                                    <label>Comentario</label>
-                                    <textarea name="comentario" id="resenaComentario" rows="3"
-                                        placeholder="Cuéntanos tu experiencia..." required maxlength="500"></textarea>
-                                </div>
-                                <div class="resena-form-actions">
-                                    <button type="submit" class="btn-enviar-resena" id="btnEnviarResena">Enviar reseña</button>
-                                    <button type="button" class="btn-cancelar-edicion" id="btnCancelarEdicion" style="display:none;">Cancelar</button>
-                                </div>
-                            </form>
-                        <?php else: ?>
-                            <div style="text-align:center;padding:20px 0;">
-                                <p style="color:var(--muted);margin-bottom:16px;font-size:15px;">
-                                    Inicia sesión para dejar tu reseña
-                                </p>
-                                <a href="<?= APP_URL ?>/login_usuario.php?redir=<?= urlencode('negocio/' . ($slug_param ?? $id_empresa) . '#resenas') ?>"
-                                    class="btn-enviar-resena" style="text-decoration:none;display:inline-block;">
-                                    Iniciar sesión
-                                </a>
-                                <p style="margin-top:12px;font-size:13px;color:var(--muted);">
-                                    ¿No tienes cuenta? <a href="<?= APP_URL ?>/registro_usuario.php"
-                                        style="color:var(--rojo);font-weight:700;">Regístrate gratis</a>
-                                </p>
+                            <div class="form-group">
+                                <label>Comentario</label>
+                                <textarea name="comentario" id="resenaComentario" rows="3"
+                                    placeholder="Cuéntanos tu experiencia..." required maxlength="500"></textarea>
                             </div>
-                        <?php endif; ?>
-                    </div>
-
-                    <?php if (count($resenas_arr) > 0): ?>
-                        <div class="resenas-lista">
-                            <?php foreach ($resenas_arr as $r):
-                                $es_anonimo = ($r['visibilidad_resenas'] ?? 'publico') === 'anonimo';
-                                $nombre_mostrar = $es_anonimo ? 'Usuario Anónimo' : htmlspecialchars($r['nombre_autor']);
-                                $avatar_class = 'resena-avatar' . ($es_anonimo ? ' anonimo' : '');
-                                $avatar_content = $es_anonimo ? '' : mb_strtoupper(mb_substr($r['nombre_autor'], 0, 1));
-                                ?>
-                                <div class="resena-item" data-resena-id="<?= intval($r['id_resena']) ?>">
-                                    <div class="resena-header">
-                                        <div class="<?= $avatar_class ?>"><?= $avatar_content ?></div>
-                                        <div>
-                                            <strong><?= $nombre_mostrar ?></strong>
-                                            <?php if (isset($_SESSION['usuario_publico_id']) && intval($_SESSION['usuario_publico_id']) === intval($r['id_usuario_publico'])): ?>
-                                                <span class="resena-badge resena-badge-propia">Tu reseña</span>
-                                            <?php endif; ?>
-                                            <div class="estrellas-display small">
-                                                <?php for ($i = 1; $i <= 5; $i++): ?>
-                                                    <span
-                                                        class="<?= $i <= $r['estrellas'] ? 'estrella-llena' : 'estrella-vacia' ?>">★</span>
-                                                <?php endfor; ?>
-                                            </div>
-                                        </div>
-                                        <span class="resena-fecha"><?= date('d/m/Y', strtotime($r['fecha'])) ?></span>
-                                        <?php if (isset($_SESSION['usuario_publico_id']) && intval($_SESSION['usuario_publico_id']) === intval($r['id_usuario_publico'])): ?>
-                                            <button type="button" class="btn-editar-resena" data-id="<?= intval($r['id_resena']) ?>" data-estrellas="<?= intval($r['estrellas']) ?>">Editar</button>
-                                        <?php endif; ?>
-                                    </div>
-                                    <p class="resena-comentario"><?= nl2br(htmlspecialchars($r['comentario'])) ?></p>
-                                    <div class="resena-votos">
-                                        <?php if (isset($_SESSION['usuario_publico_id']) && intval($_SESSION['usuario_publico_id']) !== intval($r['id_usuario_publico'])): ?>
-                                            <button type="button" class="btn-resena-voto btn-voto-like <?= $r['my_vote'] === 'like' ? 'activo' : '' ?>" data-resena-id="<?= intval($r['id_resena']) ?>" data-tipo="like">
-                                                👍 <span class="votos-like-count"><?= intval($r['likes']) ?></span>
-                                            </button>
-                                            <button type="button" class="btn-resena-voto btn-voto-dislike <?= $r['my_vote'] === 'dislike' ? 'activo' : '' ?>" data-resena-id="<?= intval($r['id_resena']) ?>" data-tipo="dislike">
-                                                👎 <span class="votos-dislike-count"><?= intval($r['dislikes']) ?></span>
-                                            </button>
-                                        <?php elseif (isset($_SESSION['usuario_publico_id'])): ?>
-                                            <span class="votos-summary">👍 <?= intval($r['likes']) ?> · 👎 <?= intval($r['dislikes']) ?></span>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
+                            <div class="resena-form-actions">
+                                <button type="submit" class="btn-enviar-resena" id="btnEnviarResena">Enviar reseña</button>
+                                <button type="button" class="btn-cancelar-edicion" id="btnCancelarEdicion"
+                                    style="display:none;">Cancelar</button>
+                            </div>
+                        </form>
                     <?php else: ?>
-                        <div class="empty-reviews-premium">
-                            <span class="empty-reviews-icon">
-                                <i class="bi bi-chat-left-heart"></i>
-                            </span>
-                            <div class="empty-reviews-text">
-                                <h3>¡Sé el primero en calificar!</h3>
-                                <p>Este negocio aún no tiene reseñas. Comparte tu experiencia y ayuda a otros.</p>
-                            </div>
+                        <div style="text-align:center;padding:20px 0;">
+                            <p style="color:var(--muted);margin-bottom:16px;font-size:15px;">
+                                Inicia sesión para dejar tu reseña
+                            </p>
+                            <a href="<?= APP_URL ?>/login_usuario.php?redir=<?= urlencode('negocio/' . ($slug_param ?? $id_empresa) . '#resenas') ?>"
+                                class="btn-enviar-resena" style="text-decoration:none;display:inline-block;">
+                                Iniciar sesión
+                            </a>
+                            <p style="margin-top:12px;font-size:13px;color:var(--muted);">
+                                ¿No tienes cuenta? <a href="<?= APP_URL ?>/registro_usuario.php"
+                                    style="color:var(--rojo);font-weight:700;">Regístrate gratis</a>
+                            </p>
                         </div>
                     <?php endif; ?>
                 </div>
 
-            </div>
-
-            <?php
-
-            $id_cat_actual = intval($fila['id_categoria'] ?? 0);
-            $id_emp_actual = intval($id_empresa);
-            if ($id_cat_actual > 0) {
-                $stmt_sim = $conexion->prepare("SELECT e.*, c.nombre AS categoria FROM empresas e JOIN categorias c ON e.id_categoria = c.id_categoria WHERE e.id_categoria = ? AND e.id_empresa != ? ORDER BY RAND() LIMIT 3");
-                $stmt_sim->bind_param("ii", $id_cat_actual, $id_emp_actual);
-                $stmt_sim->execute();
-                $res_sim = $stmt_sim->get_result();
-
-                if ($res_sim && $res_sim->num_rows > 0):
-                    ?>
-                    <div style="margin-top: 40px; padding-top: 30px; border-top: 1px solid var(--borde);">
-                        <div class="section-header" style="text-align: left; margin-bottom: 24px;">
-                            <h2 style="font-size: 24px; color: var(--ink);">También podría interesarte...</h2>
-                            <p style="color: var(--muted); font-size: 15px; margin-top: 4px;">Otras opciones en
-                                <?= htmlspecialchars($fila['categoria'] ?? '') ?>
-                            </p>
-                        </div>
-                        <div class="empresas-list">
-                            <?php
-
-                            $stmt_sim = $conexion->prepare("SELECT e.*, c.nombre AS categoria, GROUP_CONCAT(g.foto ORDER BY g.orden ASC SEPARATOR ',') as fotos_galeria FROM empresas e JOIN categorias c ON e.id_categoria = c.id_categoria LEFT JOIN empresa_galeria g ON e.id_empresa = g.id_empresa WHERE e.id_categoria = ? AND e.id_empresa != ? GROUP BY e.id_empresa ORDER BY RAND() LIMIT 3");
-                            $stmt_sim->bind_param("ii", $id_cat_actual, $id_emp_actual);
-                            $stmt_sim->execute();
-                            $res_sim = $stmt_sim->get_result();
-                            while ($f_sim = $res_sim->fetch_assoc()):
-                                $fotos_sim = !empty($f_sim['fotos_galeria']) ? explode(',', $f_sim['fotos_galeria']) : [];
-                                renderEmpresaCard($f_sim, $fotos_sim);
-                            endwhile; ?>
+                <?php if (count($resenas_arr) > 0): ?>
+                    <div class="resenas-lista">
+                        <?php foreach ($resenas_arr as $r):
+                            $es_anonimo = ($r['visibilidad_resenas'] ?? 'publico') === 'anonimo';
+                            $nombre_mostrar = $es_anonimo ? 'Usuario Anónimo' : htmlspecialchars($r['nombre_autor']);
+                            $avatar_class = 'resena-avatar' . ($es_anonimo ? ' anonimo' : '');
+                            $avatar_content = $es_anonimo ? '' : mb_strtoupper(mb_substr($r['nombre_autor'], 0, 1));
+                            ?>
+                            <div class="resena-item" data-resena-id="<?= intval($r['id_resena']) ?>">
+                                <div class="resena-header">
+                                    <div class="<?= $avatar_class ?>"><?= $avatar_content ?></div>
+                                    <div>
+                                        <strong><?= $nombre_mostrar ?></strong>
+                                        <?php if (isset($_SESSION['usuario_publico_id']) && intval($_SESSION['usuario_publico_id']) === intval($r['id_usuario_publico'])): ?>
+                                            <span class="resena-badge resena-badge-propia">Tu reseña</span>
+                                        <?php endif; ?>
+                                        <div class="estrellas-display small">
+                                            <?php for ($i = 1; $i <= 5; $i++): ?>
+                                                <span
+                                                    class="<?= $i <= $r['estrellas'] ? 'estrella-llena' : 'estrella-vacia' ?>">★</span>
+                                            <?php endfor; ?>
+                                        </div>
+                                    </div>
+                                    <span class="resena-fecha"><?= date('d/m/Y', strtotime($r['fecha'])) ?></span>
+                                    <?php if (isset($_SESSION['usuario_publico_id']) && intval($_SESSION['usuario_publico_id']) === intval($r['id_usuario_publico'])): ?>
+                                        <button type="button" class="btn-editar-resena" data-id="<?= intval($r['id_resena']) ?>"
+                                            data-estrellas="<?= intval($r['estrellas']) ?>">Editar</button>
+                                    <?php endif; ?>
+                                </div>
+                                <p class="resena-comentario"><?= nl2br(htmlspecialchars($r['comentario'])) ?></p>
+                                <div class="resena-votos">
+                                    <?php if (isset($_SESSION['usuario_publico_id']) && intval($_SESSION['usuario_publico_id']) !== intval($r['id_usuario_publico'])): ?>
+                                        <button type="button"
+                                            class="btn-resena-voto btn-voto-like <?= $r['my_vote'] === 'like' ? 'activo' : '' ?>"
+                                            data-resena-id="<?= intval($r['id_resena']) ?>" data-tipo="like">
+                                            👍 <span class="votos-like-count"><?= intval($r['likes']) ?></span>
+                                        </button>
+                                        <button type="button"
+                                            class="btn-resena-voto btn-voto-dislike <?= $r['my_vote'] === 'dislike' ? 'activo' : '' ?>"
+                                            data-resena-id="<?= intval($r['id_resena']) ?>" data-tipo="dislike">
+                                            👎 <span class="votos-dislike-count"><?= intval($r['dislikes']) ?></span>
+                                        </button>
+                                    <?php elseif (isset($_SESSION['usuario_publico_id'])): ?>
+                                        <span class="votos-summary">👍 <?= intval($r['likes']) ?> · 👎
+                                            <?= intval($r['dislikes']) ?></span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <div class="empty-reviews-premium">
+                        <span class="empty-reviews-icon">
+                            <i class="bi bi-chat-left-heart"></i>
+                        </span>
+                        <div class="empty-reviews-text">
+                            <h3>¡Sé el primero en calificar!</h3>
+                            <p>Este negocio aún no tiene reseñas. Comparte tu experiencia y ayuda a otros.</p>
                         </div>
                     </div>
-                <?php endif;
-            }
-            ?>
+                <?php endif; ?>
+            </div>
+
+        </div>
+
+        <?php
+
+        $id_cat_actual = intval($fila['id_categoria'] ?? 0);
+        $id_emp_actual = intval($id_empresa);
+        if ($id_cat_actual > 0) {
+            $stmt_sim = $conexion->prepare("SELECT e.*, c.nombre AS categoria FROM empresas e JOIN categorias c ON e.id_categoria = c.id_categoria WHERE e.id_categoria = ? AND e.id_empresa != ? ORDER BY RAND() LIMIT 3");
+            $stmt_sim->bind_param("ii", $id_cat_actual, $id_emp_actual);
+            $stmt_sim->execute();
+            $res_sim = $stmt_sim->get_result();
+
+            if ($res_sim && $res_sim->num_rows > 0):
+                ?>
+                <div style="margin-top: 40px; padding-top: 30px; border-top: 1px solid var(--borde);">
+                    <div class="section-header" style="text-align: left; margin-bottom: 24px;">
+                        <h2 style="font-size: 24px; color: var(--ink);">También podría interesarte...</h2>
+                        <p style="color: var(--muted); font-size: 15px; margin-top: 4px;">Otras opciones en
+                            <?= htmlspecialchars($fila['categoria'] ?? '') ?>
+                        </p>
+                    </div>
+                    <div class="empresas-list">
+                        <?php
+
+                        $stmt_sim = $conexion->prepare("SELECT e.*, c.nombre AS categoria, GROUP_CONCAT(g.foto ORDER BY g.orden ASC SEPARATOR ',') as fotos_galeria FROM empresas e JOIN categorias c ON e.id_categoria = c.id_categoria LEFT JOIN empresa_galeria g ON e.id_empresa = g.id_empresa WHERE e.id_categoria = ? AND e.id_empresa != ? GROUP BY e.id_empresa ORDER BY RAND() LIMIT 3");
+                        $stmt_sim->bind_param("ii", $id_cat_actual, $id_emp_actual);
+                        $stmt_sim->execute();
+                        $res_sim = $stmt_sim->get_result();
+                        while ($f_sim = $res_sim->fetch_assoc()):
+                            $fotos_sim = !empty($f_sim['fotos_galeria']) ? explode(',', $f_sim['fotos_galeria']) : [];
+                            renderEmpresaCard($f_sim, $fotos_sim);
+                        endwhile; ?>
+                    </div>
+                </div>
+            <?php endif;
+        }
+        ?>
         </div>
         <?php
         elseif ($resultado && $resultado->num_rows > 0):
@@ -684,8 +721,7 @@ include 'includes/header.php';
             <div class="paginacion"
                 style="display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 40px; margin-bottom: 20px;">
                 <?php if ($pagina_actual > 1): ?>
-                    <a href="<?= APP_URL ?>/empresas?pagina=<?= $pagina_actual - 1 ?><?= $query_str ?>"
-                        class="btn-pag">Anterior</a>
+                    <a href="<?= APP_URL ?>/empresas?pagina=<?= $pagina_actual - 1 ?><?= $query_str ?>" class="btn-pag">Anterior</a>
                 <?php endif; ?>
 
                 <?php

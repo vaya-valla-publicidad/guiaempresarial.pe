@@ -31,7 +31,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 'tamano_max' => 2 * 1024 * 1024,
                 'redimensionar' => true,
                 'ancho_max' => 800,
-                'alto_max' => 600
+                'alto_max' => 600,
+                'webp' => true
             ]);
 
             if ($resultado['success']) {
@@ -54,13 +55,28 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $id_empresa = $stmt->insert_id;
 
             if (!empty($_FILES['fotos']['name'][0])) {
-                $carpeta = __DIR__ . "/../assets/img/empresascarrusel/";
                 $total = min(count($_FILES['fotos']['name']), 5);
                 for ($i = 0; $i < $total; $i++) {
-                    $tmp = $_FILES['fotos']['tmp_name'][$i];
-                    $nombreFoto = uniqid() . "_" . basename($_FILES['fotos']['name'][$i]);
-                    $ruta = $carpeta . $nombreFoto;
-                    if (move_uploaded_file($tmp, $ruta)) {
+                    if (empty($_FILES['fotos']['name'][$i]))
+                        continue;
+
+                    $foto_file = [
+                        'name' => $_FILES['fotos']['name'][$i],
+                        'type' => $_FILES['fotos']['type'][$i],
+                        'tmp_name' => $_FILES['fotos']['tmp_name'][$i],
+                        'error' => $_FILES['fotos']['error'][$i],
+                        'size' => $_FILES['fotos']['size'][$i]
+                    ];
+
+                    $res_f = subirImagenSegura($foto_file, __DIR__ . "/../assets/img/empresascarrusel/", [
+                        'redimensionar' => true,
+                        'ancho_max' => 1200,
+                        'alto_max' => 900,
+                        'webp' => true
+                    ]);
+
+                    if ($res_f['success']) {
+                        $nombreFoto = $res_f['nombre'];
                         $stmtFoto = $conexion->prepare("INSERT INTO empresa_galeria (id_empresa,foto) VALUES (?,?)");
                         $stmtFoto->bind_param("is", $id_empresa, $nombreFoto);
                         $stmtFoto->execute();

@@ -14,6 +14,237 @@ $rol = $_SESSION['rol'];
     <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        .panel-header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .usuario-info-premium {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: #f8fafc;
+            padding: 8px 15px;
+            border-radius: 50px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .user-details {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+        }
+
+        .user-welcome {
+            font-size: 11px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .user-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .btn-logout-premium {
+            width: 35px;
+            height: 35px;
+            background: #fee2e2;
+            color: #ef4444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        .btn-logout-premium:hover {
+            background: #ef4444;
+            color: #fff;
+            transform: scale(1.1);
+        }
+
+        .quick-access-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .qa-card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 16px;
+            text-decoration: none;
+            color: #475569;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid #e2e8f0;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .qa-card i {
+            font-size: 24px;
+            color: #1B3A57;
+        }
+
+        .qa-card span {
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .qa-card:hover {
+            transform: translateY(-5px);
+            border-color: #1B3A57;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            color: #1B3A57;
+        }
+
+        .stats-dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-box {
+            background: #fff;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            position: relative;
+            border: 1px solid #f1f5f9;
+            transition: 0.3s;
+        }
+
+        .stat-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-box i {
+            font-size: 32px;
+            color: #1B3A57;
+        }
+
+        .stat-box .stat-title {
+            font-size: 12px;
+            font-weight: 800;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-box .stat-value {
+            font-size: 36px;
+            font-weight: 900;
+            color: #1e293b;
+            line-height: 1;
+        }
+
+        .stat-box .stat-footer {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: auto;
+        }
+
+        .top5-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .top5-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f8fafc;
+        }
+
+        .top5-item:last-child {
+            border-bottom: none;
+        }
+
+        .top5-name {
+            font-weight: 600;
+            font-size: 13px;
+            color: #475569;
+        }
+
+        .top5-views {
+            background: #f1f5f9;
+            color: #1B3A57;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .btn-reiniciar-vistas {
+            background: #f8fafc;
+            color: #64748b;
+            padding: 8px 12px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 15px;
+            font-weight: 700;
+            width: fit-content;
+            border: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-reiniciar-vistas:hover {
+            background: #fee2e2;
+            color: #ef4444;
+            border-color: #fecaca;
+        }
+
+        .qa-card.qa-primary {
+            background: #1B3A57;
+            color: #fff;
+            border-color: #1B3A57;
+        }
+
+        .qa-card.qa-primary i {
+            color: #fff;
+        }
+
+        .qa-card.qa-primary:hover {
+            background: #152e45;
+        }
+
+        @media (max-width: 768px) {
+            .panel-header-flex {
+                flex-direction: column;
+                gap: 20px;
+                align-items: flex-start;
+            }
+
+            .quick-access-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -21,25 +252,97 @@ $rol = $_SESSION['rol'];
     <div class="panel-container">
         <section class="panel">
 
-            <h1 class="panel-title">Panel <?= ucfirst($rol) ?></h1>
-
-            <div class="usuario-info">
-                Bienvenido, <?= htmlspecialchars($_SESSION['usuario']) ?> |
-                <a href="cerrar.php">Cerrar sesión</a>
+            <div class="panel-header-flex">
+                <h1 class="panel-title">Panel <?= ucfirst($rol) ?></h1>
+                <div class="usuario-info-premium">
+                    <div class="user-details">
+                        <span class="user-welcome">Bienvenido,</span>
+                        <span class="user-name"><?= htmlspecialchars($_SESSION['usuario']) ?></span>
+                    </div>
+                    <a href="cerrar.php" class="btn-logout-premium" title="Cerrar sesión">
+                        <i class="bi bi-box-arrow-right"></i>
+                    </a>
+                </div>
             </div>
 
-            <a href="<?= APP_URL ?>/index.php" class="btn btn-panel-nav">
-                Ver sitio principal
-            </a>
-            <a href="editar_sobre.php" class="btn btn-panel-nav-sep">
-                Editar Sobre Nosotros
-            </a>
-            <a href="gestionar_banner.php" class="btn btn-warning">
-                <i class="bi bi-images"></i> Gestionar Banner / Carrusel
-            </a>
-            <a href="gestionar_resenas.php" class="btn btn-danger-alt btn-panel-nav-sep">
-                <i class="bi bi-star-half"></i> Gestionar Reseñas
-            </a>
+            <div class="quick-access-grid">
+                <a href="<?= APP_URL ?>/index.php" class="qa-card">
+                    <i class="bi bi-house-door"></i>
+                    <span>Ver Sitio</span>
+                </a>
+                <a href="agregar_empresa.php" class="qa-card qa-primary">
+                    <i class="bi bi-plus-lg"></i>
+                    <span>Nueva Empresa</span>
+                </a>
+                <a href="agregar_categoria.php" class="qa-card">
+                    <i class="bi bi-tags"></i>
+                    <span>Nueva Categoría</span>
+                </a>
+                <a href="gestionar_banner.php" class="qa-card">
+                    <i class="bi bi-images"></i>
+                    <span>Banners</span>
+                </a>
+                <a href="gestionar_resenas.php" class="qa-card">
+                    <i class="bi bi-chat-right-quote"></i>
+                    <span>Reseñas</span>
+                </a>
+                <a href="editar_sobre.php" class="qa-card">
+                    <i class="bi bi-info-circle"></i>
+                    <span>Sobre Nosotros</span>
+                </a>
+            </div>
+
+            <?php
+            $stats_global = $conexion->query("SELECT SUM(vistas) as total, COUNT(*) as empresas FROM empresas")->fetch_assoc();
+            $total_visitas = $stats_global['total'] ?? 0;
+            $total_emp = $stats_global['empresas'] ?? 0;
+            $top5 = $conexion->query("SELECT nombre, vistas FROM empresas ORDER BY vistas DESC LIMIT 5");
+            ?>
+
+            <div class="stats-dashboard">
+                <div class="stat-box">
+                    <i class="bi bi-eye"></i>
+                    <span class="stat-title">Impacto Global</span>
+                    <span class="stat-value"><?= number_format($total_visitas) ?></span>
+                    <span class="stat-footer">Visitas totales en la plataforma</span>
+                    <button onclick="customConfirm('¿Reiniciar TODAS las vistas a cero?', () => reiniciarVistas())"
+                        class="btn-reiniciar-vistas">
+                        <i class="bi bi-arrow-counterclockwise"></i> Reiniciar todas las vistas
+                    </button>
+                </div>
+
+                <div class="stat-box" style="border-left-color: #f7941d;">
+                    <i class="bi bi-graph-up-arrow" style="color: #f7941d;"></i>
+                    <span class="stat-title">Top 5 Popularidad</span>
+                    <ul class="top5-list">
+                        <?php if ($top5 && $top5->num_rows > 0): ?>
+                            <?php while ($t = $top5->fetch_assoc()): ?>
+                                <li class="top5-item">
+                                    <span
+                                        class="top5-name"><?= htmlspecialchars(mb_strimwidth($t['nombre'], 0, 20, '…')) ?></span>
+                                    <span class="top5-views"><?= $t['vistas'] ?></span>
+                                </li>
+                            <?php endwhile; ?>
+                        <?php else: ?>
+                            <li class="top5-item">No hay datos suficientes</li>
+                        <?php endif; ?>
+                    </ul>
+                </div>
+
+                <div class="stat-box" style="border-left-color: #10b981;">
+                    <i class="bi bi-building" style="color: #10b981;"></i>
+                    <span class="stat-title">Activos</span>
+                    <span class="stat-value"><?= $total_emp ?></span>
+                    <span class="stat-footer">Empresas registradas actualmente</span>
+                    <div style="margin-top:auto;">
+                        <a href="agregar_empresa.php" class="btn-reiniciar-vistas"
+                            style="background:#dcfce7; color:#166534;">
+                            <i class="bi bi-plus-circle"></i> Nuevo registro
+                        </a>
+                    </div>
+                </div>
+            </div>
+
             <h2>Categorías</h2><br>
             <a href="agregar_categoria.php" class="btn">Agregar Categoría</a>
             <br><br>
