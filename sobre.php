@@ -2,7 +2,7 @@
 include 'db.php';
 $seo_title = "Sobre Nosotros - Guía Empresarial";
 $seo_description = "Conoce quiénes somos, nuestra misión y visión. Guía Empresarial impulsa y conecta a los negocios locales.";
-include 'includes/header.php';
+include 'includes/Header.php';
 ?>
 
 <?php

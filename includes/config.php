@@ -21,5 +21,9 @@ define('SMTP_PORT', (int) config_env('SMTP_PORT', 587));
 define('SMTP_FROM_EMAIL', config_env('SMTP_FROM_EMAIL', 'tucorreo@gmail.com'));
 define('SMTP_FROM_NAME', config_env('SMTP_FROM_NAME', 'Guía Empresarial'));
 
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https://" : "http://";
+$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+$default_url = $protocol . $host . '/guiaempresarial.pe';
+
 define('APP_NAME', config_env('APP_NAME', 'Guía Empresarial'));
-define('APP_URL', config_env('APP_URL', 'http://localhost/guiaempresarial.pe'));
+define('APP_URL', config_env('APP_URL', $default_url));

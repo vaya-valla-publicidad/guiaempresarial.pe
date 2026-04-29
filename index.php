@@ -37,7 +37,7 @@ $json_ld_schema = [
     ]
 ];
 
-include 'includes/header.php';
+include 'includes/Header.php';
 ?>
 
 <?php

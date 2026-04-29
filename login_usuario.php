@@ -60,7 +60,8 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'reenviar_codigo_ajax') {
       $stmt_upd = $conexion->prepare("UPDATE usuarios_publicos SET codigo_verificacion=?, codigo_expira=? WHERE email=?");
       $stmt_upd->bind_param("sis", $codigo, $expira, $email);
       if ($stmt_upd->execute()) {
-        enviarCorreo($email, $u['nombre'], 'Código de Acceso - Guía Empresarial', "Tu código de acceso es: $codigo\n\nEste código expira en 10 minutos.");
+        $cuerpo = plantillaCorreoOTP($u['nombre'], $codigo, 'acceso');
+        enviarCorreo($email, $u['nombre'], 'Código de Acceso - Guía Empresarial', $cuerpo);
         $limits['count']++;
         $limits['daily_count']++;
         $limits['last_time'] = $now;
@@ -118,8 +119,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
             $stmt_upd = $conexion->prepare("UPDATE usuarios_publicos SET codigo_verificacion=?, codigo_expira=? WHERE id=?");
             $stmt_upd->bind_param("sii", $codigo, $expira, $u['id']);
             $stmt_upd->execute();
-
-            enviarCorreo($email, $u['nombre'], 'Acceso a Guía Empresarial', "Tu código de acceso es: $codigo");
+            
+            $cuerpo = plantillaCorreoOTP($u['nombre'], $codigo, 'acceso');
+            enviarCorreo($email, $u['nombre'], 'Acceso a Guía Empresarial', $cuerpo);
             $limits['count']++;
             $limits['daily_count']++;
             $limits['last_time'] = $now;

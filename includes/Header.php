@@ -315,7 +315,3 @@ if (isset($_SESSION['usuario_publico_id'])) {
         startProgress();
       });
     </script>
-  </main>
-</body>
-
-</html>

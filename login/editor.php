@@ -15,6 +15,37 @@ $rol = $_SESSION['rol'];
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
+        #nprogress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 4px;
+            background: #ef4444;
+            z-index: 10000;
+            transition: width 0.4s ease, opacity 0.4s ease;
+            pointer-events: none;
+            box-shadow: 0 0 10px rgba(230, 57, 70, 0.4);
+        }
+
+        .mantenimiento-top-banner {
+            background: #ef4444;
+            color: #fff;
+            text-align: center;
+            padding: 8px;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            position: sticky;
+            top: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
         .panel-header-flex {
             display: flex;
             justify-content: space-between;
@@ -248,6 +279,19 @@ $rol = $_SESSION['rol'];
 </head>
 
 <body>
+    <div id="nprogress-bar"></div>
+
+    <?php if (file_exists(__DIR__ . '/../mantenimiento.flag')): ?>
+        <div id="mantenimiento-banner" class="mantenimiento-top-banner">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            EL SITIO WEB SE ENCUENTRA ACTUALMENTE EN MANTENIMIENTO (PÚBLICO BLOQUEADO)
+        </div>
+    <?php else: ?>
+        <div id="mantenimiento-banner" class="mantenimiento-top-banner" style="display:none; background: #10b981;">
+            <i class="bi bi-check-circle-fill"></i>
+            EL SITIO WEB ESTÁ EN LÍNEA Y ACCESIBLE PARA EL PÚBLICO
+        </div>
+    <?php endif; ?>
 
     <div class="panel-container">
         <section class="panel">
@@ -340,6 +384,29 @@ $rol = $_SESSION['rol'];
                             <i class="bi bi-plus-circle"></i> Nuevo registro
                         </a>
                     </div>
+                </div>
+            </div>
+
+            <div class="system-tools-grid"
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 40px;">
+                <div class="stat-box" style="border-top: 4px solid #6366f1; padding: 20px;">
+                    <h3 style="font-size: 15px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
+                        <i class="bi bi-shield-lock"></i> Modo Mantenimiento
+                    </h3>
+                    <button id="btn-toggle-maint" onclick="toggleMantenimiento()" class="btn-reiniciar-vistas"
+                        style="width: 100%; justify-content: center; transition: 0.3s; padding: 12px; font-weight: 700; border-radius: 12px; border: 2px solid;">
+                        <?php $mantenimiento_activo = file_exists(__DIR__ . '/../mantenimiento.flag'); ?>
+                        <i class="bi <?= $mantenimiento_activo ? 'bi-toggle-on' : 'bi-toggle-off' ?>"></i>
+                        <span
+                            id="maint-text"><?= $mantenimiento_activo ? 'Desactivar Mantenimiento' : 'Activar Mantenimiento' ?></span>
+                    </button>
+                    <script>
+                        const isM = <?= $mantenimiento_activo ? 'true' : 'false' ?>;
+                        const btnM = document.getElementById('btn-toggle-maint');
+                        btnM.style.background = isM ? '#fee2e2' : '#f0fdf4';
+                        btnM.style.color = isM ? '#ef4444' : '#16a34a';
+                        btnM.style.borderColor = isM ? '#fecaca' : '#bbf7d0';
+                    </script>
                 </div>
             </div>
 
@@ -443,13 +510,13 @@ $rol = $_SESSION['rol'];
                     </tr>
                     <?php
                     $res = $conexion->query("
-    SELECT e.id_empresa, e.logo, e.nombre, e.telefono, e.direccion,
-           e.descripcion, e.horario, e.ubicacion_link, e.link_empresa,
-           e.destacada, e.vistas, c.nombre AS categoria
-    FROM empresas e
-    JOIN categorias c ON e.id_categoria = c.id_categoria
-    ORDER BY e.destacada DESC, e.vistas DESC
-");
+                        SELECT e.id_empresa, e.logo, e.nombre, e.telefono, e.direccion,
+                               e.descripcion, e.horario, e.ubicacion_link, e.link_empresa,
+                               e.destacada, e.vistas, c.nombre AS categoria
+                        FROM empresas e
+                        JOIN categorias c ON e.id_categoria = c.id_categoria
+                        ORDER BY e.destacada DESC, e.vistas DESC
+                    ");
                     while ($fila = $res->fetch_assoc()):
                         ?>
                         <tr id="fila-<?= $fila['id_empresa'] ?>">
@@ -467,7 +534,8 @@ $rol = $_SESSION['rol'];
                                     <button
                                         onclick="customConfirm('¿Reiniciar vistas de esta empresa?', () => reiniciarVistas(<?= $fila['id_empresa'] ?>))"
                                         class="btn btn-warning" style="font-size: 12px; padding: 6px 12px;">
-                                        <i class="bi bi-arrow-counterclockwise"></i> 0 Vistas </button>
+                                        <i class="bi bi-arrow-counterclockwise"></i> 0 Vistas
+                                    </button>
                                 </div>
                             </td>
                             <td data-label="Logo">
@@ -524,6 +592,7 @@ $rol = $_SESSION['rol'];
     <script src="<?= APP_URL ?>/assets/js/toast.js"></script>
     <script>
         const csrfToken = '<?= $_SESSION['csrf_token'] ?? '' ?>';
+        let currentMaintState = <?= file_exists(__DIR__ . '/../mantenimiento.flag') ? 'true' : 'false' ?>;
 
         function reiniciarVistas(id = null) {
             const fd = new FormData();
@@ -568,7 +637,6 @@ $rol = $_SESSION['rol'];
         function eliminarRegistro(tipo, id, btn) {
             customConfirm('¿Estás seguro de eliminar permanentemente este registro?', () => {
                 let archivo = '';
-
                 if (tipo === 'empresa') archivo = 'eliminar.php';
                 if (tipo === 'categoria') archivo = 'eliminar_categoria.php';
 
@@ -593,7 +661,6 @@ $rol = $_SESSION['rol'];
                             btn.style.opacity = '1';
                             return;
                         }
-
                         let fila = btn.closest('tr');
                         if (fila) {
                             fila.style.transition = "opacity 0.3s ease";
@@ -604,12 +671,71 @@ $rol = $_SESSION['rol'];
                         }
                     })
                     .catch(e => {
-                        showToast('Error de red al intentar eliminar.', 'error');
-                        btn.disabled = false;
-                        btn.innerText = 'Eliminar';
-                        btn.style.opacity = '1';
-                    });
+                        showToast('Error de red al intentar eliminar.', 'error'));
+                btn.disabled = false;
+                btn.innerText = 'Eliminar';
+                btn.style.opacity = '1';
             });
+        });
+        }
+
+        function toggleMantenimiento() {
+            startProgress();
+            const btn = document.getElementById('btn-toggle-maint');
+            const banner = document.getElementById('mantenimiento-banner');
+
+            btn.disabled = true;
+
+            const fd = new FormData();
+            fd.append('csrf_token', csrfToken);
+            fetch('toggle_mantenimiento.php', {
+                method: 'POST',
+                body: fd
+            })
+                .then(r => r.json())
+                .then(data => {
+                    finishProgress();
+                    btn.disabled = false;
+                    if (data.ok) {
+                        const isM = !data.mensaje.toLowerCase().includes('desactivado');
+                        currentMaintState = isM;
+
+                        btn.style.background = isM ? '#fee2e2' : '#f0fdf4';
+                        btn.style.color = isM ? '#ef4444' : '#16a34a';
+                        btn.style.borderColor = isM ? '#fecaca' : '#bbf7d0';
+                        btn.innerHTML = `<i class="bi bi-toggle-${isM ? 'on' : 'off'}"></i> <span id="maint-text">${isM ? 'Desactivar' : 'Activar'} Mantenimiento</span>`;
+
+                        banner.style.display = 'flex';
+                        banner.style.background = isM ? '#ef4444' : '#10b981';
+                        banner.innerHTML = `<i class="bi bi-${isM ? 'exclamation-triangle' : 'check-circle'}-fill"></i> ${isM ? 'EL SITIO WEB SE ENCUENTRA ACTUALMENTE EN MANTENIMIENTO (PÚBLICO BLOQUEADO)' : 'EL SITIO WEB ESTÁ EN LÍNEA Y ACCESIBLE PARA EL PÚBLICO'}`;
+
+                        if (!isM) {
+                            setTimeout(() => {
+                                if (!currentMaintState) {
+                                    banner.style.transition = 'opacity 0.5s ease';
+                                    banner.style.opacity = '0';
+                                    setTimeout(() => {
+                                        if (!currentMaintState) {
+                                            banner.style.display = 'none';
+                                            banner.style.opacity = '1';
+                                        }
+                                    }, 500);
+                                }
+                            }, 3000);
+                        } else {
+                            banner.style.opacity = '1';
+                        }
+
+                        showToast(data.mensaje, isM ? 'warning' : 'success');
+                    } else {
+                        showToast(data.error, 'error');
+                    }
+                })
+                .catch(() => {
+                    finishProgress();
+                    btn.disabled = false;
+                    showToast('Error al conectar con el servidor', 'error');
+                });
         }
 
         document.getElementById('filtroEmpresa')?.addEventListener('keyup', function () {
@@ -634,8 +760,46 @@ $rol = $_SESSION['rol'];
                 noResults.style.display = found ? "none" : "";
             }
         });
-    </script>
 
+        const bar = document.getElementById('nprogress-bar');
+
+        function startProgress() {
+            if (!bar) return;
+            bar.style.opacity = '1';
+            bar.style.transition = 'none';
+            bar.style.width = '0%';
+            requestAnimationFrame(() => {
+                bar.style.transition = 'width 0.4s cubic-bezier(0.1, 0.5, 0.5, 1)';
+                bar.style.width = '70%';
+            });
+        }
+
+        function finishProgress() {
+            if (!bar) return;
+            bar.style.transition = 'width 0.2s ease-out';
+            bar.style.width = '100%';
+            setTimeout(() => {
+                bar.style.opacity = '0';
+                setTimeout(() => {
+                    bar.style.width = '0%';
+                }, 400);
+            }, 200);
+        }
+
+        document.addEventListener('click', e => {
+            const a = e.target.closest('a');
+            if (a && a.href && !a.target && a.href !== '#' &&
+                new URL(a.href).origin === location.origin &&
+                !a.hasAttribute('download') &&
+                !a.href.includes('mailto:') &&
+                !a.href.includes('tel:')) {
+                startProgress();
+            }
+        });
+
+        window.addEventListener('pageshow', () => finishProgress());
+        window.addEventListener('beforeunload', () => startProgress());
+    </script>
 </body>
 
 </html>

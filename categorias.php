@@ -2,7 +2,7 @@
 include 'db.php';
 $seo_title = "Categorías - Guía Empresarial";
 $seo_description = "Explora los rubros destacados y descubre empresas relacionadas en Guía Empresarial.";
-include 'includes/header.php';
+include 'includes/Header.php';
 include 'includes/components/breadcrumbs.php';
 ?>
 

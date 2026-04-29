@@ -18,7 +18,7 @@ function renderEmpresaCard($fila, $fotos_arr = [])
             <div class="empresa-top-row">
                 <div class="empresa-logo">
                     <?php if ($logo): ?>
-                        <img src="<?= $path_img . $logo ?>" alt="<?= htmlspecialchars($fila['nombre']) ?>">
+                        <img src="<?= $path_img . $logo ?>" alt="<?= htmlspecialchars($fila['nombre']) ?>" loading="lazy">
                     <?php else: ?>
                         <div class="logo-placeholder"><?= mb_strtoupper(mb_substr($fila['nombre'], 0, 1)) ?></div>
                     <?php endif; ?>
@@ -80,8 +80,7 @@ function renderEmpresaCard($fila, $fotos_arr = [])
                 <?php endif; ?>
 
                 <?php foreach ($fotos_arr as $i => $foto): ?>
-                    <div class="slide <?= $i === 0 ? 'activo' : '' ?>"
-                        style="background-image: url('<?= $path_galeria . htmlspecialchars($foto) ?>');">
+                    <div class="slide <?= $i === 0 ? 'activo' : '' ?>">
                         <img src="<?= $path_galeria . htmlspecialchars($foto) ?>"
                             alt="Imagen de <?= htmlspecialchars($fila['nombre']) ?>" loading="lazy">
                     </div>

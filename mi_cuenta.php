@@ -147,7 +147,6 @@ if ($resenas_q) {
   }
 }
 
-// Cargar favoritos
 $stmt_favs_q = $conexion->prepare(
   "SELECT e.*, c.nombre AS categoria, 
           GROUP_CONCAT(g.foto ORDER BY g.orden ASC, g.id_foto ASC SEPARATOR ',') as fotos_galeria
@@ -189,7 +188,7 @@ $panel_activo = $_GET['tab'] ?? 'perfil';
 <?php
 $seo_title = "Mi Cuenta - Guía Empresarial";
 $seo_robots = "noindex, nofollow";
-include 'includes/header.php';
+include 'includes/Header.php';
 ?>
 
 <link rel="stylesheet" href="assets/css/mi_cuenta.css">
@@ -508,7 +507,6 @@ include 'includes/header.php';
     }
   }
 
-  // Manejar Hash inicial y cambios
   window.addEventListener('load', () => {
     const hash = window.location.hash.replace('#', '');
     if (hash && mcPanels[hash]) {

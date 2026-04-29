@@ -21,4 +21,37 @@ if ($conexion->connect_error) {
 if (!$conexion->set_charset(DB_CHARSET)) {
     error_log('No se pudo establecer el charset de la base de datos: ' . $conexion->error);
 }
+
+if (file_exists(__DIR__ . '/mantenimiento.flag')) {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    $es_admin = (isset($_SESSION['rol']) && $_SESSION['rol'] === 'admin');
+    $ruta_actual = $_SERVER['REQUEST_URI'];
+
+    $whitelist = [
+        '/login',
+        '/login_usuario',
+        '/registro_usuario',
+        '/logout',
+        '/panel',   // <-- AÑADIDO
+        '/admin',   // <-- AÑADIDO
+        '/editor',  // <-- AÑADIDO
+    ];
+
+    $es_excluido = false;
+    foreach ($whitelist as $item) {
+        if (strpos($ruta_actual, $item) !== false) {
+            $es_excluido = true;
+            break;
+        }
+    }
+
+    if (!$es_admin && !$es_excluido) {
+        http_response_code(503);
+        include __DIR__ . '/mantenimiento.php';
+        exit;
+    }
+}
 ?>

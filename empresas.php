@@ -70,7 +70,7 @@ if ($slug_param) {
         exit;
     }
 }
-include 'includes/header.php';
+include 'includes/Header.php';
 ?>
 
 <section class="empresas-page-section">

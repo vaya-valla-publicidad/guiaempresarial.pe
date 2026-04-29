@@ -76,6 +76,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $nombreArchivo = uniqid() . "_" . basename($_FILES['logo']['name']);
                 $rutaDestino = __DIR__ . "/../assets/img/" . $nombreArchivo;
                 if (move_uploaded_file($_FILES['logo']['tmp_name'], $rutaDestino)) {
+                    if (!empty($empresa['logo']) && file_exists(__DIR__ . "/../assets/img/" . $empresa['logo'])) {
+                        unlink(__DIR__ . "/../assets/img/" . $empresa['logo']);
+                    }
                     $logo = $nombreArchivo;
                 } else {
                     $error = "No se pudo guardar el logo. Intenta nuevamente.";

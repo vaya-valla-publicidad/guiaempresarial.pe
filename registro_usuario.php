@@ -60,7 +60,8 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'reenviar_codigo_ajax') {
     $stmt = $conexion->prepare("UPDATE usuarios_publicos SET codigo_verificacion=?, codigo_expira=? WHERE email=? AND verificado=0");
     $stmt->bind_param("sis", $codigo, $expira, $email);
     if ($stmt->execute()) {
-      enviarCorreo($email, 'Usuario', 'Código de Acceso - Guía Empresarial', "Tu nuevo código: $codigo");
+      $cuerpo = plantillaCorreoOTP('Usuario', $codigo, 'registro');
+      enviarCorreo($email, 'Usuario', 'Código de Acceso - Guía Empresarial', $cuerpo);
       $limits['count']++;
       $limits['daily_count']++;
       $limits['last_time'] = $now;
@@ -116,8 +117,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
           $stmt = $conexion->prepare("INSERT INTO usuarios_publicos (nombre, email, password_hash, codigo_verificacion, codigo_expira, verificado) VALUES (?, ?, ?, ?, ?, 0)");
           $stmt->bind_param("ssssi", $nombre, $email, $pw_hash, $codigo, $expira);
           if ($stmt->execute()) {
-            enviarCorreo($email, $nombre, 'Verificación - Guía Empresarial', "Tu código: $codigo");
-            $limits['count_30m']++;
+            $cuerpo = plantillaCorreoOTP($nombre, $codigo, 'registro');
+            enviarCorreo($email, $nombre, 'Verificación - Guía Empresarial', $cuerpo);
+            $limits['count']++;
             header("Location: registro_usuario?paso=verificar&email=" . urlencode($email));
             exit;
           } else {
