@@ -211,8 +211,6 @@ if (isset($_SESSION['usuario_publico_id'])) {
       const navOverlay = document.getElementById('nav-overlay');
       const toggleIcon = navToggle ? navToggle.querySelector('i') : null;
 
-      window.csrfToken = '<?php echo function_exists('generarTokenCSRF') ? generarTokenCSRF() : ""; ?>';
-
       function abrirMenu() {
         if (!navActions || !navOverlay || !toggleIcon) return;
         navActions.classList.add('open');
@@ -269,49 +267,5 @@ if (isset($_SESSION['usuario_publico_id'])) {
             }, 300);
           }
         }
-      });
-
-      const bar = document.getElementById('nprogress-bar');
-
-      function startProgress() {
-        if (!bar) return;
-        bar.style.opacity = '1';
-        bar.style.transition = 'none';
-        bar.style.width = '0%';
-        requestAnimationFrame(() => {
-          bar.style.transition = 'width 0.4s cubic-bezier(0.1, 0.5, 0.5, 1)';
-          bar.style.width = '70%';
-        });
-      }
-
-      function finishProgress() {
-        if (!bar) return;
-        bar.style.transition = 'width 0.2s ease-out';
-        bar.style.width = '100%';
-        setTimeout(() => {
-          bar.style.opacity = '0';
-          setTimeout(() => {
-            bar.style.width = '0%';
-          }, 400);
-        }, 200);
-      }
-
-      document.addEventListener('click', e => {
-        const a = e.target.closest('a');
-        if (a && a.href && !a.target && a.href !== '#' &&
-          new URL(a.href).origin === location.origin &&
-          !a.hasAttribute('download') &&
-          !a.href.includes('mailto:') &&
-          !a.href.includes('tel:')) {
-          startProgress();
-        }
-      });
-
-      window.addEventListener('pageshow', (event) => {
-        finishProgress();
-      });
-
-      window.addEventListener('beforeunload', () => {
-        startProgress();
       });
     </script>

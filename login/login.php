@@ -46,6 +46,11 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) 
     $segundos = $restante % 60;
     $error = "Demasiados intentos fallidos. Intenta de nuevo en {$minutos} min {$segundos} seg.";
 } elseif (isset($_POST['usu'], $_POST['pass'])) {
+    if (!empty($_POST['segundo_nombre'])) {
+        header("Location: " . APP_URL . "/index.php");
+        exit();
+    }
+
     $usu = trim($_POST['usu']);
     $pass = $_POST['pass'];
 
@@ -123,6 +128,10 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) 
 
             <?php if (!($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo)): ?>
                 <form action="" method="post" class="login-form">
+                    <div style="display:none; visibility:hidden; opacity:0; position:absolute; left:-9999px;">
+                        <label for="segundo_nombre">Segundo Nombre</label>
+                        <input type="text" name="segundo_nombre" id="segundo_nombre" tabindex="-1" autocomplete="off">
+                    </div>
                     <div class="form-group">
                         <label for="usu">Usuario</label>
                         <input type="text" name="usu" id="usu" required>

@@ -311,7 +311,7 @@ $total_slides = count($slides);
         }
 
         if (resultadosDiv.innerHTML.trim() === '') {
-            fetch('<?= APP_URL ?>/buscar.php?q=' + encodeURIComponent(q))
+            fetch('<?= APP_URL ?>/buscar?q=' + encodeURIComponent(q))
                 .then(r => r.text())
                 .then(d => { resultadosDiv.innerHTML = d; })
                 .catch(() => { resultadosDiv.innerHTML = ''; });

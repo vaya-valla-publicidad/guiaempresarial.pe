@@ -1,8 +1,6 @@
-const CACHE_NAME = "guia-empresarial-v5";
+const CACHE_NAME = "guia-empresarial-v6";
 
 const assetsToCache = [
-  "./",
-  "index.php",
   "assets/css/style.css",
   "assets/css/registro_usuario.css",
   "assets/img/image.png",
@@ -37,14 +35,21 @@ self.addEventListener("activate", event => {
 self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
 
+  // No cachear las peticiones de navegación (HTML/PHP dinámico)
+  if (event.request.mode === 'navigate') {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   const url = new URL(event.request.url);
-  
-  const isDynamic = url.pathname.endsWith('.php') || 
-                    url.pathname.includes('login_usuario') || 
-                    url.pathname.includes('registro_usuario') || 
-                    url.pathname.includes('admin') || 
-                    url.pathname.includes('editor') ||
-                    url.search.length > 0;
+
+  const isDynamic = url.pathname.endsWith('.php') ||
+    url.pathname.includes('login_usuario') ||
+    url.pathname.includes('registro_usuario') ||
+    url.pathname.includes('admin') ||
+    url.pathname.includes('editor') ||
+    url.pathname.endsWith('index') ||
+    url.search.length > 0;
 
   if (isDynamic) {
     event.respondWith(fetch(event.request));

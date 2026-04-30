@@ -77,6 +77,11 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'reenviar_codigo_ajax') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
+  if (!empty($_POST['telefono_movil'])) {
+    header("Location: index");
+    exit;
+  }
+
   if (!validarCSRF()) {
     $error = 'Error de seguridad detectado. Por favor, recarga la página.';
   } else {
@@ -119,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
             $stmt_upd = $conexion->prepare("UPDATE usuarios_publicos SET codigo_verificacion=?, codigo_expira=? WHERE id=?");
             $stmt_upd->bind_param("sii", $codigo, $expira, $u['id']);
             $stmt_upd->execute();
-            
+
             $cuerpo = plantillaCorreoOTP($u['nombre'], $codigo, 'acceso');
             enviarCorreo($email, $u['nombre'], 'Acceso a Guía Empresarial', $cuerpo);
             $limits['count']++;
@@ -282,6 +287,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
           <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>"><input type="hidden" name="accion"
             value="check_email">
           <?php if ($redir): ?><input type="hidden" name="redir" value="<?= htmlspecialchars($redir) ?>"><?php endif; ?>
+
+          <div style="display:none; visibility:hidden; opacity:0; position:absolute; left:-9999px;">
+            <label for="telefono_movil">Teléfono Móvil</label>
+            <input type="text" name="telefono_movil" id="telefono_movil" tabindex="-1" autocomplete="off">
+          </div>
           <div class="field-wrap"><label>Correo Electrónico</label><input type="email" name="email"
               placeholder="tu@correo.com" required value="<?= htmlspecialchars($email_param) ?>"></div>
           <button type="submit" class="btn-primary">Continuar</button>
@@ -311,7 +321,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
       <?php elseif ($paso === 'codigo'): ?>
         <div class="verification-view">
           <p style="text-align:center; font-size:14px; margin-bottom:25px; color:rgba(255,255,255,0.6);">Código enviado a
-            <strong><?= htmlspecialchars($email_param) ?></strong></p>
+            <strong><?= htmlspecialchars($email_param) ?></strong>
+          </p>
           <form method="POST" id="form-otp">
             <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>"><input type="hidden" name="accion"
               value="verificar_codigo"><input type="hidden" name="email" value="<?= htmlspecialchars($email_param) ?>">

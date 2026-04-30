@@ -78,6 +78,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
     $error = 'Error de seguridad detectado. Por favor, recarga la página.';
   } else {
     if ($_POST['accion'] === 'registrar') {
+      if (!empty($_POST['apellido_materno'])) {
+        header("Location: index");
+        exit;
+      }
+
       $nombre = trim($_POST['nombre']);
       $email = trim($_POST['email']);
       $password = $_POST['password'];
@@ -213,6 +218,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
         <form method="POST" id="reg-form">
           <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
           <input type="hidden" name="accion" value="registrar">
+
+          <!-- HONEYPOT (Trampa para bots) -->
+          <div style="display:none; visibility:hidden; opacity:0; position:absolute; left:-9999px;">
+            <label for="apellido_materno">Segundo Apellido</label>
+            <input type="text" name="apellido_materno" id="apellido_materno" tabindex="-1" autocomplete="off">
+          </div>
 
           <div class="field-wrap">
             <label>Nombre Completo</label>

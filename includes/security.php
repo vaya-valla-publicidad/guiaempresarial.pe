@@ -276,12 +276,11 @@ if (!function_exists('verificarLimiteCorreo')) {
         if (session_status() === PHP_SESSION_NONE)
             session_start();
         $clave = 'limite_correo_' . md5($email);
+
         if (!isset($_SESSION[$clave])) {
             $_SESSION[$clave] = [
-                'count_30m' => 0,
-                'count_24h' => 0,
-                'first_request_30m' => time(),
-                'first_request_24h' => time(),
+                'count_12h' => 0,
+                'first_request_12h' => time(),
                 'locked_until' => 0
             ];
         }
@@ -289,32 +288,28 @@ if (!function_exists('verificarLimiteCorreo')) {
         $now = time();
         $s = &$_SESSION[$clave];
 
-        if ($now > $s['first_request_24h'] + 86400) {
-            $s['count_24h'] = 0;
-            $s['first_request_24h'] = $now;
+        if ($now > $s['first_request_12h'] + 43200) {
+            $s['count_12h'] = 0;
+            $s['first_request_12h'] = $now;
         }
 
         if ($now < $s['locked_until']) {
             return false;
         }
 
-        if ($s['count_24h'] >= 6) {
-            $s['locked_until'] = $now + 86400;
+        if ($s['count_12h'] >= 10) {
+            $s['locked_until'] = max($now, $s['first_request_12h'] + 43200);
             return false;
         }
 
-        if ($now > $s['first_request_30m'] + 1800) {
-            $s['count_30m'] = 0;
-            $s['first_request_30m'] = $now;
-        }
+        $s['count_12h']++;
 
-        if ($s['count_30m'] >= 3) {
+        if ($s['count_12h'] == 7) {
             $s['locked_until'] = $now + 1800;
-            return false;
+        } else if ($s['count_12h'] == 10) {
+            $s['locked_until'] = max($now, $s['first_request_12h'] + 43200);
         }
 
-        $s['count_30m']++;
-        $s['count_24h']++;
         return true;
     }
 }

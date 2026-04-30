@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
             toast.classList.remove('show');
             setTimeout(() => toast.remove(), 400);
         }, 4000);
-    };
+    }; s
 
     const modalHTML = `
     <div id="custom-modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(10,15,24,0.7); z-index:100000; align-items:center; justify-content:center; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
