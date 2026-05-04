@@ -314,7 +314,8 @@ $rol = $_SESSION['rol'];
         </div>
     <?php endif; ?>
 
-    <section class="panel">
+    <div class="panel-container">
+        <section class="panel">
 
         <div class="panel-header-flex">
             <h1 class="panel-title">Panel <?= ucfirst($rol) ?></h1>

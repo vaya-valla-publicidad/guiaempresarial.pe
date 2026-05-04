@@ -49,7 +49,7 @@ if (isset($_SESSION['usuario_publico_id'])) {
   <meta property="twitter:description" content="<?= htmlspecialchars($seo_description) ?>">
   <meta property="twitter:image" content="<?= htmlspecialchars($seo_image) ?>">
 
-  <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css">
+  <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css?v=1.2">
   <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/mi_cuenta.css">
   <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -216,7 +216,7 @@ if (isset($_SESSION['usuario_publico_id'])) {
         navActions.classList.add('open');
         navOverlay.classList.add('open');
         toggleIcon.className = 'bi bi-x';
-        document.body.style.overflow = 'hidden';
+        document.body.classList.add('menu-abierto');
       }
 
       function cerrarMenu() {
@@ -224,7 +224,7 @@ if (isset($_SESSION['usuario_publico_id'])) {
         navActions.classList.remove('open');
         navOverlay.classList.remove('open');
         toggleIcon.className = 'bi bi-list';
-        document.body.style.overflow = '';
+        document.body.classList.remove('menu-abierto');
       }
 
       if (navToggle) {
@@ -239,6 +239,15 @@ if (isset($_SESSION['usuario_publico_id'])) {
 
       document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', cerrarMenu);
+      });
+
+      // Cerrar menú automáticamente al pasar a vista de PC
+      window.addEventListener('resize', () => {
+        if (window.innerWidth > 900) {
+          if (navActions && navActions.classList.contains('open')) {
+            cerrarMenu();
+          }
+        }
       });
 
       function handleNavClick(e, targetId) {
