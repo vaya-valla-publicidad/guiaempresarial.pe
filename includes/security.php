@@ -327,3 +327,24 @@ if (!function_exists('validarRedireccionLocal')) {
         return $url;
     }
 }
+
+// Verificación de integridad de sesión (Cerrar sesiones si cambia la contraseña)
+if (isset($_SESSION['usuario_publico_id']) && isset($conexion)) {
+    $stmt_check_session = $conexion->prepare("SELECT password_hash FROM usuarios_publicos WHERE id = ?");
+    $stmt_check_session->bind_param("i", $_SESSION['usuario_publico_id']);
+    $stmt_check_session->execute();
+    $res_check_session = $stmt_check_session->get_result()->fetch_assoc();
+    
+    if ($res_check_session) {
+        $hash_actual = $res_check_session['password_hash'];
+        $hash_sesion = $_SESSION['usuario_publico_pw_hash'] ?? '';
+        
+        if ($hash_actual !== $hash_sesion) {
+            // La contraseña ha cambiado, invalidamos esta sesión
+            session_unset();
+            session_destroy();
+            header('Location: login_usuario?error=sesion_expirada');
+            exit;
+        }
+    }
+}

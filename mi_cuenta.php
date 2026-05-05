@@ -2,6 +2,7 @@
 session_start();
 include 'db.php';
 include 'includes/security.php';
+include_once 'libs/mailer.php';
 include_once 'includes/components/empresa_card.php';
 
 if (!isset($_SESSION['usuario_publico_id'])) {
@@ -14,38 +15,94 @@ $stmt_u = $conexion->prepare("SELECT * FROM usuarios_publicos WHERE id = ?");
 $stmt_u->bind_param("i", $id_u);
 $stmt_u->execute();
 $u = $stmt_u->get_result()->fetch_assoc();
-$error = '';
-$exito = '';
+
+$error = $_SESSION['error'] ?? '';
+$exito = $_SESSION['exito'] ?? '';
+unset($_SESSION['error'], $_SESSION['exito']);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
   if (!validarCSRF()) {
     logSeguridad('csrf_invalido', 'Intento de POST en mi_cuenta sin token');
     $error = 'Error de seguridad. Intente nuevamente.';
   } else {
-    if ($_POST['accion'] === 'borrar_cuenta') {
-      $stmt_del_r = $conexion->prepare("DELETE FROM resenas WHERE id_usuario_publico = ?");
-      $stmt_del_r->bind_param("i", $id_u);
-      $stmt_del_r->execute();
-
-      $stmt_del_f = $conexion->prepare("DELETE FROM favoritos WHERE id_usuario_publico = ?");
-      $stmt_del_f->bind_param("i", $id_u);
-      $stmt_del_f->execute();
-
-      $stmt_del_v = $conexion->prepare("DELETE FROM resena_votos WHERE id_usuario_publico = ?");
-      $stmt_del_v->bind_param("i", $id_u);
-      $stmt_del_v->execute();
-
-      if (!empty($u['foto_perfil']) && file_exists('assets/img/avatars/' . $u['foto_perfil'])) {
-        unlink('assets/img/avatars/' . $u['foto_perfil']);
+    if ($_POST['accion'] === 'enviar_codigo_pw') {
+      if (!verificarRateLimit('envio_otp_pw', 10, 600)) {
+        $error = 'Demasiados intentos. Espera unos minutos.';
+      } else {
+        $codigo = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $expira = time() + 600;
+        $stmt_upd = $conexion->prepare("UPDATE usuarios_publicos SET codigo_verificacion=?, codigo_expira=? WHERE id=?");
+        $stmt_upd->bind_param("sii", $codigo, $expira, $id_u);
+        if ($stmt_upd->execute()) {
+          $cuerpo = plantillaCorreoOTP($u['nombre'], $codigo, 'password');
+          if (enviarCorreo($u['email'], $u['nombre'], 'Código de Seguridad - Cambio de Contraseña', $cuerpo)) {
+            $exito = 'Código enviado a su correo electrónico.';
+            $_SESSION['esperando_otp_pw'] = true;
+          } else {
+            $error = 'No se pudo enviar el correo. Intente más tarde.';
+          }
+        }
       }
+    }
 
-      $stmt_del_u = $conexion->prepare("DELETE FROM usuarios_publicos WHERE id = ?");
-      $stmt_del_u->bind_param("i", $id_u);
-      $stmt_del_u->execute();
+    if ($_POST['accion'] === 'verificar_codigo_pw') {
+      $codigo = trim($_POST['codigo_otp'] ?? '');
+      $stmt_check = $conexion->prepare("SELECT * FROM usuarios_publicos WHERE id = ?");
+      $stmt_check->bind_param("i", $id_u);
+      $stmt_check->execute();
+      $res_u = $stmt_check->get_result()->fetch_assoc();
 
-      session_destroy();
-      header('Location: index');
-      exit;
+      if ($codigo === $res_u['codigo_verificacion'] && time() < $res_u['codigo_expira']) {
+        $conexion->query("UPDATE usuarios_publicos SET codigo_verificacion=NULL, codigo_expira=NULL WHERE id=" . $id_u);
+        $_SESSION['login_bypass_pw'] = true;
+        unset($_SESSION['esperando_otp_pw']);
+        $exito = 'Código verificado. Ahora puede establecer su nueva contraseña.';
+      } else {
+        $error = 'Código incorrecto o expirado.';
+      }
+    }
+
+    if ($_POST['accion'] === 'borrar_cuenta') {
+      $pw_confirm = $_POST['password_confirm'] ?? '';
+      
+      // Verificar contraseña
+      $stmt_v = $conexion->prepare("SELECT password_hash FROM usuarios_publicos WHERE id = ?");
+      $stmt_v->bind_param("i", $id_u);
+      $stmt_v->execute();
+      $u_v = $stmt_v->get_result()->fetch_assoc();
+
+      if (!password_verify($pw_confirm, $u_v['password_hash'])) {
+        $error = 'La contraseña de confirmación es incorrecta.';
+      } else {
+        // Eliminar reseñas
+        $stmt_del_r = $conexion->prepare("DELETE FROM resenas WHERE id_usuario_publico = ?");
+        $stmt_del_r->bind_param("i", $id_u);
+        $stmt_del_r->execute();
+
+        // Eliminar favoritos
+        $stmt_del_f = $conexion->prepare("DELETE FROM favoritos WHERE id_usuario_publico = ?");
+        $stmt_del_f->bind_param("i", $id_u);
+        $stmt_del_f->execute();
+
+        // Eliminar votos
+        $stmt_del_v = $conexion->prepare("DELETE FROM resena_votos WHERE id_usuario_publico = ?");
+        $stmt_del_v->bind_param("i", $id_u);
+        $stmt_del_v->execute();
+
+        // Eliminar foto física
+        if (!empty($u['foto_perfil']) && file_exists('assets/img/avatars/' . $u['foto_perfil'])) {
+          unlink('assets/img/avatars/' . $u['foto_perfil']);
+        }
+
+        // Eliminar usuario
+        $stmt_del_u = $conexion->prepare("DELETE FROM usuarios_publicos WHERE id = ?");
+        $stmt_del_u->bind_param("i", $id_u);
+        $stmt_del_u->execute();
+
+        session_destroy();
+        header('Location: index?msg=cuenta_eliminada');
+        exit;
+      }
     }
 
     if ($_POST['accion'] === 'borrar_foto') {
@@ -77,20 +134,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
       $actual = $_POST['actual'] ?? '';
       $nueva = $_POST['nueva'] ?? '';
       $confirm = $_POST['confirm'] ?? '';
+      $confirmar_misma = isset($_POST['confirmar_misma']) && $_POST['confirmar_misma'] === '1';
+
       if (!$bypass && !password_verify($actual, $u['password_hash'])) {
         $error = 'La contraseña actual no es correcta.';
       } elseif (strlen($nueva) < 6) {
         $error = 'La nueva contraseña debe tener al menos 6 caracteres.';
       } elseif ($nueva !== $confirm) {
         $error = 'Las contraseñas nuevas no coinciden.';
+      } elseif (password_verify($nueva, $u['password_hash']) && !$confirmar_misma) {
+        $error = 'MISMA_PW'; // Usaremos este flag para detectar el caso en la UI
       } else {
         $hash = password_hash($nueva, PASSWORD_DEFAULT);
         $stmt_pw = $conexion->prepare("UPDATE usuarios_publicos SET password_hash = ? WHERE id = ?");
         $stmt_pw->bind_param("si", $hash, $id_u);
         $stmt_pw->execute();
-        $exito = 'Contraseña actualizada.';
-        if ($bypass)
-          unset($_SESSION['login_bypass_pw']);
+        
+        // Destruimos la sesión y redirigimos al login para confirmar
+        session_unset();
+        session_destroy();
+        header('Location: login_usuario?exito=pw_cambiada');
+        exit;
       }
     }
 
@@ -112,8 +176,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
         $_SESSION['usuario_publico_foto'] = $nombre_archivo;
         $u['foto_perfil'] = $nombre_archivo;
         $exito = 'Foto de perfil actualizada correctamente.';
+        $_SESSION['exito'] = $exito;
+        header("Location: mi_cuenta#perfil");
+        exit;
       } else {
-        $error = $resultado_subida['error'];
+        $error = "Error al subir: " . $resultado_subida['error'];
+        $_SESSION['error'] = $error;
+        header("Location: mi_cuenta#perfil");
+        exit;
       }
     }
 
@@ -191,14 +261,61 @@ $seo_robots = "noindex, nofollow";
 include 'includes/Header.php';
 ?>
 
-<link rel="stylesheet" href="assets/css/mi_cuenta.css">
+<style>
+.mc-avatar-preview {
+  position: relative !important;
+  width: 120px !important;
+  height: 120px !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+  background: #f0f2f5 !important;
+  border: 4px solid #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+  display: block !important;
+}
+.mc-avatar-preview img, .mc-avatar-preview span {
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 48px !important;
+  font-weight: 800 !important;
+  color: #3b5998 !important;
+  margin: 0 !important;
+}
+.mc-avatar-overlay {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(2px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  opacity: 0 !important;
+  transition: all 0.3s ease !important;
+  z-index: 5 !important;
+}
+.mc-avatar-preview:hover .mc-avatar-overlay { opacity: 1 !important; }
+</style>
 
 <div class="mc-page">
-
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       <?php if ($error): ?>
-        if (typeof showToast === 'function') showToast('<?= addslashes($error) ?>', 'error');
+        <?php if ($error === 'MISMA_PW'): ?>
+          if (typeof showToast === 'function') showToast('La nueva contraseña es igual a la actual.', 'warning');
+        <?php else: ?>
+          if (typeof showToast === 'function') showToast('<?= addslashes($error) ?>', 'error');
+        <?php endif; ?>
       <?php endif; ?>
       <?php if ($exito): ?>
         if (typeof showToast === 'function') showToast('<?= addslashes($exito) ?>', 'success');
@@ -259,12 +376,21 @@ include 'includes/Header.php';
       <div class="mc-panel active" id="mc-panel-perfil">
 
         <div class="mc-avatar-row">
-          <div class="mc-avatar-preview" id="mc-avatar-preview">
+          <div class="mc-avatar-preview" id="mc-avatar-preview" onclick="document.getElementById('foto_input').click()" style="cursor:pointer; position:relative; overflow:hidden;">
             <?php if (!empty($u['foto_perfil'])): ?>
-              <img src="assets/img/avatars/<?= htmlspecialchars($u['foto_perfil']) ?>" alt="Avatar">
+              <img src="assets/img/avatars/<?= htmlspecialchars($u['foto_perfil']) ?>?t=<?= time() ?>" alt="Avatar">
             <?php else: ?>
               <span><?= mb_strtoupper(mb_substr($u['nombre'], 0, 1)) ?></span>
             <?php endif; ?>
+            <div class="mc-avatar-overlay">
+              <i class="bi bi-camera"></i>
+            </div>
+          </div>
+          <div id="avatar-confirm-wrap" style="display:none; margin-top:15px; text-align:center; animation:fadeIn 0.3s;">
+             <button type="button" onclick="document.getElementById('form-foto').submit()" class="mc-btn-primary" style="padding: 8px 16px; font-size:12px; background: #10b981; border:none; border-radius:8px; color:white; font-weight:700; cursor:pointer;">
+               <i class="bi bi-check-circle"></i> Confirmar foto
+             </button>
+             <button type="button" onclick="location.reload()" style="background:none; border:none; color:#ef4444; font-size:11px; cursor:pointer; margin-left:12px; font-weight:600;">Cancelar</button>
           </div>
           <div class="mc-avatar-actions">
             <form method="POST" enctype="multipart/form-data" id="form-foto">
@@ -279,7 +405,7 @@ include 'includes/Header.php';
                 Subir foto
               </label>
               <input type="file" id="foto_input" name="foto_perfil" accept="image/*" style="display:none"
-                onchange="previewFoto(event); this.form.submit();">
+                onchange="previewFoto(event);">
             </form>
             <?php if (!empty($u['foto_perfil'])): ?>
               <form method="POST" style="display:inline">
@@ -312,54 +438,110 @@ include 'includes/Header.php';
 
       <div class="mc-panel" id="mc-panel-password">
         <?php $bypass_active = isset($_SESSION['login_bypass_pw']) && $_SESSION['login_bypass_pw'] === true; ?>
+        <?php $esperando_otp = isset($_SESSION['esperando_otp_pw']) && $_SESSION['esperando_otp_pw'] === true; ?>
+
         <?php if ($bypass_active): ?>
           <div class="mc-alerta mc-alerta-ok" style="margin-bottom: 20px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="20 6 9 17 4 12" />
             </svg>
-            Has ingresado con un código de recuperación. Puedes crear una nueva contraseña ahora mismo sin conocer la
-            anterior.
+            Autorización concedida vía email. Puedes establecer tu nueva contraseña.
           </div>
-        <?php endif; ?>
-        <form method="POST" class="mc-form">
-          <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
-          <input type="hidden" name="accion" value="password">
-          <?php if (!$bypass_active): ?>
+          <form method="POST" class="mc-form">
+            <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
+            <input type="hidden" name="accion" value="password">
+            <input type="hidden" name="actual" value="bypass">
+
+            <?php if ($error === 'MISMA_PW'): ?>
+              <div class="mc-alerta mc-alerta-warning" style="margin-bottom: 20px; border-left: 4px solid var(--aura-yellow);">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <i class="bi bi-exclamation-triangle" style="font-size: 20px;"></i>
+                  <div>
+                    <strong>Contraseña idéntica</strong><br>
+                    La nueva contraseña es la misma que ya tienes configurada.
+                  </div>
+                </div>
+                <div style="margin-top:12px;">
+                  <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px;">
+                    <input type="checkbox" name="confirmar_misma" value="1" required>
+                    Entiendo, deseo mantener esta contraseña.
+                  </label>
+                </div>
+              </div>
+            <?php endif; ?>
+
             <div class="mc-field">
-              <label>Contraseña actual</label>
+              <label>Nueva contraseña</label>
               <div class="pw-input-wrap">
-                <input type="password" name="actual" id="pw-actual" placeholder="••••••••" required>
-                <button type="button" class="pw-toggle" onclick="togglePw('pw-actual','pw-actual-icon')">
-                  <i class="bi bi-eye" id="pw-actual-icon"></i>
+                <input type="password" name="nueva" id="pw-nueva" placeholder="••••••••" required autofocus
+                  value="<?= htmlspecialchars($_POST['nueva'] ?? '') ?>">
+                <button type="button" class="pw-toggle" onclick="togglePw('pw-nueva','pw-nueva-icon')">
+                  <i class="bi bi-eye" id="pw-nueva-icon"></i>
+                </button>
+              </div>
+              <span class="mc-hint">Mínimo 6 caracteres.</span>
+            </div>
+            <div class="mc-field">
+              <label>Confirmar nueva contraseña</label>
+              <div class="pw-input-wrap">
+                <input type="password" name="confirm" id="pw-confirm" placeholder="••••••••" required
+                  value="<?= htmlspecialchars($_POST['confirm'] ?? '') ?>">
+                <button type="button" class="pw-toggle" onclick="togglePw('pw-confirm','pw-confirm-icon')">
+                  <i class="bi bi-eye" id="pw-confirm-icon"></i>
                 </button>
               </div>
             </div>
-          <?php else: ?>
-            <input type="hidden" name="actual" value="bypass">
-          <?php endif; ?>
-          <div class="mc-field">
-            <label>Nueva contraseña</label>
-            <div class="pw-input-wrap">
-              <input type="password" name="nueva" id="pw-nueva" placeholder="••••••••" required>
-              <button type="button" class="pw-toggle" onclick="togglePw('pw-nueva','pw-nueva-icon')">
-                <i class="bi bi-eye" id="pw-nueva-icon"></i>
-              </button>
+            <div class="mc-form-footer">
+              <button type="submit" class="mc-btn-dark">Actualizar contraseña</button>
             </div>
-            <span class="mc-hint">Mínimo 6 caracteres.</span>
+          </form>
+
+        <?php elseif ($esperando_otp): ?>
+          <div class="mc-alerta mc-alerta-info" style="margin-bottom: 20px;">
+            <i class="bi bi-envelope-at" style="margin-right:8px;"></i>
+            Hemos enviado un código a <strong><?= htmlspecialchars($u['email']) ?></strong>.
           </div>
-          <div class="mc-field">
-            <label>Confirmar nueva contraseña</label>
-            <div class="pw-input-wrap">
-              <input type="password" name="confirm" id="pw-confirm" placeholder="••••••••" required>
-              <button type="button" class="pw-toggle" onclick="togglePw('pw-confirm','pw-confirm-icon')">
-                <i class="bi bi-eye" id="pw-confirm-icon"></i>
-              </button>
+          <form method="POST" class="mc-form">
+            <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
+            <input type="hidden" name="accion" value="verificar_codigo_pw">
+            <div class="mc-field">
+              <label>Código de Verificación</label>
+              <input type="text" name="codigo_otp" placeholder="000000" maxlength="6" required autofocus
+                style="text-align: center; font-size: 24px; letter-spacing: 8px; font-weight: 700;">
             </div>
+            <div class="mc-form-footer">
+              <button type="submit" class="mc-btn-primary">Verificar código</button>
+              <div style="display:inline-block; margin-left: 10px;">
+                <button type="submit" name="accion" value="enviar_codigo_pw" class="mc-btn-ghost mc-btn-sm" id="btn-resend-pw" formnovalidate>
+                  Reenviar código
+                </button>
+                <span id="timer-resend-pw" style="font-size: 12px; color: rgba(255,255,255,0.4); display: none;">
+                  Reenviar en <span id="timer-sec-pw">60</span>s
+                </span>
+              </div>
+            </div>
+          </form>
+
+        <?php else: ?>
+          <div class="mc-empty" style="padding: 20px 0;">
+            <div
+              style="background: rgba(255,255,255,0.03); width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+              <i class="bi bi-shield-lock" style="font-size: 32px; color: var(--aura-yellow);"></i>
+            </div>
+            <h3 style="margin-bottom: 10px;">Cambio de Contraseña</h3>
+            <p style="color: rgba(255,255,255,0.6); font-size: 14px; max-width: 300px; margin: 0 auto 24px;">
+              Para proteger tu cuenta, te enviaremos un código de seguridad a tu correo electrónico registrado.
+            </p>
+            <form method="POST">
+              <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
+              <input type="hidden" name="accion" value="enviar_codigo_pw">
+              <button type="submit" class="mc-btn-primary">
+                <i class="bi bi-send" style="margin-right: 8px;"></i>
+                Enviar código al correo
+              </button>
+            </form>
           </div>
-          <div class="mc-form-footer">
-            <button type="submit" class="mc-btn-dark">Cambiar contraseña</button>
-          </div>
-        </form>
+        <?php endif; ?>
       </div>
 
       <div class="mc-panel" id="mc-panel-resenas">
@@ -451,12 +633,22 @@ include 'includes/Header.php';
 
         <div class="mc-danger-zone">
           <h3>Eliminar cuenta</h3>
-          <p>Eliminar tu cuenta eliminará permanentemente tu perfil y todo el contenido asociado. Esta acción no se
-            puede revertir.</p>
+          <p>Una vez eliminada, no hay marcha atrás. Por seguridad, ingresa tu contraseña para confirmar la eliminación definitiva.</p>
           <form method="POST" id="form-borrar-cuenta">
             <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
             <input type="hidden" name="accion" value="borrar_cuenta">
-            <button type="button" class="mc-btn-delete" onclick="confirmarBorrarCuenta()">Eliminar cuenta</button>
+            
+            <div id="confirm-del-wrap" style="display: none; margin-bottom: 15px; animation: fadeIn 0.3s ease;">
+              <input type="password" name="password_confirm" placeholder="Confirma tu contraseña actual" 
+                     style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; color: white; outline: none;">
+            </div>
+
+            <button type="button" class="mc-btn-delete" id="btn-pre-delete" onclick="mostrarConfirmacionBorrado()">Eliminar cuenta</button>
+            
+            <div id="final-del-actions" style="display: none; gap: 10px; animation: fadeIn 0.3s ease;">
+               <button type="submit" class="mc-btn-delete" style="background: #ef4444; flex: 1;">Confirmar eliminación</button>
+               <button type="button" class="mc-btn-ghost" style="flex: 1;" onclick="cancelarBorrarCuenta()">Cancelar</button>
+            </div>
           </form>
         </div>
 
@@ -467,14 +659,16 @@ include 'includes/Header.php';
 </div>
 
 <script>
-  function confirmarBorrarCuenta() {
-    if (typeof window.customConfirm === 'function') {
-      window.customConfirm('¿Seguro que deseas borrar tu cuenta? Esta acción no se puede deshacer y perderás todas tus reseñas y favoritos.', () => {
-        document.getElementById('form-borrar-cuenta').submit();
-      });
-    } else if (confirm('¿Seguro que deseas borrar tu cuenta? Esta acción no se puede deshacer.')) {
-      document.getElementById('form-borrar-cuenta').submit();
-    }
+  function mostrarConfirmacionBorrado() {
+    document.getElementById('confirm-del-wrap').style.display = 'block';
+    document.getElementById('final-del-actions').style.display = 'flex';
+    document.getElementById('btn-pre-delete').style.display = 'none';
+  }
+
+  function cancelarBorrarCuenta() {
+    document.getElementById('confirm-del-wrap').style.display = 'none';
+    document.getElementById('final-del-actions').style.display = 'none';
+    document.getElementById('btn-pre-delete').style.display = 'block';
   }
   const mcPanels = {
     perfil: { label: 'Editar perfil', sub: 'Configure su presencia y datos de cuenta' },
@@ -538,10 +732,37 @@ include 'includes/Header.php';
     if (!file) return;
     const reader = new FileReader();
     reader.onload = ev => {
-      const preview = document.getElementById('mc-avatar-preview');
-      preview.innerHTML = `<img src="${ev.target.result}" alt="Avatar">`;
-      const headerAvatar = document.querySelector('.mc-header-avatar');
-      headerAvatar.innerHTML = `<img src="${ev.target.result}" alt="Avatar">`;
+      // Actualizar imagen en el panel lateral (preview principal)
+      const previewImg = document.querySelector('#mc-avatar-preview img');
+      if (previewImg) {
+        previewImg.src = ev.target.result;
+      } else {
+        const preview = document.getElementById('mc-avatar-preview');
+        const img = document.createElement('img');
+        img.src = ev.target.result;
+        img.alt = 'Avatar';
+        img.style.position = 'absolute';
+        img.style.top = '50%';
+        img.style.left = '50%';
+        img.style.transform = 'translate(-50%, -50%)';
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'cover';
+        
+        preview.insertBefore(img, preview.firstChild);
+        const span = preview.querySelector('span');
+        if (span) span.style.display = 'none';
+      }
+
+      const headerAvatar = document.querySelector('.mc-header-avatar img');
+      if (headerAvatar) {
+        headerAvatar.src = ev.target.result;
+      }
+
+      const confirmWrap = document.getElementById('avatar-confirm-wrap');
+      if (confirmWrap) confirmWrap.style.display = 'block';
+
+      if (window.showToast) showToast('Previsualización cargada. ¿Te gusta cómo queda?', 'success');
     };
     reader.readAsDataURL(file);
   }
@@ -606,6 +827,32 @@ include 'includes/Header.php';
       btn.style.cursor = 'pointer';
     }
   }
+
+  function startResendTimerPw() {
+    const btn = document.getElementById('btn-resend-pw');
+    const timerWrap = document.getElementById('timer-resend-pw');
+    const timerSec = document.getElementById('timer-sec-pw');
+    if (!btn || !timerWrap) return;
+
+    let seconds = 60;
+    btn.style.display = 'none';
+    timerWrap.style.display = 'inline-block';
+    timerSec.textContent = seconds;
+
+    const interval = setInterval(() => {
+      seconds--;
+      timerSec.textContent = seconds;
+      if (seconds <= 0) {
+        clearInterval(interval);
+        btn.style.display = 'inline-block';
+        timerWrap.style.display = 'none';
+      }
+    }, 1000);
+  }
+
+  <?php if ($esperando_otp): ?>
+    document.addEventListener('DOMContentLoaded', startResendTimerPw);
+  <?php endif; ?>
 </script>
 
 <?php include 'includes/footer.php'; ?>

@@ -1148,3 +1148,65 @@ body.dark-mode ::-webkit-scrollbar-thumb {
   font-size: 60px;
   margin-bottom: 10px;
 }
+
+/* Efecto Premium para Foto de Perfil */
+.mc-avatar-preview {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #f0f2f5;
+  border: 4px solid #ffffff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  cursor: pointer;
+}
+
+.mc-avatar-preview img,
+.mc-avatar-preview span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  font-weight: 800;
+  color: #3b5998;
+  transition: all 0.4s ease;
+}
+
+.mc-avatar-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 5;
+}
+
+.mc-avatar-overlay i {
+  color: white;
+  font-size: 32px !important;
+}
+
+.mc-avatar-preview:hover .mc-avatar-overlay {
+  opacity: 1;
+}
+
+.mc-avatar-preview:hover img,
+.mc-avatar-preview:hover span {
+  transform: translate(-50%, -50%) scale(1.1);
+}
+

@@ -15,10 +15,10 @@ define('DB_NAME', config_env('DB_NAME', 'guia_empresarial'));
 define('DB_CHARSET', config_env('DB_CHARSET', 'utf8mb4'));
 
 define('SMTP_HOST', config_env('SMTP_HOST', 'smtp.gmail.com'));
-define('SMTP_USER', config_env('SMTP_USER', 'tucorreo@gmail.com'));
-define('SMTP_PASS', config_env('SMTP_PASS', 'xxxx xxxx xxxx xxxx'));
+define('SMTP_USER', config_env('SMTP_USER', 'abelperezcoca058@gmail.com'));
+define('SMTP_PASS', config_env('SMTP_PASS', 'jged zccg zyvp ulno'));
 define('SMTP_PORT', (int) config_env('SMTP_PORT', 587));
-define('SMTP_FROM_EMAIL', config_env('SMTP_FROM_EMAIL', 'tucorreo@gmail.com'));
+define('SMTP_FROM_EMAIL', config_env('SMTP_FROM_EMAIL', 'abelperezcoca058@gmail.com'));
 define('SMTP_FROM_NAME', config_env('SMTP_FROM_NAME', 'Guía Empresarial'));
 
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https://" : "http://";

@@ -45,8 +45,8 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'reenviar_codigo_ajax') {
   if ($limits['daily_count'] >= 20) {
     echo json_encode(['success' => false, 'error' => 'Límite diario alcanzado. Intenta en 24 horas.']);
   } elseif ($limits['count'] >= 10) {
-    if ($now - $limits['last_time'] < 3600) {
-      echo json_encode(['success' => false, 'error' => 'Límite de 10 intentos alcanzado. Espera 1 hora.']);
+    if ($now - $limits['last_time'] < 43200) {
+      echo json_encode(['success' => false, 'error' => 'Límite de 10 intentos alcanzado. Espera 12 horas.']);
     } else {
       $limits['count'] = 0;
     }
@@ -57,11 +57,17 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'reenviar_codigo_ajax') {
   if (!isset($error) || !$error) {
     $codigo = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
     $expira = time() + 600;
+    $stmt_name = $conexion->prepare("SELECT nombre FROM usuarios_publicos WHERE email = ?");
+    $stmt_name->bind_param("s", $email);
+    $stmt_name->execute();
+    $res_name = $stmt_name->get_result();
+    $nombre_real = ($res_name->num_rows > 0) ? $res_name->fetch_assoc()['nombre'] : 'Usuario';
+
     $stmt = $conexion->prepare("UPDATE usuarios_publicos SET codigo_verificacion=?, codigo_expira=? WHERE email=? AND verificado=0");
     $stmt->bind_param("sis", $codigo, $expira, $email);
     if ($stmt->execute()) {
-      $cuerpo = plantillaCorreoOTP('Usuario', $codigo, 'registro');
-      enviarCorreo($email, 'Usuario', 'Código de Acceso - Guía Empresarial', $cuerpo);
+      $cuerpo = plantillaCorreoOTP($nombre_real, $codigo, 'registro');
+      enviarCorreo($email, $nombre_real, 'Código de Acceso - Guía Empresarial', $cuerpo);
       $limits['count']++;
       $limits['daily_count']++;
       $limits['last_time'] = $now;
@@ -101,8 +107,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
 
       if ($limits['daily_count'] >= 20) {
         $error = 'Límite diario alcanzado. Intenta mañana.';
-      } elseif ($limits['count'] >= 10 && ($now - $limits['last_time'] < 3600)) {
-        $error = 'Límite de 10 intentos alcanzado. Espera 1 hora.';
+      } elseif ($limits['count'] >= 10 && ($now - $limits['last_time'] < 43200)) {
+        $error = 'Límite de 10 intentos alcanzado. Espera 12 horas.';
       } elseif ($limits['count'] >= 7 && ($now - $limits['last_time'] < 1800)) {
         $error = 'Demasiados intentos. Espera 30 minutos.';
       } elseif (strlen($password) < 6) {

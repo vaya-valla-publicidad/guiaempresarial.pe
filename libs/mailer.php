@@ -33,34 +33,59 @@ function enviarCorreo(string $destinatario, string $nombre, string $asunto, stri
 
 function plantillaCorreoOTP(string $nombre, string $codigo, string $motivo): string
 {
-  $titulo = $motivo === 'registro' ? 'Confirma tu cuenta' : 'Tu código de acceso';
+  $titulo = 'Verificación de Seguridad';
+  if ($motivo === 'registro') $titulo = 'Confirma tu cuenta';
+  if ($motivo === 'acceso') $titulo = 'Tu código de acceso';
+  if ($motivo === 'password') $titulo = 'Cambio de Contraseña';
+
   $mensaje = $motivo === 'registro'
     ? "Bienvenido a Guía Empresarial. Para finalizar tu registro, ingresa el siguiente código en la pantalla de verificación:"
-    : "Has solicitado un código temporal para acceder a tu cuenta en Guía Empresarial. Ingrésalo a continuación:";
+    : ($motivo === 'password'
+      ? "Has solicitado cambiar tu contraseña. Por seguridad, ingresa el siguiente código para autorizar la operación:"
+      : "Has solicitado un código temporal para acceder a tu cuenta en Guía Empresarial. Ingrésalo a continuación:");
 
   return "
-    <div style='font-family: \"Segoe UI\", Roboto, \"Helvetica Neue\", sans-serif; background-color: #f3f4f6; padding: 40px 20px; line-height: 1.5;'>
-      <div style='max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);'>
-        <div style='background-color: #111827; padding: 24px; text-align: center; border-bottom: 3px solid #10b981;'>
-          <h2 style='color: #ffffff; margin: 0; font-size: 22px; font-weight: 600; letter-spacing: 0.5px;'>Guía Empresarial</h2>
-        </div>
-        <div style='padding: 32px 28px;'>
-          <h3 style='color: #1f2937; font-size: 19px; margin-top: 0; margin-bottom: 20px;'>Hola, {$nombre}</h3>
-          <p style='color: #4b5563; font-size: 15px; margin-bottom: 32px;'>
-            {$mensaje}
-          </p>
-          <div style='text-align: center; margin: 0 0 32px 0;'>
-            <div style='display: inline-block; background-color: #f8fafc; color: #0f172a; font-size: 34px; font-weight: 700; letter-spacing: 10px; padding: 18px 24px; border-radius: 8px; border: 1px dashed #cbd5e1;'>
-              {$codigo}
-            </div>
-          </div>
-          <p style='color: #64748b; font-size: 13.5px; text-align: center; margin-bottom: 0;'>
-            Este código es válido por 10 minutos.<br>Si no lo solicitaste, puedes ignorar este correo de forma segura.
-          </p>
-        </div>
-      </div>
-      <div style='text-align: center; margin-top: 24px; color: #94a3b8; font-size: 12px;'>
-        &copy; " . date('Y') . " Guía Empresarial. Todos los derechos reservados.
-      </div>
-    </div>";
+    <table width='100%' border='0' cellspacing='0' cellpadding='0' style='margin: 0; padding: 0;'>
+      <tr>
+        <td align='center' style='padding: 40px 20px;'>
+          <table width='100%' border='0' cellspacing='0' cellpadding='0' style='max-width: 500px; text-align: left;'>
+            <tr>
+              <td style='padding-bottom: 25px;'>
+                <div style='width: 35px; height: 4px; background-color: #fbbf24; margin-bottom: 12px;'></div>
+                <h1 style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif; font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin: 0; color: #000000;'>" . APP_NAME . "</h1>
+              </td>
+            </tr>
+            <tr>
+              <td style='padding-bottom: 30px;'>
+                <h2 style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif; font-size: 28px; font-weight: 800; line-height: 1.1; margin: 0 0 15px 0; letter-spacing: -0.5px; color: #000000;'>Confirmación de<br>identidad.</h2>
+                <p style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif; font-size: 15px; color: #444444; line-height: 1.4; margin: 0;'>
+                  Hola {$nombre}, copia tu código de verificación:
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style='padding: 20px 0;'>
+                <div style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif; font-size: 52px; font-weight: 800; letter-spacing: 10px; color: #000000;'>
+                  {$codigo}
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style='padding-bottom: 30px;'>
+                <p style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif; font-size: 13px; color: #777777; margin: 0;'>
+                  Válido por 10 min. Si no has sido tú, ignora este mensaje.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style='padding-top: 15px;'>
+                <p style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif; font-size: 10px; color: #999999; text-transform: uppercase; letter-spacing: 1px; margin: 0;'>
+                  Seguridad de Cuenta &bull; " . date('Y') . "
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>";
 }

@@ -12,12 +12,15 @@ if (isset($_SESSION['usuario_publico_id'])) {
 
 $error = '';
 $exito = '';
+if (isset($_GET['exito']) && $_GET['exito'] === 'pw_cambiada') {
+    $exito = 'Contraseña actualizada correctamente. Inicia sesión con tu nueva clave.';
+}
 $redir = validarRedireccionLocal($_GET['redir'] ?? '');
 $paso = $_GET['paso'] ?? 'email';
 $email_param = $_GET['email'] ?? '';
 
-$max_30m = 5;
-$max_24h = 15;
+$max_30m = 50; // Aumentado para pruebas
+$max_24h = 100; // Aumentado para pruebas
 
 if (isset($_POST['accion']) && $_POST['accion'] === 'reenviar_codigo_ajax') {
   if (!validarCSRF()) {
@@ -103,9 +106,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
         }
 
         if ($limits['daily_count'] >= 20) {
-          $error = 'Límite diario alcanzado. Intenta en 24 horas.';
-        } elseif ($limits['count'] >= 10 && ($now - $limits['last_time'] < 3600)) {
-          $error = 'Has superado el límite de 10 intentos. Por seguridad, espera 1 hora.';
+          $error = 'Límite diario de 20 intentos alcanzado. Intenta en 24 horas.';
+        } elseif ($limits['count'] >= 10 && ($now - $limits['last_time'] < 43200)) {
+          $error = 'Has superado el límite de 10 intentos. Por seguridad, espera 12 horas.';
         } elseif ($limits['count'] >= 7 && ($now - $limits['last_time'] < 1800)) {
           $error = 'Demasiados intentos. Espera 30 minutos.';
         } else {
@@ -115,10 +118,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
           $res = $stmt->get_result();
           if ($res->num_rows === 1) {
             $u = $res->fetch_assoc();
-            if ($u['verificado'] == 0) {
-              header("Location: registro_usuario?email=" . urlencode($email));
-              exit;
-            }
             $codigo = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
             $expira = time() + 600;
             $stmt_upd = $conexion->prepare("UPDATE usuarios_publicos SET codigo_verificacion=?, codigo_expira=? WHERE id=?");
@@ -127,9 +126,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
 
             $cuerpo = plantillaCorreoOTP($u['nombre'], $codigo, 'acceso');
             enviarCorreo($email, $u['nombre'], 'Acceso a Guía Empresarial', $cuerpo);
+            
             $limits['count']++;
             $limits['daily_count']++;
             $limits['last_time'] = $now;
+            
             header("Location: login_usuario?paso=codigo&email=" . urlencode($email) . ($redir ? '&redir=' . urlencode($redir) : ''));
             exit;
           } else {
@@ -151,13 +152,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
         $res = $stmt->get_result();
         if ($res && $res->num_rows === 1) {
           $u = $res->fetch_assoc();
-          if ($u['verificado'] == 0) {
-            header("Location: registro_usuario?email=" . urlencode($email));
-            exit;
-          } elseif ($u['password_hash']) {
+          if ($u['password_hash']) {
             header("Location: login_usuario?paso=password&email=" . urlencode($email) . ($redir ? '&redir=' . urlencode($redir) : ''));
             exit;
           } else {
+            // Si no tiene password pero existe (raro), mandamos código
             header("Location: login_usuario?paso=codigo&email=" . urlencode($email) . ($redir ? '&redir=' . urlencode($redir) : ''));
             exit;
           }
@@ -180,6 +179,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
         if (password_verify($password, $u['password_hash'])) {
           $_SESSION['usuario_publico_id'] = $u['id'];
           $_SESSION['usuario_publico_nombre'] = $u['nombre'];
+          $_SESSION['usuario_publico_pw_hash'] = $u['password_hash'];
           $destino = $redir ? urldecode($redir) : 'mi_cuenta';
           if (isset($_POST['ajax'])) {
             echo json_encode(['success' => true, 'redirect' => $destino]);
@@ -212,6 +212,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
           $conexion->query("UPDATE usuarios_publicos SET verificado=1, codigo_verificacion=NULL, codigo_expira=NULL WHERE id=" . $u['id']);
           $_SESSION['usuario_publico_id'] = $u['id'];
           $_SESSION['usuario_publico_nombre'] = $u['nombre'];
+          $_SESSION['usuario_publico_pw_hash'] = $u['password_hash'];
           $_SESSION['login_bypass_pw'] = true;
           $destino = $redir ? urldecode($redir) : 'mi_cuenta';
           if (isset($_POST['ajax'])) {
@@ -280,6 +281,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
 
       <?php if ($error): ?>
         <script>document.addEventListener('DOMContentLoaded', () => { if (window.showToast) showToast("<?= addslashes($error) ?>", "error"); });</script>
+      <?php endif; ?>
+
+      <?php if ($exito): ?>
+        <script>document.addEventListener('DOMContentLoaded', () => { if (window.showToast) showToast("<?= addslashes($exito) ?>", "success"); });</script>
       <?php endif; ?>
 
       <?php if ($paso === 'email'): ?>
@@ -361,15 +366,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
     if (otpBoxes.length > 0) {
       otpBoxes.forEach((inp, idx) => {
         inp.addEventListener('input', e => {
-          e.target.value = e.target.value.replace(/\D/g, '').slice(-1);
-          if (e.target.value && idx < otpBoxes.length - 1) otpBoxes[idx + 1].focus();
+          if (e.target.value.length === 1 && idx < otpBoxes.length - 1) otpBoxes[idx + 1].focus();
           collectOTP();
           if (otpHid.value.length === 6) handleFinalSubmit();
         });
         inp.addEventListener('keydown', e => {
           if (e.key === 'Backspace' && !e.target.value && idx > 0) otpBoxes[idx - 1].focus();
         });
+        inp.addEventListener('paste', e => {
+          e.preventDefault();
+          const data = e.clipboardData.getData('text').trim();
+          const match = data.match(/\d{6}/);
+          if (match) {
+            const digits = match[0].split('');
+            otpBoxes.forEach((box, i) => box.value = digits[i]);
+            collectOTP();
+            handleFinalSubmit();
+          }
+        });
       });
+    }
+
+    async function pegarCodigo() {
+      try {
+        const text = await navigator.clipboard.readText();
+        const match = text.trim().match(/\d{6}/);
+        if (match) {
+          const digits = match[0].split('');
+          otpBoxes.forEach((box, i) => box.value = digits[i]);
+          collectOTP();
+          if (window.showToast) showToast('Código pegado correctamente.', 'success');
+          // No auto-enviamos, dejamos que el usuario lo vea
+        } else {
+          if (window.showToast) showToast('No se encontró un código de 6 dígitos en el portapapeles.', 'error');
+        }
+      } catch (err) {
+        if (window.showToast) showToast('Error al acceder al portapapeles. Asegúrate de dar permisos.', 'error');
+      }
     }
 
     function collectOTP() { if (otpHid) otpHid.value = Array.from(otpBoxes).map(i => i.value).join(''); }
