@@ -18,7 +18,10 @@ $user_favs = [];
 if (isset($_SESSION['usuario_publico_id'])) {
   require_once __DIR__ . '/../db.php';
   $id_u_fav = intval($_SESSION['usuario_publico_id']);
-  $stmt_favs = $conexion->query("SELECT id_empresa FROM favoritos WHERE id_usuario_publico = $id_u_fav");
+  $stmt_favs = $conexion->prepare("SELECT id_empresa FROM favoritos WHERE id_usuario_publico = ?");
+  $stmt_favs->bind_param("i", $id_u_fav);
+  $stmt_favs->execute();
+  $stmt_favs = $stmt_favs->get_result();
   if ($stmt_favs) {
     while ($rf = $stmt_favs->fetch_assoc()) {
       $user_favs[] = (int) $rf['id_empresa'];
@@ -49,8 +52,8 @@ if (isset($_SESSION['usuario_publico_id'])) {
   <meta property="twitter:description" content="<?= htmlspecialchars($seo_description) ?>">
   <meta property="twitter:image" content="<?= htmlspecialchars($seo_image) ?>">
 
-  <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css?v=1.2">
-  <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/mi_cuenta.css">
+  <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css?v=<?= time() ?>">
+  <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/mi_cuenta.css?v=<?= time() ?>">
   <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -66,62 +69,6 @@ if (isset($_SESSION['usuario_publico_id'])) {
     window.csrfToken = '<?php echo function_exists('generarTokenCSRF') ? generarTokenCSRF() : ""; ?>';
   </script>
   <script src="<?= APP_URL ?>/assets/js/toast.js"></script>
-  <style>
-    #toast-container {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 100000;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .toast {
-      min-width: 280px;
-      background: #fff;
-      color: #1b3a57;
-      padding: 16px 20px;
-      border-radius: 16px;
-      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      transform: translateX(120%);
-      transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-      border-left: 5px solid #1b3a57;
-    }
-
-    .toast.show {
-      transform: translateX(0);
-    }
-
-    .toast-success {
-      border-left-color: #2ecc71;
-    }
-
-    .toast-error {
-      border-left-color: #e74c3c;
-    }
-
-    .toast i {
-      font-size: 20px;
-    }
-
-    .toast-success i {
-      color: #2ecc71;
-    }
-
-    .toast-error i {
-      color: #e74c3c;
-    }
-
-    body.dark-mode .toast {
-      background: #374151;
-      color: #f3f4f6;
-      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
-    }
-  </style>
 </head>
 
 <body
@@ -133,21 +80,6 @@ if (isset($_SESSION['usuario_publico_id'])) {
   </script>
 
   <div id="nprogress-bar"></div>
-  <style>
-    #nprogress-bar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      height: 3px;
-      width: 0%;
-      background: var(--grad-main);
-      z-index: 10001;
-      opacity: 1;
-      transition: width 0.3s ease, opacity 0.4s ease;
-      pointer-events: none;
-      box-shadow: 0 0 10px rgba(230, 57, 70, 0.4);
-    }
-  </style>
 
   <div class="nav-overlay" id="nav-overlay"></div>
 

@@ -13,7 +13,7 @@ if (isset($_SESSION['usuario_publico_id'])) {
 $error = '';
 $exito = '';
 if (isset($_GET['exito']) && $_GET['exito'] === 'pw_cambiada') {
-    $exito = 'Contraseña actualizada correctamente. Inicia sesión con tu nueva clave.';
+  $exito = 'Contraseña actualizada correctamente. Inicia sesión con tu nueva clave.';
 }
 $redir = validarRedireccionLocal($_GET['redir'] ?? '');
 $paso = $_GET['paso'] ?? 'email';
@@ -126,11 +126,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
 
             $cuerpo = plantillaCorreoOTP($u['nombre'], $codigo, 'acceso');
             enviarCorreo($email, $u['nombre'], 'Acceso a Guía Empresarial', $cuerpo);
-            
+
             $limits['count']++;
             $limits['daily_count']++;
             $limits['last_time'] = $now;
-            
+
             header("Location: login_usuario?paso=codigo&email=" . urlencode($email) . ($redir ? '&redir=' . urlencode($redir) : ''));
             exit;
           } else {
@@ -156,7 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
             header("Location: login_usuario?paso=password&email=" . urlencode($email) . ($redir ? '&redir=' . urlencode($redir) : ''));
             exit;
           } else {
-            // Si no tiene password pero existe (raro), mandamos código
+
             header("Location: login_usuario?paso=codigo&email=" . urlencode($email) . ($redir ? '&redir=' . urlencode($redir) : ''));
             exit;
           }
@@ -209,7 +209,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
       if ($res && $res->num_rows === 1) {
         $u = $res->fetch_assoc();
         if ($codigo === $u['codigo_verificacion'] && time() < $u['codigo_expira']) {
-          $conexion->query("UPDATE usuarios_publicos SET verificado=1, codigo_verificacion=NULL, codigo_expira=NULL WHERE id=" . $u['id']);
+          $stmt_upd = $conexion->prepare("UPDATE usuarios_publicos SET verificado=1, codigo_verificacion=NULL, codigo_expira=NULL WHERE id=?");
+          $stmt_upd->bind_param("i", $u['id']);
+          $stmt_upd->execute();
+          $stmt_upd->close();
           $_SESSION['usuario_publico_id'] = $u['id'];
           $_SESSION['usuario_publico_nombre'] = $u['nombre'];
           $_SESSION['usuario_publico_pw_hash'] = $u['password_hash'];
@@ -396,7 +399,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
           otpBoxes.forEach((box, i) => box.value = digits[i]);
           collectOTP();
           if (window.showToast) showToast('Código pegado correctamente.', 'success');
-          // No auto-enviamos, dejamos que el usuario lo vea
+
         } else {
           if (window.showToast) showToast('No se encontró un código de 6 dígitos en el portapapeles.', 'error');
         }
@@ -439,7 +442,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
 
     function resendOTP() {
       const btn = document.getElementById('btn-resend');
-      const email = "<?= $email_param ?>";
+      const email = "<?= htmlspecialchars($email_param, ENT_QUOTES, 'UTF-8') ?>";
       const formData = new FormData();
       formData.append('accion', 'reenviar_codigo_ajax');
       formData.append('email', email);

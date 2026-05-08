@@ -37,19 +37,6 @@ if ($resena_autor === $id_u) {
     exit;
 }
 
-$createTableSql = "CREATE TABLE IF NOT EXISTS resena_votos (
-  id_voto int(11) NOT NULL AUTO_INCREMENT,
-  id_resena int(11) NOT NULL,
-  id_usuario_publico int(11) NOT NULL,
-  tipo enum('like','dislike') NOT NULL,
-  fecha datetime DEFAULT current_timestamp(),
-  PRIMARY KEY (id_voto),
-  UNIQUE KEY resena_usuario (id_resena, id_usuario_publico),
-  KEY id_resena (id_resena),
-  KEY id_usuario_publico (id_usuario_publico)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;";
-$conexion->query($createTableSql);
-
 $stmt_check = $conexion->prepare("SELECT tipo FROM resena_votos WHERE id_resena = ? AND id_usuario_publico = ?");
 $stmt_check->bind_param("ii", $id_resena, $id_u);
 $stmt_check->execute();

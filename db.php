@@ -28,21 +28,29 @@ if (file_exists(__DIR__ . '/mantenimiento.flag')) {
     }
 
     $es_admin = (isset($_SESSION['rol']) && $_SESSION['rol'] === 'admin');
-    $ruta_actual = $_SERVER['REQUEST_URI'];
+    $ruta_actual = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+    $base_path = parse_url(APP_URL, PHP_URL_PATH) ?: '';
+
+    // Si la aplicación está en un subdirectorio, lo removemos para la comparación
+    if (!empty($base_path) && str_starts_with($ruta_actual, $base_path)) {
+        $ruta_actual = substr($ruta_actual, strlen($base_path));
+    }
 
     $whitelist = [
-        '/login',
+        '/login/',
         '/login_usuario',
         '/registro_usuario',
         '/logout',
-        '/panel',   // <-- AÑADIDO
-        '/admin',   // <-- AÑADIDO
-        '/editor',  // <-- AÑADIDO
+        '/login/login',
+        '/login/admin',
+        '/login/editor',
+        '/login/cerrar',
+        '/login/panel',
     ];
 
     $es_excluido = false;
     foreach ($whitelist as $item) {
-        if (strpos($ruta_actual, $item) !== false) {
+        if ($ruta_actual === $item || str_starts_with($ruta_actual, $item)) {
             $es_excluido = true;
             break;
         }

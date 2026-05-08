@@ -1,0 +1,4039 @@
+﻿diff --git a/.htaccess b/.htaccess
+index afcc591..0e27168 100644
+--- a/.htaccess
++++ b/.htaccess
+@@ -5,17 +5,18 @@ ErrorDocument 500 /guiaempresarial.pe/500.php
+ Options +FollowSymLinks -Indexes -MultiViews
+ ServerSignature Off
+ 
+-# Protecci├│n contra acceso a archivos por extensi├│n
+ <FilesMatch "\.(log|sql|md|git|env)$">
+     Require all denied
+ </FilesMatch>
+ 
+-# Proteger archivos espec├¡ficos
++<Files ".env">
++    Require all denied
++</Files>
++
+ <Files "README.md">
+     Require all denied
+ </Files>
+ 
+-# Headers de seguridad adicionales
+ <IfModule mod_headers.c>
+     Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+     Header always set Referrer-Policy "strict-origin-when-cross-origin"
+@@ -23,25 +24,24 @@ ServerSignature Off
+ 
+ <IfModule mod_rewrite.c>
+     RewriteEngine On
++    RewriteBase /guiaempresarial.pe/
+     DirectoryIndex index.php
+ 
+-    # Redirigir /index a la ra├¡z /
+     RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s(.*)/index(\.php)? [NC]
+     RewriteRule ^ %1/ [R=301,L]
+ 
+     RewriteRule ^negocio/([^/]+)/?$ empresas.php?slug=$1 [L,QSA]
+     RewriteRule ^rubro/([^/]+)/?$ empresas.php?cat_slug=$1 [L,QSA]
+ 
+-    # Ocultar extensi├│n .php: Si se pide .php manualmente, redireccionar a la versi├│n limpia
+-    RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s([^.]+)\.php [NC]
+-    RewriteRule ^ %1 [R=301,L]
++    RewriteCond %{THE_REQUEST} \s([^.]+)\.php [NC]
++    RewriteRule ^ %1 [R=301,L,QSA]
+ 
+-    # Mapeo interno: Si se pide un archivo sin extensi├│n, servir el .php si existe
+     RewriteCond %{REQUEST_FILENAME} !-d
+     RewriteCond %{REQUEST_FILENAME}\.php -f
+-    RewriteRule ^([^\.]+)$ $1.php [NC,L]
++    RewriteRule ^(.*?)/?$ $1.php [L,QSA]
++
++    RewriteRule ^login/?$ index.php [R=302,L]
+ 
+-    # Redirecci├│n de archivos no encontrados
+     RewriteCond %{REQUEST_FILENAME} !-f
+     RewriteCond %{REQUEST_FILENAME} !-d
+     RewriteRule ^(.*)$ 404.php [L]
+diff --git a/ajax/resena_vote.php b/ajax/resena_vote.php
+index 37180d6..3cf4ebb 100644
+--- a/ajax/resena_vote.php
++++ b/ajax/resena_vote.php
+@@ -37,19 +37,6 @@ if ($resena_autor === $id_u) {
+     exit;
+ }
+ 
+-$createTableSql = "CREATE TABLE IF NOT EXISTS resena_votos (
+-  id_voto int(11) NOT NULL AUTO_INCREMENT,
+-  id_resena int(11) NOT NULL,
+-  id_usuario_publico int(11) NOT NULL,
+-  tipo enum('like','dislike') NOT NULL,
+-  fecha datetime DEFAULT current_timestamp(),
+-  PRIMARY KEY (id_voto),
+-  UNIQUE KEY resena_usuario (id_resena, id_usuario_publico),
+-  KEY id_resena (id_resena),
+-  KEY id_usuario_publico (id_usuario_publico)
+-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;";
+-$conexion->query($createTableSql);
+-
+ $stmt_check = $conexion->prepare("SELECT tipo FROM resena_votos WHERE id_resena = ? AND id_usuario_publico = ?");
+ $stmt_check->bind_param("ii", $id_resena, $id_u);
+ $stmt_check->execute();
+diff --git a/assets/css/login.css b/assets/css/login.css
+index 8cb6b64..60e760f 100644
+--- a/assets/css/login.css
++++ b/assets/css/login.css
+@@ -20,6 +20,61 @@
+     --shadow-lg: 0 15px 35px rgba(0, 0, 0, 0.1);
+     --radius-md: 12px;
+     --radius-lg: 20px;
++    --radius-full: 50px;
++}
++
++/* === SHARED COMPONENTS === */
++#toast-container {
++    position: fixed;
++    top: 20px;
++    right: 20px;
++    z-index: 100000;
++    display: flex;
++    flex-direction: column;
++    gap: 10px;
++}
++
++.toast {
++    min-width: 280px;
++    background: #fff;
++    color: #1b3a57;
++    padding: 16px 20px;
++    border-radius: 16px;
++    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
++    display: flex;
++    align-items: center;
++    gap: 12px;
++    transform: translateX(120%);
++    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
++    border-left: 5px solid #1b3a57;
++}
++
++.toast.show { transform: translateX(0); }
++.toast-success { border-left-color: #2ecc71; }
++.toast-error { border-left-color: #e74c3c; }
++.toast i { font-size: 20px; }
++.toast-success i { color: #2ecc71; }
++.toast-error i { color: #e74c3c; }
++
++body.dark-mode .toast {
++    background: #1f2937;
++    color: #f3f4f6;
++    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
++    border-color: #374151;
++}
++
++#nprogress-bar {
++    position: fixed;
++    top: 0;
++    left: 0;
++    height: 3px;
++    width: 0%;
++    background: linear-gradient(90deg, #F7DC05, #E63946);
++    z-index: 10001;
++    opacity: 1;
++    transition: width 0.3s ease, opacity 0.4s ease;
++    pointer-events: none;
++    box-shadow: 0 0 10px rgba(230, 57, 70, 0.4);
+ }
+ 
+ * {
+@@ -356,33 +411,9 @@ body {
+ .foto-item:hover { transform: scale(1.05); }
+ .foto-item img { width: 100%; height: 100%; object-fit: cover; }
+ 
+-/* === TOASTS === */
+-#toast-container {
+-    position: fixed;
+-    bottom: 30px;
+-    right: 30px;
+-    z-index: 10000;
+-    display: flex;
+-    flex-direction: column;
+-    gap: 10px;
+-}
+ 
+-.toast {
+-    background: #fff;
+-    padding: 12px 20px;
+-    border-radius: 10px;
+-    box-shadow: var(--shadow-lg);
+-    border-left: 5px solid var(--secundario);
+-    display: flex;
+-    align-items: center;
+-    gap: 10px;
+-    animation: slideIn 0.3s ease-out forwards;
+-}
++/* === TOASTS & SHARED (INTEGRATED) === */
+ 
+-@keyframes slideIn {
+-    from { transform: translateX(100%); opacity: 0; }
+-    to { transform: translateX(0); opacity: 1; }
+-}
+ 
+ /* === RESPONSIVE === */
+ @media (max-width: 900px) {
+@@ -474,4 +505,730 @@ body {
+ 
+ .icono-btn:hover { border-color: var(--secundario); transform: translateY(-2px); }
+ .icono-btn.activo { background: var(--secundario); border-color: var(--secundario); color: #fff; }
+-.icono-btn.activo i, .icono-btn.activo span { color: #fff; }
+\ No newline at end of file
++.icono-btn.activo i, .icono-btn.activo span { color: #fff; }
++
++
++/* NProgress ya est├í en la secci├│n premium al final */
++
++.mantenimiento-top-banner {
++    background: #ef4444;
++    color: #fff;
++    text-align: center;
++    padding: 8px;
++    font-size: 12px;
++    font-weight: 800;
++    letter-spacing: 0.5px;
++    position: sticky;
++    top: 0;
++    z-index: 9999;
++    display: flex;
++    align-items: center;
++    justify-content: center;
++    gap: 10px;
++    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
++}
++
++.panel-header-flex {
++    display: flex;
++    justify-content: space-between;
++    align-items: center;
++    margin-bottom: 40px;
++    padding-bottom: 20px;
++    border-bottom: 1px solid #f1f5f9;
++}
++
++.usuario-info-premium {
++    display: flex;
++    align-items: center;
++    gap: 15px;
++    background: #f8fafc;
++    padding: 8px 15px;
++    border-radius: 50px;
++    border: 1px solid #e2e8f0;
++}
++
++.user-details {
++    display: flex;
++    flex-direction: column;
++    line-height: 1.2;
++}
++
++.user-welcome {
++    font-size: 11px;
++    color: #94a3b8;
++    text-transform: uppercase;
++    font-weight: 700;
++}
++
++.user-name {
++    font-size: 14px;
++    font-weight: 700;
++    color: #1e293b;
++}
++
++.btn-logout-premium {
++    width: 35px;
++    height: 35px;
++    background: #fee2e2;
++    color: #ef4444;
++    display: flex;
++    align-items: center;
++    justify-content: center;
++    border-radius: 50%;
++    text-decoration: none;
++    transition: 0.3s;
++}
++
++.btn-logout-premium:hover {
++    background: #ef4444;
++    color: #fff;
++    transform: scale(1.1);
++}
++
++.quick-access-grid {
++    display: grid;
++    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
++    gap: 15px;
++    margin-bottom: 40px;
++}
++
++.qa-card {
++    background: #fff;
++    padding: 20px;
++    border-radius: 16px;
++    text-decoration: none;
++    color: #475569;
++    display: flex;
++    flex-direction: column;
++    align-items: center;
++    gap: 10px;
++    border: 1px solid #e2e8f0;
++    transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
++    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
++}
++
++.qa-card i {
++    font-size: 24px;
++    color: var(--primario);
++}
++
++.qa-card span {
++    font-size: 13px;
++    font-weight: 700;
++}
++
++.qa-card:hover {
++    transform: translateY(-5px);
++    border-color: var(--primario);
++    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
++    color: var(--primario);
++}
++
++.qa-card.qa-primary {
++    background: var(--primario);
++    color: #fff;
++    border-color: var(--primario);
++}
++
++.qa-card.qa-primary i {
++    color: #fff;
++}
++
++.qa-card.qa-primary:hover {
++    background: var(--primario-hover);
++}
++
++/* === STAT BOXES PREMIUM === */
++.stat-box {
++    background: #fff;
++    padding: 30px;
++    border-radius: 20px;
++    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
++    display: flex;
++    flex-direction: column;
++    gap: 12px;
++    position: relative;
++    border: 1px solid #f1f5f9;
++    transition: 0.3s;
++}
++
++.stat-box:hover {
++    transform: translateY(-5px);
++    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
++}
++
++.stat-box i {
++    font-size: 32px;
++    color: var(--primario);
++}
++
++.stat-box .stat-title {
++    font-size: 12px;
++    font-weight: 800;
++    color: #94a3b8;
++    text-transform: uppercase;
++    letter-spacing: 1px;
++}
++
++.stat-box .stat-value {
++    font-size: 36px;
++    font-weight: 900;
++    color: var(--text-main);
++    line-height: 1;
++}
++
++.stat-box .stat-footer {
++    font-size: 13px;
++    color: var(--text-muted);
++    margin-top: auto;
++}
++
++.top5-list {
++    list-style: none;
++    padding: 0;
++    margin: 0;
++}
++
++.top5-item {
++    display: flex;
++    align-items: center;
++    justify-content: space-between;
++    padding: 10px 0;
++    border-bottom: 1px solid #f8fafc;
++}
++
++.top5-item:last-child {
++    border-bottom: none;
++}
++
++.top5-name {
++    font-weight: 600;
++    font-size: 13px;
++    color: #475569;
++}
++
++.top5-views {
++    background: #f1f5f9;
++    color: var(--primario);
++    padding: 4px 10px;
++    border-radius: 999px;
++    font-size: 11px;
++    font-weight: 800;
++}
++
++.btn-reiniciar-vistas {
++    background: #f8fafc;
++    color: #64748b;
++    padding: 8px 12px;
++    border-radius: 8px;
++    text-decoration: none;
++    font-size: 12px;
++    display: inline-flex;
++    align-items: center;
++    gap: 8px;
++    margin-top: 15px;
++    font-weight: 700;
++    width: fit-content;
++    border: 1px solid #e2e8f0;
++    cursor: pointer;
++    transition: 0.2s;
++}
++
++.btn-reiniciar-vistas:hover {
++    background: #fee2e2;
++    color: #ef4444;
++    border-color: #fecaca;
++}
++
++.btn-orden {
++    background: #f8fafc;
++    border: 1px solid #e2e8f0;
++    color: #64748b;
++    width: 32px;
++    height: 32px;
++    border-radius: 8px;
++    cursor: pointer;
++    font-size: 14px;
++    display: inline-flex;
++    align-items: center;
++    justify-content: center;
++    transition: all 0.2s;
++}
++
++.btn-orden:hover {
++    background: var(--primario);
++    color: #fff;
++    border-color: var(--primario);
++}
++
++@media (max-width: 768px) {
++    .panel-header-flex {
++        flex-direction: column;
++        gap: 20px;
++        align-items: flex-start;
++    }
++
++    .quick-access-grid {
++        grid-template-columns: repeat(2, 1fr);
++    }
++}
++/* === EMPRESAS DESTACADAS (ADMIN) === */
++.destacadas-section {
++    background: #fffef0;
++    border: 1px solid #fde68a;
++    padding: 25px;
++    border-radius: 20px;
++    margin-bottom: 40px;
++    box-shadow: 0 10px 30px rgba(247, 220, 5, 0.08);
++}
++
++.destacadas-section h3 {
++    font-size: 18px;
++    margin-bottom: 10px;
++    color: #854d0e;
++}
++
++.contador-dest {
++    font-size: 14px;
++    color: #92400e;
++    margin-bottom: 20px;
++}
++
++.contador-dest span {
++    font-weight: 800;
++    font-size: 18px;
++}
++
++.destacadas-lista {
++    display: flex;
++    flex-wrap: wrap;
++    gap: 12px;
++}
++
++.destacada-chip {
++    background: #fff;
++    border: 1px solid #fde68a;
++    padding: 8px 16px;
++    border-radius: 50px;
++    display: flex;
++    align-items: center;
++    gap: 10px;
++    font-weight: 700;
++    color: #475569;
++    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
++    transition: 0.3s;
++}
++
++.destacada-chip:hover {
++    transform: translateY(-2px);
++    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
++}
++
++.destacada-chip button {
++    background: #fee2e2;
++    color: #ef4444;
++    border: none;
++    width: 24px;
++    height: 24px;
++    border-radius: 50%;
++    display: flex;
++    align-items: center;
++    justify-content: center;
++    cursor: pointer;
++    font-size: 12px;
++    transition: 0.2s;
++}
++
++.destacada-chip button:hover {
++    background: #ef4444;
++    color: #fff;
++}
++
++/* === BANNER MANAGER PREMIUM === */
++.banner-manager {
++    margin-top: 30px;
++}
++
++.size-tip {
++    background: #f0f9ff;
++    border: 1px solid #bae6fd;
++    padding: 20px;
++    border-radius: 16px;
++    display: flex;
++    gap: 15px;
++    margin-bottom: 30px;
++}
++
++.size-tip i { font-size: 24px; color: #0284c7; }
++.size-tip-text { font-size: 14px; color: #0c4a6e; line-height: 1.6; }
++.size-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
++.size-tag { padding: 4px 10px; background: #e0f2fe; border-radius: 6px; font-size: 11px; font-weight: 700; }
++.size-tag.success { background: #dcfce7; color: #166534; }
++.size-tag.warning { background: #fef9c3; color: #854d0e; }
++
++.drop-zone {
++    border: 3px dashed #e2e8f0;
++    border-radius: 24px;
++    padding: 60px 40px;
++    text-align: center;
++    background: #f8fafc;
++    transition: 0.3s;
++    cursor: pointer;
++    position: relative;
++    overflow: hidden;
++    margin-bottom: 40px;
++}
++
++.drop-zone:hover, .drop-zone.drag-over {
++    border-color: var(--primario);
++    background: #f1f5f9;
++}
++
++.drop-icon { font-size: 48px; color: #94a3b8; margin-bottom: 15px; display: block; }
++.drop-label { font-size: 18px; font-weight: 700; color: #475569; display: block; }
++.drop-sublabel { font-size: 14px; color: #94a3b8; display: block; margin-top: 5px; }
++
++.drop-preview-wrap {
++    display: none;
++    margin-top: 20px;
++    flex-direction: column;
++    align-items: center;
++    gap: 10px;
++}
++
++.drop-preview-wrap.show { display: flex; }
++.drop-preview-img { width: 200px; height: 80px; object-fit: cover; border-radius: 8px; border: 2px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
++.drop-preview-name { font-size: 12px; color: #64748b; font-weight: 600; }
++
++.drop-footer {
++    display: flex;
++    align-items: center;
++    justify-content: center;
++    gap: 20px;
++    margin-top: 30px;
++    flex-wrap: wrap;
++}
++
++.banner-grid {
++    display: grid;
++    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
++    gap: 25px;
++    margin-top: 20px;
++}
++
++.banner-card {
++    background: #fff;
++    border-radius: 20px;
++    border: 1px solid #e2e8f0;
++    overflow: hidden;
++    transition: 0.3s;
++    position: relative;
++    box-shadow: var(--shadow-sm);
++    cursor: grab;
++    user-select: none;
++}
++
++.banner-card:active {
++    cursor: grabbing;
++}
++
++.banner-card.inactivo { opacity: 0.7; filter: grayscale(0.5); }
++
++.banner-card-header {
++    position: absolute;
++    top: 15px;
++    left: 15px;
++    background: rgba(0,0,0,0.5);
++    color: #fff;
++    padding: 4px 10px;
++    border-radius: 6px;
++    font-size: 11px;
++    font-weight: 800;
++    backdrop-filter: blur(4px);
++    z-index: 2;
++}
++
++.card-controls, .time-control, .switch, .btn-del, .rng-tiempo {
++    cursor: default;
++}
++
++.banner-card-img { width: 100%; height: 160px; background: #f1f5f9; position: relative; }
++.banner-card-img img { width: 100%; height: 100%; object-fit: cover; }
++
++.banner-card-footer { padding: 20px; }
++
++.time-control { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #f1f5f9; }
++.time-control-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
++.time-control-row label { font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; white-space: nowrap; }
++.time-val { font-size: 13px; font-weight: 800; color: var(--primario); min-width: 30px; }
++
++.btn-save-time {
++    width: 100%;
++    background: #f8fafc;
++    border: 1px solid #e2e8f0;
++    color: #64748b;
++    font-size: 11px;
++    font-weight: 700;
++    padding: 6px;
++    border-radius: 8px;
++    cursor: pointer;
++    transition: 0.2s;
++}
++
++.btn-save-time:hover { background: #e2e8f0; color: #1e293b; }
++.btn-save-time.saved { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
++
++.card-controls { display: flex; align-items: center; justify-content: space-between; }
++.estado-label { font-size: 13px; font-weight: 700; color: #475569; }
++
++/* === CUSTOM SWITCH === */
++.switch { position: relative; display: inline-block; width: 44px; height: 24px; }
++.switch input { opacity: 0; width: 0; height: 0; }
++.slider-sw {
++    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
++    background-color: #cbd5e1; transition: .4s; border-radius: 34px;
++}
++.slider-sw:before {
++    position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
++    background-color: white; transition: .4s; border-radius: 50%;
++}
++input:checked + .slider-sw { background-color: #10b981; }
++input:checked + .slider-sw:before { transform: translateX(20px); }
++
++.btn-del {
++    width: 36px; height: 36px; border-radius: 10px; border: none;
++    background: #fff1f2; color: #e11d48; display: flex; align-items: center; justify-content: center;
++    cursor: pointer; transition: 0.2s;
++}
++.btn-del:hover { background: #e11d48; color: #fff; transform: scale(1.1); }
++
++.banner-toolbar {
++    display: flex; justify-content: space-between; align-items: center;
++    background: #f8fafc; padding: 15px 25px; border-radius: 16px;
++    border: 1px solid #e2e8f0; margin-bottom: 20px;
++    font-size: 13px; font-weight: 700; color: #64748b;
++}
++
++.btn-save-order {
++    background: var(--primario); color: #fff; border: none; padding: 8px 16px;
++    border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer;
++    display: none; transition: 0.3s;
++}
++.btn-save-order.visible { display: flex; align-items: center; gap: 8px; animation: slideUp 0.3s ease-out; }
++
++@keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
++
++.sortable-ghost { opacity: 0.4; }
++.sortable-chosen { box-shadow: 0 15px 35px rgba(0,0,0,0.2) !important; }
++
++/* === UI ELEMENTS ADMIN === */
++.btn-estrella {
++    background: none;
++    border: none;
++    font-size: 20px;
++    cursor: pointer;
++    transition: 0.2s;
++    filter: grayscale(1);
++    opacity: 0.3;
++}
++
++.btn-estrella.activa {
++    filter: grayscale(0);
++    opacity: 1;
++    transform: scale(1.2);
++}
++
++.btn-estrella:hover {
++    transform: scale(1.3);
++    opacity: 1;
++}
++
++.system-tools-grid {
++    display: grid;
++    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
++    gap: 20px;
++    margin-bottom: 40px;
++}
++
++.empty-state {
++    text-align: center;
++    padding: 60px 20px;
++    color: #94a3b8;
++}
++
++.empty-icon {
++    font-size: 48px;
++    display: block;
++    margin-bottom: 15px;
++    opacity: 0.5;
++}
++
++.empty-state h3 {
++    font-size: 18px;
++    color: #475569;
++    margin-bottom: 8px;
++}
++
++.table-wrap {
++    background: #fff;
++    border-radius: var(--radius-lg);
++    border: 1px solid var(--border-color);
++    overflow: hidden;
++    box-shadow: var(--shadow-sm);
++}
++
++.mantenimiento-top-banner.online {
++    background: #10b981;
++}
++
++/* === GESTIONAR RESE├æAS SELECTOR === */
++.empresa-sel-lista {
++    display: grid;
++    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
++    gap: 15px;
++    margin-top: 20px;
++}
++
++.empresa-sel-item {
++    background: #fff;
++    border: 1px solid var(--border-color);
++    padding: 15px;
++    border-radius: 16px;
++    display: flex;
++    align-items: center;
++    gap: 15px;
++    text-decoration: none;
++    color: var(--text-main);
++    transition: 0.3s;
++    box-shadow: var(--shadow-sm);
++}
++
++.empresa-sel-item:hover {
++    transform: translateY(-3px);
++    border-color: var(--primario);
++    box-shadow: var(--shadow-md);
++}
++
++.empresa-sel-logo {
++    width: 50px;
++    height: 50px;
++    border-radius: 10px;
++    object-fit: cover;
++    background: #f1f5f9;
++}
++
++.empresa-sel-info {
++    flex: 1;
++    min-width: 0;
++}
++
++.empresa-sel-nombre {
++    display: block;
++    font-weight: 700;
++    font-size: 14px;
++    white-space: nowrap;
++    overflow: hidden;
++    text-overflow: ellipsis;
++}
++
++.empresa-sel-meta {
++    font-size: 12px;
++    color: var(--text-muted);
++    display: flex;
++    align-items: center;
++    gap: 10px;
++}
++
++.empresa-sel-meta span {
++    display: flex;
++    align-items: center;
++    gap: 4px;
++}
++
++/* === BANNER MANAGER REFACTOR === */
++.section-title {
++    font-size: 16px;
++    font-weight: 800;
++    color: var(--primario);
++    margin: 40px 0 20px 0;
++    display: flex;
++    align-items: center;
++    gap: 10px;
++}
++
++.drop-zone {
++    border: 3px dashed #e2e8f0;
++    border-radius: 24px;
++    padding: 40px;
++    text-align: center;
++    background: #f8fafc;
++    transition: 0.3s;
++    cursor: pointer;
++    position: relative;
++    overflow: hidden;
++    margin-bottom: 20px;
++}
++
++.upload-actions-bar {
++    display: flex;
++    align-items: center;
++    justify-content: center;
++    gap: 25px;
++    background: #fff;
++    padding: 20px;
++    border-radius: 20px;
++    border: 1px solid #e2e8f0;
++    box-shadow: var(--shadow-sm);
++    flex-wrap: wrap;
++}
++
++.time-upload-wrap {
++    display: flex;
++    align-items: center;
++    gap: 12px;
++    background: #f1f5f9;
++    padding: 8px 16px;
++    border-radius: 12px;
++    font-size: 13px;
++    font-weight: 700;
++}
++
++.drop-preview-wrap {
++    display: none;
++    margin-top: 25px;
++    flex-direction: column;
++    align-items: center;
++    gap: 12px;
++    animation: fadeIn 0.3s ease-out;
++}
++
++.drop-preview-wrap.show {
++    display: flex;
++}
++
++.drop-preview-img {
++    display: block;
++    width: auto;
++    height: auto;
++    max-width: 100%;
++    max-height: 400px;
++    border-radius: 12px;
++    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
++    border: 1px solid #e2e8f0;
++    margin: 0 auto;
++}
++
++.drop-preview-name {
++    font-size: 12px;
++    font-weight: 700;
++    color: #64748b;
++    background: #fff;
++    padding: 4px 12px;
++    border-radius: 99px;
++    box-shadow: var(--shadow-sm);
++}
++
++@keyframes fadeIn {
++    from { opacity: 0; transform: translateY(10px); }
++    to { opacity: 1; transform: translateY(0); }
++}
+diff --git a/assets/css/style.css b/assets/css/style.css
+index 1cb86ea..348396f 100644
+--- a/assets/css/style.css
++++ b/assets/css/style.css
+@@ -2,15 +2,8 @@
+     --amarillo: #F7DC05;
+     --rojo: #E63946;
+     --azul: #1B3A57;
+-    --azul-oscuro: #152e45;
++    --crema: #fff9e6;
+     --blanco: #ffffff;
+-    --primario: #10b981;
+-    --primario-hover: #059669;
+-    --ink: #1f2937;
+-    --ink-muted: #6b7280;
+-    --sky: #f0f9ff;
+-    --emerald: #10b981;
+-    --glass-bg: rgba(255, 255, 255, 0.7);
+     --glass-border: rgba(255, 255, 255, 0.3);
+     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+@@ -24,179 +17,62 @@
+     --grad-premium: linear-gradient(145deg, #f8fafc, #f1f5f9);
+ }
+ 
+-html {
+-    height: 100%;
+-}
+-
+-body {
+-    margin: 0;
+-    padding: 0;
+-    font-family: sans-serif;
+-    background: linear-gradient(#141e30, #243b55);
+-}
+-
+-.login-box {
+-    position: absolute;
+-    top: 50%;
+-    left: 50%;
+-    width: 400px;
+-    padding: 40px;
+-    transform: translate(-50%, -50%);
+-    background: rgba(0, 0, 0, .5);
+-    box-sizing: border-box;
+-    box-shadow: 0 15px 25px rgba(0, 0, 0, .6);
+-    border-radius: 10px;
++/* === SHARED COMPONENTS === */
++#toast-container {
++    position: fixed;
++    top: 20px;
++    right: 20px;
++    z-index: 100000;
++    display: flex;
++    flex-direction: column;
++    gap: 10px;
+ }
+ 
+-.login-box h2 {
+-    margin: 0 0 30px;
+-    padding: 0;
+-    color: #fff;
+-    text-align: center;
++.toast {
++    min-width: 280px;
++    background: #fff;
++    color: #1b3a57;
++    padding: 16px 20px;
++    border-radius: 16px;
++    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
++    display: flex;
++    align-items: center;
++    gap: 12px;
++    transform: translateX(120%);
++    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
++    border-left: 5px solid #1b3a57;
+ }
+ 
+-.login-box .user-box {
+-    position: relative;
+-}
++.toast.show { transform: translateX(0); }
++.toast-success { border-left-color: #2ecc71; }
++.toast-error { border-left-color: #e74c3c; }
++.toast i { font-size: 20px; }
++.toast-success i { color: #2ecc71; }
++.toast-error i { color: #e74c3c; }
+ 
+-.login-box .user-box input {
+-    width: 100%;
+-    padding: 10px 0;
+-    font-size: 16px;
+-    color: #fff;
+-    margin-bottom: 30px;
+-    border: none;
+-    border-bottom: 1px solid #fff;
+-    outline: none;
+-    background: transparent;
++body.dark-mode .toast {
++    background: #1f2937;
++    color: #f3f4f6;
++    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
++    border-color: #374151;
+ }
+ 
+-.login-box .user-box label {
+-    position: absolute;
++#nprogress-bar {
++    position: fixed;
+     top: 0;
+     left: 0;
+-    padding: 10px 0;
+-    font-size: 16px;
+-    color: #fff;
++    height: 3px;
++    width: 0%;
++    background: var(--grad-main);
++    z-index: 10001;
++    opacity: 1;
++    transition: width 0.3s ease, opacity 0.4s ease;
+     pointer-events: none;
+-    transition: .5s;
+-}
+-
+-.login-box .user-box input:focus~label,
+-.login-box .user-box input:valid~label {
+-    top: -20px;
+-    left: 0;
+-    color: #03e9f4;
+-    font-size: 12px;
+-}
+-
+-.login-box form a {
+-    position: relative;
+-    display: inline-block;
+-    padding: 10px 20px;
+-    color: #03e9f4;
+-    font-size: 16px;
+-    text-decoration: none;
+-    text-transform: uppercase;
+-    overflow: hidden;
+-    transition: .5s;
+-    margin-top: 40px;
+-    letter-spacing: 4px
+-}
+-
+-.login-box a:hover {
+-    background: #03e9f4;
+-    color: #fff;
+-    border-radius: 5px;
+-    box-shadow: 0 0 5px #03e9f4, 0 0 25px #03e9f4, 0 0 50px #03e9f4, 0 0 100px #03e9f4;
+-}
+-
+-.login-box a span {
+-    position: absolute;
+-    display: block;
+-}
+-
+-.login-box a span:nth-child(1) {
+-    top: 0;
+-    left: -100%;
+-    width: 100%;
+-    height: 2px;
+-    background: linear-gradient(90deg, transparent, #03e9f4);
+-    animation: btn-anim1 1s linear infinite;
+-}
+-
+-@keyframes btn-anim1 {
+-    0% {
+-        left: -100%;
+-    }
+-
+-    50%,
+-    100% {
+-        left: 100%;
+-    }
+-}
+-
+-.login-box a span:nth-child(2) {
+-    top: -100%;
+-    right: 0;
+-    width: 2px;
+-    height: 100%;
+-    background: linear-gradient(180deg, transparent, #03e9f4);
+-    animation: btn-anim2 1s linear infinite;
+-    animation-delay: .25s
+-}
+-
+-@keyframes btn-anim2 {
+-    0% {
+-        top: -100%;
+-    }
+-
+-    50%,
+-    100% {
+-        top: 100%;
+-    }
+-}
+-
+-.login-box a span:nth-child(3) {
+-    bottom: 0;
+-    right: -100%;
+-    width: 100%;
+-    height: 2px;
+-    background: linear-gradient(270deg, transparent, #03e9f4);
+-    animation: btn-anim3 1s linear infinite;
+-    animation-delay: .5s
+-}
+-
+-@keyframes btn-anim3 {
+-    0% {
+-        right: -100%;
+-    }
+-
+-    50%,
+-    100% {
+-        right: 100%;
+-    }
++    box-shadow: 0 0 10px rgba(230, 57, 70, 0.4);
+ }
+ 
+-.login-box a span:nth-child(4) {
+-    bottom: -100%;
+-    left: 0;
+-    width: 2px;
++html {
+     height: 100%;
+-    background: linear-gradient(360deg, transparent, #03e9f4);
+-    animation: btn-anim4 1s linear infinite;
+-    animation-delay: .75s
+-}
+-
+-@keyframes btn-anim4 {
+-    0% {
+-        bottom: -100%;
+-    }
+-
+-    50%,
+-    100% {
+-        bottom: 100%;
+-    }
+ }
+ 
+ *,
+@@ -939,26 +815,6 @@ body.menu-abierto {
+     z-index: 9999;
+ }
+ 
+-.search-container {
+-    max-width: 800px;
+-    margin: auto;
+-    background: var(--grad-card);
+-    padding: 55px;
+-    border-radius: var(--radius);
+-    border: 1px solid rgba(247, 220, 5, 0.3);
+-    box-shadow: var(--shadow);
+-}
+-
+-.search-container input {
+-    width: 100%;
+-    padding: 16px;
+-    border-radius: var(--radius-sm);
+-    border: 1px solid var(--borde);
+-    margin-bottom: 8px;
+-    background: #fff;
+-    color: var(--azul);
+-}
+-
+ .search-box {
+     background: #fff;
+     border-radius: var(--radius-full);
+@@ -2141,7 +1997,7 @@ body.menu-abierto {
+ }
+ 
+ .main-footer {
+-    background: linear-gradient(180deg, var(--azul), var(--azul-oscuro));
++    background: #1B3A57;
+     padding: 80px 20px;
+     border-top: 1px solid rgba(247, 220, 5, 0.25);
+     margin-top: 120px;
+diff --git a/assets/js/toast.js b/assets/js/toast.js
+index f7f423d..6992d57 100644
+--- a/assets/js/toast.js
++++ b/assets/js/toast.js
+@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
+             toast.classList.remove('show');
+             setTimeout(() => toast.remove(), 400);
+         }, 4000);
+-    }; s
++    };
+ 
+     const modalHTML = `
+     <div id="custom-modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(10,15,24,0.7); z-index:100000; align-items:center; justify-content:center; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+diff --git a/categorias.php b/categorias.php
+index 9c99efb..4c5840a 100644
+--- a/categorias.php
++++ b/categorias.php
+@@ -26,7 +26,7 @@ echo renderBreadcrumbs($bc_items);
+                 $nombre = htmlspecialchars($fila['nombre']);
+                 $icono = htmlspecialchars($fila['icono'] ?? 'bi-briefcase');
+                 ?>
+-                <a href="<?= APP_URL ?>/rubro/<?= $fila['slug'] ?>" class="categoria-card reveal">
++                <a href="<?= APP_URL ?>/rubro/<?= htmlspecialchars($fila['slug']) ?>" class="categoria-card reveal">
+                     <div class="categoria-icono-wrap">
+                         <i class="bi <?= $icono ?>"></i>
+                     </div>
+@@ -38,4 +38,4 @@ echo renderBreadcrumbs($bc_items);
+     </div>
+ </section>
+ 
+-<?php include 'includes/footer.php'; ?>
++<?php include 'includes/footer.php'; ?>
+\ No newline at end of file
+diff --git a/contacto.php b/contacto.php
+index 5d2f0ac..d201f08 100644
+--- a/contacto.php
++++ b/contacto.php
+@@ -1,4 +1,5 @@
+ <?php
++include 'db.php';
+ $seo_title = "Contacto Oficial - Gu├¡a Empresarial";
+ $seo_description = "Comun├¡cate con Gu├¡a Empresarial a trav├®s de WhatsApp, Facebook y Messenger. Horario de atenci├│n: Lunes a S├íbado de 9:00 AM a 6:00 PM.";
+ include 'includes/Header.php';
+@@ -39,4 +40,4 @@ include 'includes/Header.php';
+     </div>
+ </section>
+ 
+-<?php include 'includes/footer.php'; ?>
++<?php include 'includes/footer.php'; ?>
+\ No newline at end of file
+diff --git a/db.php b/db.php
+index 989ab0b..4c5549d 100644
+--- a/db.php
++++ b/db.php
+@@ -28,21 +28,29 @@ if (file_exists(__DIR__ . '/mantenimiento.flag')) {
+     }
+ 
+     $es_admin = (isset($_SESSION['rol']) && $_SESSION['rol'] === 'admin');
+-    $ruta_actual = $_SERVER['REQUEST_URI'];
++    $ruta_actual = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
++    $base_path = parse_url(APP_URL, PHP_URL_PATH) ?: '';
++
++    // Si la aplicaci├│n est├í en un subdirectorio, lo removemos para la comparaci├│n
++    if (!empty($base_path) && str_starts_with($ruta_actual, $base_path)) {
++        $ruta_actual = substr($ruta_actual, strlen($base_path));
++    }
+ 
+     $whitelist = [
+-        '/login',
++        '/login/',
+         '/login_usuario',
+         '/registro_usuario',
+         '/logout',
+-        '/panel',   // <-- A├æADIDO
+-        '/admin',   // <-- A├æADIDO
+-        '/editor',  // <-- A├æADIDO
++        '/login/login',
++        '/login/admin',
++        '/login/editor',
++        '/login/cerrar',
++        '/login/panel',
+     ];
+ 
+     $es_excluido = false;
+     foreach ($whitelist as $item) {
+-        if (strpos($ruta_actual, $item) !== false) {
++        if ($ruta_actual === $item || str_starts_with($ruta_actual, $item)) {
+             $es_excluido = true;
+             break;
+         }
+@@ -54,4 +62,4 @@ if (file_exists(__DIR__ . '/mantenimiento.flag')) {
+         exit;
+     }
+ }
+-?>
++?>
+\ No newline at end of file
+diff --git a/empresas.php b/empresas.php
+index 6c1654f..99bddf0 100644
+--- a/empresas.php
++++ b/empresas.php
+@@ -520,9 +520,10 @@ include 'includes/Header.php';
+                     <?php if (isset($_SESSION['usuario_publico_id'])): ?>
+                         <?php if ($usuario_tiene_resena): ?>
+                             <div id="resenaEditHint" class="resena-alerta resena-alerta-info">Ya tienes tu rese├▒a enviada. Presiona
+-                                <strong>Editar</strong> en tu comentario para actualizarla.</div>
++                                <strong>Editar</strong> en tu comentario para actualizarla.
++                            </div>
+                         <?php endif; ?>
+-                        <form id="formResena" method="POST" action="<?= APP_URL ?>/empresas.php?empresa=<?= $id_empresa ?>"
++                        <form id="formResena" method="POST" action="<?= APP_URL ?>/empresas?empresa=<?= $id_empresa ?>"
+                             style="<?= $usuario_tiene_resena ? 'display:none;' : '' ?>">
+                             <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
+                             <input type="hidden" name="id_empresa" value="<?= $id_empresa ?>">
+@@ -556,12 +557,12 @@ include 'includes/Header.php';
+                             <p style="color:var(--muted);margin-bottom:16px;font-size:15px;">
+                                 Inicia sesi├│n para dejar tu rese├▒a
+                             </p>
+-                            <a href="<?= APP_URL ?>/login_usuario.php?redir=<?= urlencode('negocio/' . ($slug_param ?? $id_empresa) . '#resenas') ?>"
++                            <a href="<?= APP_URL ?>/login_usuario?redir=<?= urlencode('negocio/' . ($slug_param ?? $id_empresa) . '#resenas') ?>"
+                                 class="btn-enviar-resena" style="text-decoration:none;display:inline-block;">
+                                 Iniciar sesi├│n
+                             </a>
+                             <p style="margin-top:12px;font-size:13px;color:var(--muted);">
+-                                ┬┐No tienes cuenta? <a href="<?= APP_URL ?>/registro_usuario.php"
++                                ┬┐No tienes cuenta? <a href="<?= APP_URL ?>/registro_usuario"
+                                     style="color:var(--rojo);font-weight:700;">Reg├¡strate gratis</a>
+                             </p>
+                         </div>
+@@ -1004,4 +1005,4 @@ include 'includes/Header.php';
+                 });
+         });
+     })();
+-</script>
++</script>
+\ No newline at end of file
+diff --git a/includes/Header.php b/includes/Header.php
+index b1a1314..b4149f4 100644
+--- a/includes/Header.php
++++ b/includes/Header.php
+@@ -18,7 +18,10 @@ $user_favs = [];
+ if (isset($_SESSION['usuario_publico_id'])) {
+   require_once __DIR__ . '/../db.php';
+   $id_u_fav = intval($_SESSION['usuario_publico_id']);
+-  $stmt_favs = $conexion->query("SELECT id_empresa FROM favoritos WHERE id_usuario_publico = $id_u_fav");
++  $stmt_favs = $conexion->prepare("SELECT id_empresa FROM favoritos WHERE id_usuario_publico = ?");
++  $stmt_favs->bind_param("i", $id_u_fav);
++  $stmt_favs->execute();
++  $stmt_favs = $stmt_favs->get_result();
+   if ($stmt_favs) {
+     while ($rf = $stmt_favs->fetch_assoc()) {
+       $user_favs[] = (int) $rf['id_empresa'];
+@@ -49,8 +52,8 @@ if (isset($_SESSION['usuario_publico_id'])) {
+   <meta property="twitter:description" content="<?= htmlspecialchars($seo_description) ?>">
+   <meta property="twitter:image" content="<?= htmlspecialchars($seo_image) ?>">
+ 
+-  <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css?v=1.2">
+-  <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/mi_cuenta.css">
++  <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css?v=<?= time() ?>">
++  <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/mi_cuenta.css?v=<?= time() ?>">
+   <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
+   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+@@ -66,62 +69,6 @@ if (isset($_SESSION['usuario_publico_id'])) {
+     window.csrfToken = '<?php echo function_exists('generarTokenCSRF') ? generarTokenCSRF() : ""; ?>';
+   </script>
+   <script src="<?= APP_URL ?>/assets/js/toast.js"></script>
+-  <style>
+-    #toast-container {
+-      position: fixed;
+-      top: 20px;
+-      right: 20px;
+-      z-index: 100000;
+-      display: flex;
+-      flex-direction: column;
+-      gap: 10px;
+-    }
+-
+-    .toast {
+-      min-width: 280px;
+-      background: #fff;
+-      color: #1b3a57;
+-      padding: 16px 20px;
+-      border-radius: 16px;
+-      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+-      display: flex;
+-      align-items: center;
+-      gap: 12px;
+-      transform: translateX(120%);
+-      transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+-      border-left: 5px solid #1b3a57;
+-    }
+-
+-    .toast.show {
+-      transform: translateX(0);
+-    }
+-
+-    .toast-success {
+-      border-left-color: #2ecc71;
+-    }
+-
+-    .toast-error {
+-      border-left-color: #e74c3c;
+-    }
+-
+-    .toast i {
+-      font-size: 20px;
+-    }
+-
+-    .toast-success i {
+-      color: #2ecc71;
+-    }
+-
+-    .toast-error i {
+-      color: #e74c3c;
+-    }
+-
+-    body.dark-mode .toast {
+-      background: #374151;
+-      color: #f3f4f6;
+-      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+-    }
+-  </style>
+ </head>
+ 
+ <body
+@@ -133,21 +80,6 @@ if (isset($_SESSION['usuario_publico_id'])) {
+   </script>
+ 
+   <div id="nprogress-bar"></div>
+-  <style>
+-    #nprogress-bar {
+-      position: fixed;
+-      top: 0;
+-      left: 0;
+-      height: 3px;
+-      width: 0%;
+-      background: var(--grad-main);
+-      z-index: 10001;
+-      opacity: 1;
+-      transition: width 0.3s ease, opacity 0.4s ease;
+-      pointer-events: none;
+-      box-shadow: 0 0 10px rgba(230, 57, 70, 0.4);
+-    }
+-  </style>
+ 
+   <div class="nav-overlay" id="nav-overlay"></div>
+ 
+diff --git a/includes/admin_config.php b/includes/admin_config.php
+index f926ec3..73c61a0 100644
+--- a/includes/admin_config.php
++++ b/includes/admin_config.php
+@@ -2,6 +2,6 @@
+ if (!defined('ACCESO_PERMITIDO'))
+     die('Acceso directo no permitido.');
+ return [
+-    'token_hash' => '$2y$10$HMpVhmbMKROM2JnanXhg0.2c9P.RGArd5e8lDJAFal/l/gJ1GBfgK',
++    'token_hash' => '$2y$10$8C0K8d7yCkpp.T7topcXZuvCFHqUOKQKQEe0/iHmyUSOahUmiz1a6',
+     'ips_bloqueadas' => []
+ ];
+diff --git a/includes/config.php b/includes/config.php
+index f7230ae..47d317d 100644
+--- a/includes/config.php
++++ b/includes/config.php
+@@ -1,5 +1,22 @@
+ <?php
+ 
++$envFile = __DIR__ . '/../.env';
++if (file_exists($envFile)) {
++    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
++    foreach ($lines as $line) {
++        if (strpos(trim($line), '#') === 0)
++            continue;
++        if (strpos($line, '=') === false)
++            continue;
++        list($key, $value) = explode('=', $line, 2);
++        $key = trim($key);
++        $value = trim($value);
++        if (!getenv($key)) {
++            putenv("$key=$value");
++        }
++    }
++}
++
+ if (!function_exists('config_env')) {
+     function config_env($key, $default = null)
+     {
+@@ -16,7 +33,7 @@ define('DB_CHARSET', config_env('DB_CHARSET', 'utf8mb4'));
+ 
+ define('SMTP_HOST', config_env('SMTP_HOST', 'smtp.gmail.com'));
+ define('SMTP_USER', config_env('SMTP_USER', 'abelperezcoca058@gmail.com'));
+-define('SMTP_PASS', config_env('SMTP_PASS', 'jged zccg zyvp ulno'));
++define('SMTP_PASS', config_env('SMTP_PASS', ''));
+ define('SMTP_PORT', (int) config_env('SMTP_PORT', 587));
+ define('SMTP_FROM_EMAIL', config_env('SMTP_FROM_EMAIL', 'abelperezcoca058@gmail.com'));
+ define('SMTP_FROM_NAME', config_env('SMTP_FROM_NAME', 'Gu├¡a Empresarial'));
+diff --git a/includes/security.php b/includes/security.php
+index 2bb8041..023c7db 100644
+--- a/includes/security.php
++++ b/includes/security.php
+@@ -55,8 +55,9 @@ if (!function_exists('inputLimpio')) {
+ if (!function_exists('limpiarParaLike')) {
+     function limpiarParaLike($data)
+     {
+-        $data = str_replace(['%', '_', '\\'], ['\%', '\_', '\\\\'], $data);
+-        return inputLimpio($data);
++        $data = trim(strip_tags($data));
++        $data = str_replace(['%', '_', '\\'], ['\\%', '\\_', '\\\\'], $data);
++        return $data;
+     }
+ }
+ 
+@@ -240,6 +241,10 @@ if (!function_exists('logSeguridad')) {
+         if (!is_dir($dirLog)) {
+             mkdir($dirLog, 0755, true);
+         }
++        if (file_exists($archivoLog) && filesize($archivoLog) > 5 * 1024 * 1024) {
++            $nuevoNombre = str_replace('.log', '_' . date('Y-m-d_H-i-s') . '.log', $archivoLog);
++            rename($archivoLog, $nuevoNombre);
++        }
+         file_put_contents($archivoLog, $entrada, FILE_APPEND);
+     }
+ }
+@@ -334,11 +339,11 @@ if (isset($_SESSION['usuario_publico_id']) && isset($conexion)) {
+     $stmt_check_session->bind_param("i", $_SESSION['usuario_publico_id']);
+     $stmt_check_session->execute();
+     $res_check_session = $stmt_check_session->get_result()->fetch_assoc();
+-    
++
+     if ($res_check_session) {
+         $hash_actual = $res_check_session['password_hash'];
+         $hash_sesion = $_SESSION['usuario_publico_pw_hash'] ?? '';
+-        
++
+         if ($hash_actual !== $hash_sesion) {
+             // La contrase├▒a ha cambiado, invalidamos esta sesi├│n
+             session_unset();
+@@ -348,3 +353,72 @@ if (isset($_SESSION['usuario_publico_id']) && isset($conexion)) {
+         }
+     }
+ }
++
++if (!function_exists('registrarIntentoOTP')) {
++    function registrarIntentoOTP($identificador)
++    {
++        global $conexion;
++        if (!$conexion) return;
++        $stmt = $conexion->prepare("INSERT INTO otp_intentos (identificador, intentos, ultimo_intento) 
++                                   VALUES (?, 1, NOW()) 
++                                   ON DUPLICATE KEY UPDATE 
++                                   intentos = intentos + 1, 
++                                   ultimo_intento = NOW()");
++        $stmt->bind_param("s", $identificador);
++        $stmt->execute();
++        $stmt->close();
++    }
++}
++
++if (!function_exists('verificarBloqueoOTP')) {
++    function verificarBloqueoOTP($identificador)
++    {
++        global $conexion;
++        if (!$conexion) return true;
++        $stmt = $conexion->prepare("SELECT intentos, ultimo_intento, bloqueado_hasta FROM otp_intentos WHERE identificador = ?");
++        $stmt->bind_param("s", $identificador);
++        $stmt->execute();
++        $res = $stmt->get_result()->fetch_assoc();
++        $stmt->close();
++
++        if (!$res) return true;
++
++        $now = time();
++        if ($res['bloqueado_hasta']) {
++            $bloqueo = strtotime($res['bloqueado_hasta']);
++            if ($now < $bloqueo) return false;
++        }
++
++        if ($res['intentos'] >= 5) {
++            $ultimo = strtotime($res['ultimo_intento']);
++            if ($now - $ultimo < 900) { // 15 minutos
++                if (!$res['bloqueado_hasta']) {
++                    $bloqueo_hasta = date('Y-m-d H:i:s', $now + 900);
++                    $stmt_upd = $conexion->prepare("UPDATE otp_intentos SET bloqueado_hasta = ? WHERE identificador = ?");
++                    $stmt_upd->bind_param("ss", $bloqueo_hasta, $identificador);
++                    $stmt_upd->execute();
++                    $stmt_upd->close();
++                }
++                return false;
++            } else {
++                $stmt_res = $conexion->prepare("UPDATE otp_intentos SET intentos = 0, bloqueado_hasta = NULL WHERE identificador = ?");
++                $stmt_res->bind_param("s", $identificador);
++                $stmt_res->execute();
++                $stmt_res->close();
++            }
++        }
++        return true;
++    }
++}
++
++if (!function_exists('limpiarIntentosOTP')) {
++    function limpiarIntentosOTP($identificador)
++    {
++        global $conexion;
++        if (!$conexion) return;
++        $stmt = $conexion->prepare("DELETE FROM otp_intentos WHERE identificador = ?");
++        $stmt->bind_param("s", $identificador);
++        $stmt->execute();
++        $stmt->close();
++    }
++}
+diff --git a/index.php b/index.php
+index ae3bdf7..3ab7831 100644
+--- a/index.php
++++ b/index.php
+@@ -94,7 +94,7 @@ $total_slides = count($slides);
+ <section id="empresas" class="page-section empresas-section">
+     <div class="container">
+         <div class="section-header">
+-            <h1>Ô¡É Empresas Destacadas</h1>
++            <h2>Ô¡É Empresas Destacadas</h2>
+         </div>
+         <?php
+         $sql_destacadas = "SELECT e.*, c.nombre AS categoria, c.slug AS cat_slug,
+@@ -122,7 +122,7 @@ $total_slides = count($slides);
+ <section class="page-section empresas-section" style="padding-top:0;">
+     <div class="container">
+         <div class="section-header">
+-            <h1>­ƒæü M├ís Vistas</h1>
++            <h2>­ƒæü M├ís Vistas</h2>
+             <p>Las empresas m├ís populares de nuestra gu├¡a</p>
+         </div>
+         <?php
+@@ -152,7 +152,7 @@ $total_slides = count($slides);
+ <section id="categorias" class="page-section">
+     <div class="container">
+         <div class="section-header">
+-            <h1>Categor├¡as</h1>
++            <h2>Categor├¡as</h2>
+             <p>Explora los rubros destacados</p>
+         </div>
+         <div class="categorias-modern">
+diff --git a/login/.htaccess b/login/.htaccess
+deleted file mode 100644
+index 1755dab..0000000
+--- a/login/.htaccess
++++ /dev/null
+@@ -1,3 +0,0 @@
+-Options -Indexes
+-RewriteEngine On
+-RewriteRule ^$ ../index.php [R=302,L]
+\ No newline at end of file
+diff --git a/login/admin.php b/login/admin.php
+index 5afef6e..5653a5c 100644
+--- a/login/admin.php
++++ b/login/admin.php
+@@ -12,580 +12,291 @@ $rol = $_SESSION['rol'];
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>Panel <?= ucfirst($rol) ?></title>
+     <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
+-    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css">
++    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css?v=<?= time() ?>">
+     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+-    <style>
+-        #nprogress-bar {
+-            position: fixed;
+-            top: 0;
+-            left: 0;
+-            height: 3px;
+-            width: 0%;
+-            background: linear-gradient(90deg, #F7DC05, #E63946);
+-            z-index: 10001;
+-            opacity: 1;
+-            transition: width 0.3s ease, opacity 0.4s ease;
+-            pointer-events: none;
+-            box-shadow: 0 0 10px rgba(230, 57, 70, 0.4);
+-        }
+-
+-        .mantenimiento-top-banner {
+-            background: #ef4444;
+-            color: #fff;
+-            text-align: center;
+-            padding: 8px;
+-            font-size: 12px;
+-            font-weight: 800;
+-            letter-spacing: 0.5px;
+-            position: sticky;
+-            top: 0;
+-            z-index: 9999;
+-            display: flex;
+-            align-items: center;
+-            justify-content: center;
+-            gap: 10px;
+-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+-        }
+-
+-        .panel-header-flex {
+-            display: flex;
+-            justify-content: space-between;
+-            align-items: center;
+-            margin-bottom: 40px;
+-            padding-bottom: 20px;
+-            border-bottom: 1px solid #f1f5f9;
+-        }
+-
+-        .usuario-info-premium {
+-            display: flex;
+-            align-items: center;
+-            gap: 15px;
+-            background: #f8fafc;
+-            padding: 8px 15px;
+-            border-radius: 50px;
+-            border: 1px solid #e2e8f0;
+-        }
+-
+-        .user-details {
+-            display: flex;
+-            flex-direction: column;
+-            line-height: 1.2;
+-        }
+-
+-        .user-welcome {
+-            font-size: 11px;
+-            color: #94a3b8;
+-            text-transform: uppercase;
+-            font-weight: 700;
+-        }
+-
+-        .user-name {
+-            font-size: 14px;
+-            font-weight: 700;
+-            color: #1e293b;
+-        }
+-
+-        .btn-logout-premium {
+-            width: 35px;
+-            height: 35px;
+-            background: #fee2e2;
+-            color: #ef4444;
+-            display: flex;
+-            align-items: center;
+-            justify-content: center;
+-            border-radius: 50%;
+-            text-decoration: none;
+-            transition: 0.3s;
+-        }
+-
+-        .btn-logout-premium:hover {
+-            background: #ef4444;
+-            color: #fff;
+-            transform: scale(1.1);
+-        }
+-
+-        .quick-access-grid {
+-            display: grid;
+-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+-            gap: 15px;
+-            margin-bottom: 40px;
+-        }
+-
+-        .qa-card {
+-            background: #fff;
+-            padding: 20px;
+-            border-radius: 16px;
+-            text-decoration: none;
+-            color: #475569;
+-            display: flex;
+-            flex-direction: column;
+-            align-items: center;
+-            gap: 10px;
+-            border: 1px solid #e2e8f0;
+-            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+-        }
+-
+-        .qa-card i {
+-            font-size: 24px;
+-            color: #1B3A57;
+-        }
+-
+-        .qa-card span {
+-            font-size: 13px;
+-            font-weight: 700;
+-        }
+-
+-        .qa-card:hover {
+-            transform: translateY(-5px);
+-            border-color: #1B3A57;
+-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+-            color: #1B3A57;
+-        }
+-
+-        .qa-card.qa-primary {
+-            background: #1B3A57;
+-            color: #fff;
+-            border-color: #1B3A57;
+-        }
+-
+-        .qa-card.qa-primary i {
+-            color: #fff;
+-        }
+-
+-        .qa-card.qa-primary:hover {
+-            background: #152e45;
+-        }
+-
+-        .stats-dashboard {
+-            display: grid;
+-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+-            gap: 20px;
+-            margin-bottom: 40px;
+-        }
+-
+-        .stat-box {
+-            background: #fff;
+-            padding: 30px;
+-            border-radius: 20px;
+-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+-            display: flex;
+-            flex-direction: column;
+-            gap: 12px;
+-            position: relative;
+-            border: 1px solid #f1f5f9;
+-            transition: 0.3s;
+-        }
++</head>
+ 
+-        .stat-box:hover {
+-            transform: translateY(-5px);
+-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+-        }
++<body>
++    <?php require_once __DIR__ . '/../includes/admin_layout_top.php'; ?>
+ 
+-        .stat-box i {
+-            font-size: 32px;
+-            color: #1B3A57;
+-        }
+ 
+-        .stat-box .stat-title {
+-            font-size: 12px;
+-            font-weight: 800;
+-            color: #94a3b8;
+-            text-transform: uppercase;
+-            letter-spacing: 1px;
+-        }
++    <div class="panel-container">
++        <section class="panel">
+ 
+-        .stat-box .stat-value {
+-            font-size: 36px;
+-            font-weight: 900;
+-            color: #1e293b;
+-            line-height: 1;
+-        }
++            <div class="panel-header-flex">
++                <h1 class="panel-title">Panel <?= ucfirst($rol) ?></h1>
++                <div class="usuario-info-premium">
++                    <div class="user-details">
++                        <span class="user-welcome">Bienvenido,</span>
++                        <span class="user-name"><?= htmlspecialchars($_SESSION['usuario']) ?></span>
++                    </div>
++                    <a href="cerrar.php" class="btn-logout-premium" title="Cerrar sesi├│n">
++                        <i class="bi bi-box-arrow-right"></i>
++                    </a>
++                </div>
++            </div>
+ 
+-        .stat-box .stat-footer {
+-            font-size: 13px;
+-            color: #64748b;
+-            margin-top: auto;
+-        }
++            <div class="quick-access-grid">
++                <a href="<?= APP_URL ?>/index" class="qa-card">
++                    <i class="bi bi-house-door"></i>
++                    <span>Ver Sitio</span>
++                </a>
++                <a href="agregar_empresa.php" class="qa-card qa-primary">
++                    <i class="bi bi-plus-lg"></i>
++                    <span>Nueva Empresa</span>
++                </a>
++                <a href="agregar_categoria.php" class="qa-card">
++                    <i class="bi bi-tags"></i>
++                    <span>Nueva Categor├¡a</span>
++                </a>
++                <a href="gestionar_banner.php" class="qa-card">
++                    <i class="bi bi-images"></i>
++                    <span>Banners</span>
++                </a>
++                <a href="gestionar_resenas.php" class="qa-card">
++                    <i class="bi bi-chat-right-quote"></i>
++                    <span>Rese├▒as</span>
++                </a>
++                <a href="editar_sobre.php" class="qa-card">
++                    <i class="bi bi-info-circle"></i>
++                    <span>Sobre Nosotros</span>
++                </a>
++            </div>
+ 
+-        .top5-list {
+-            list-style: none;
+-            padding: 0;
+-            margin: 0;
+-        }
+ 
+-        .top5-item {
+-            display: flex;
+-            align-items: center;
+-            justify-content: space-between;
+-            padding: 10px 0;
+-            border-bottom: 1px solid #f8fafc;
+-        }
+ 
+-        .top5-item:last-child {
+-            border-bottom: none;
+-        }
++            <?php
++            $stats_global = $conexion->query("SELECT SUM(vistas) as total, COUNT(*) as empresas FROM empresas")->fetch_assoc();
++            $total_visitas = $stats_global['total'] ?? 0;
++            $total_emp = $stats_global['empresas'] ?? 0;
++            $top5 = $conexion->query("SELECT nombre, vistas FROM empresas ORDER BY vistas DESC LIMIT 5");
++            ?>
+ 
+-        .top5-name {
+-            font-weight: 600;
+-            font-size: 13px;
+-            color: #475569;
+-        }
++            <div class="stats-dashboard">
++                <div class="stat-box">
++                    <i class="bi bi-eye"></i>
++                    <span class="stat-title">Impacto Global</span>
++                    <span class="stat-value"><?= number_format($total_visitas) ?></span>
++                    <span class="stat-footer">Visitas totales en la plataforma</span>
++                    <button onclick="customConfirm('┬┐Reiniciar TODAS las vistas a cero?', () => reiniciarVistas())"
++                        class="btn-reiniciar-vistas">
++                        <i class="bi bi-arrow-counterclockwise"></i> Reiniciar todas las vistas
++                    </button>
++                </div>
+ 
+-        .top5-views {
+-            background: #f1f5f9;
+-            color: #1B3A57;
+-            padding: 4px 10px;
+-            border-radius: 999px;
+-            font-size: 11px;
+-            font-weight: 800;
+-        }
++                <div class="stat-box" style="border-left-color: #f7941d;">
++                    <i class="bi bi-graph-up-arrow" style="color: #f7941d;"></i>
++                    <span class="stat-title">Top 5 Popularidad</span>
++                    <ul class="top5-list">
++                        <?php if ($top5 && $top5->num_rows > 0): ?>
++                            <?php while ($t = $top5->fetch_assoc()): ?>
++                                <li class="top5-item">
++                                    <span
++                                        class="top5-name"><?= htmlspecialchars(mb_strimwidth($t['nombre'], 0, 20, 'ÔÇª')) ?></span>
++                                    <span class="top5-views"><?= $t['vistas'] ?></span>
++                                </li>
++                            <?php endwhile; ?>
++                        <?php else: ?>
++                            <li class="top5-item">No hay datos suficientes</li>
++                        <?php endif; ?>
++                    </ul>
++                </div>
+ 
+-        .btn-reiniciar-vistas {
+-            background: #f8fafc;
+-            color: #64748b;
+-            padding: 8px 12px;
+-            border-radius: 8px;
+-            text-decoration: none;
+-            font-size: 12px;
+-            display: inline-flex;
+-            align-items: center;
+-            gap: 8px;
+-            margin-top: 15px;
+-            font-weight: 700;
+-            width: fit-content;
+-            border: 1px solid #e2e8f0;
+-            cursor: pointer;
+-            transition: 0.2s;
+-        }
++                <div class="stat-box" style="border-left-color: #10b981;">
++                    <i class="bi bi-building" style="color: #10b981;"></i>
++                    <span class="stat-title">Activos</span>
++                    <span class="stat-value"><?= $total_emp ?></span>
++                    <span class="stat-footer">Empresas registradas actualmente</span>
++                    <div style="margin-top:auto;">
++                        <a href="agregar_empresa.php" class="btn-reiniciar-vistas"
++                            style="background:#dcfce7; color:#166534;">
++                            <i class="bi bi-plus-circle"></i> Nuevo registro
++                        </a>
++                    </div>
++                </div>
++            </div>
+ 
+-        .btn-reiniciar-vistas:hover {
+-            background: #fee2e2;
+-            color: #ef4444;
+-            border-color: #fecaca;
+-        }
++            <div class="system-tools-grid">
++                <div class="stat-box" style="border-top: 4px solid #6366f1; padding: 20px;">
++                    <h3 style="font-size: 15px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
++                        <i class="bi bi-shield-lock"></i> Modo Mantenimiento
++                    </h3>
++                    <button id="btn-toggle-maint" onclick="toggleMantenimiento()" class="btn-reiniciar-vistas"
++                        style="width: 100%; justify-content: center; transition: 0.3s; padding: 12px; font-weight: 700; border-radius: 12px; border: 2px solid;">
++                        <?php $mantenimiento_activo = file_exists(__DIR__ . '/../mantenimiento.flag'); ?>
++                        <i class="bi <?= $mantenimiento_activo ? 'bi-toggle-on' : 'bi-toggle-off' ?>"></i>
++                        <span
++                            id="maint-text"><?= $mantenimiento_activo ? 'Desactivar Mantenimiento' : 'Activar Mantenimiento' ?></span>
++                    </button>
++                    <script>
++                        const isM = <?= $mantenimiento_activo ? 'true' : 'false' ?>;
++                        const btnM = document.getElementById('btn-toggle-maint');
++                        btnM.style.background = isM ? '#fee2e2' : '#f0fdf4';
++                        btnM.style.color = isM ? '#ef4444' : '#16a34a';
++                        btnM.style.borderColor = isM ? '#fecaca' : '#bbf7d0';
++                    </script>
++                </div>
+ 
+-        .btn-orden {
+-            background: #f8fafc;
+-            border: 1px solid #e2e8f0;
+-            color: #64748b;
+-            width: 32px;
+-            height: 32px;
+-            border-radius: 8px;
+-            cursor: pointer;
+-            font-size: 14px;
+-            display: inline-flex;
+-            align-items: center;
+-            justify-content: center;
+-            transition: all 0.2s;
+-        }
++                <div class="stat-box" style="border-top: 4px solid #ec4899; padding: 20px;">
++                    <h3 style="font-size: 15px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
++                        <i class="bi bi-trash3"></i> Limpiador de Im├ígenes
++                    </h3>
++                    <button onclick="escanearHuerfanos()" class="btn-reiniciar-vistas"
++                        style="width: 100%; justify-content: center; background: #f8fafc; color: #475569; padding: 12px; border-radius: 12px;">
++                        <i class="bi bi-search"></i> Escanear im├ígenes sin uso
++                    </button>
++                    <div id="huerfanos-info"
++                        style="font-size: 12px; margin-top: 15px; display: none; background: #fff5f7; padding: 15px; border-radius: 12px; border: 1px solid #fecaca;">
++                        <div id="huerfanos-lista"
++                            style="max-height: 150px; overflow-y: auto; margin-bottom: 12px; background: #fff; border-radius: 8px; border: 1px solid #fecaca; padding: 5px;">
++                        </div>
++                        <button onclick="limpiarArchivos()" class="btn-reiniciar-vistas"
++                            style="width: 100%; background: #e11d48; color: #fff; border: none; font-weight: 800; padding: 10px;">
++                            Borrar <span id="huerfanos-count">0</span> archivos
++                        </button>
++                    </div>
++                </div>
++            </div>
+ 
+-        .btn-orden:hover {
+-            background: #1B3A57;
+-            color: #fff;
+-            border-color: #1B3A57;
+-        }
+ 
+-        @media (max-width: 768px) {
+-            .panel-header-flex {
+-                flex-direction: column;
+-                gap: 20px;
+-                align-items: flex-start;
+-            }
+ 
+-            .quick-access-grid {
+-                grid-template-columns: repeat(2, 1fr);
+-            }
+-        }
+-    </style>
+-</head>
++            <h2>Administraci├│n de Usuarios</h2><br>
++            <a href="agregar.php" class="btn">Agregar Usuario</a>
++            <br><br>
+ 
+-<body>
+-    <div id="nprogress-bar"></div>
+-    <?php if (file_exists(__DIR__ . '/../mantenimiento.flag')): ?>
+-        <div id="mantenimiento-banner" class="mantenimiento-top-banner">
+-            <i class="bi bi-exclamation-triangle-fill"></i>
+-            EL SITIO WEB SE ENCUENTRA ACTUALMENTE EN MANTENIMIENTO (P├ÜBLICO BLOQUEADO)
+-        </div>
+-    <?php else: ?>
+-        <div id="mantenimiento-banner" class="mantenimiento-top-banner" style="display:none; background: #10b981;">
+-            <i class="bi bi-check-circle-fill"></i>
+-            EL SITIO WEB EST├ü EN L├ìNEA Y ACCESIBLE PARA EL P├ÜBLICO
+-        </div>
+-    <?php endif; ?>
++            <div class="table-wrap">
++                <table>
++                    <tr>
++                        <th>ID</th>
++                        <th>Nombre</th>
++                        <th>Rol</th>
++                        <th>Acciones</th>
++                    </tr>
++                    <?php
++                    $stmt_u = $conexion->prepare("SELECT id_usuario, nombre, rol FROM usuarios");
++                    $stmt_u->execute();
++                    $res = $stmt_u->get_result();
++                    while ($fila = $res->fetch_assoc()):
++                        ?>
++                        <tr>
++                            <td data-label="ID"><?= $fila['id_usuario'] ?></td>
++                            <td data-label="Usuario"><?= htmlspecialchars($fila['nombre']) ?></td>
++                            <td data-label="Rol"><?= htmlspecialchars($fila['rol']) ?></td>
++                            <td data-label="Acciones">
++                                <div class="acciones">
++                                    <a href="editar_usuario.php?id=<?= $fila['id_usuario'] ?>" class="btn">Editar</a>
++                                    <button onclick="eliminarRegistro('usuario', <?= $fila['id_usuario'] ?>, this)"
++                                        class="btn btn-danger">Eliminar</button>
++                                </div>
++                            </td>
++                        </tr>
++                    <?php endwhile; ?>
++                </table>
++            </div>
++            <br><br>
+ 
+-    <div class="panel-container">
+-        <section class="panel">
++            <h2>Categor├¡as</h2><br>
++            <a href="agregar_categoria.php" class="btn">Agregar Categor├¡a</a>
++            <br><br>
+ 
+-        <div class="panel-header-flex">
+-            <h1 class="panel-title">Panel <?= ucfirst($rol) ?></h1>
+-            <div class="usuario-info-premium">
+-                <div class="user-details">
+-                    <span class="user-welcome">Bienvenido,</span>
+-                    <span class="user-name"><?= htmlspecialchars($_SESSION['usuario']) ?></span>
+-                </div>
+-                <a href="cerrar.php" class="btn-logout-premium" title="Cerrar sesi├│n">
+-                    <i class="bi bi-box-arrow-right"></i>
+-                </a>
+-            </div>
+-        </div>
+-
+-        <div class="quick-access-grid">
+-            <a href="<?= APP_URL ?>/index.php" class="qa-card">
+-                <i class="bi bi-house-door"></i>
+-                <span>Ver Sitio</span>
+-            </a>
+-            <a href="agregar_empresa.php" class="qa-card qa-primary">
+-                <i class="bi bi-plus-lg"></i>
+-                <span>Nueva Empresa</span>
+-            </a>
+-            <a href="agregar_categoria.php" class="qa-card">
+-                <i class="bi bi-tags"></i>
+-                <span>Nueva Categor├¡a</span>
+-            </a>
+-            <a href="gestionar_banner.php" class="qa-card">
+-                <i class="bi bi-images"></i>
+-                <span>Banners</span>
+-            </a>
+-            <a href="gestionar_resenas.php" class="qa-card">
+-                <i class="bi bi-chat-right-quote"></i>
+-                <span>Rese├▒as</span>
+-            </a>
+-            <a href="editar_sobre.php" class="qa-card">
+-                <i class="bi bi-info-circle"></i>
+-                <span>Sobre Nosotros</span>
+-            </a>
+-        </div>
+-
+-
+-
+-        <?php
+-        $stats_global = $conexion->query("SELECT SUM(vistas) as total, COUNT(*) as empresas FROM empresas")->fetch_assoc();
+-        $total_visitas = $stats_global['total'] ?? 0;
+-        $total_emp = $stats_global['empresas'] ?? 0;
+-        $top5 = $conexion->query("SELECT nombre, vistas FROM empresas ORDER BY vistas DESC LIMIT 5");
+-        ?>
+-
+-        <div class="stats-dashboard">
+-            <div class="stat-box">
+-                <i class="bi bi-eye"></i>
+-                <span class="stat-title">Impacto Global</span>
+-                <span class="stat-value"><?= number_format($total_visitas) ?></span>
+-                <span class="stat-footer">Visitas totales en la plataforma</span>
+-                <button onclick="customConfirm('┬┐Reiniciar TODAS las vistas a cero?', () => reiniciarVistas())"
+-                    class="btn-reiniciar-vistas">
+-                    <i class="bi bi-arrow-counterclockwise"></i> Reiniciar todas las vistas
+-                </button>
++            <div class="table-wrap">
++                <table>
++                    <tr>
++                        <th>Orden</th>
++                        <th>Icono</th>
++                        <th>Nombre</th>
++                        <th>Acciones</th>
++                    </tr>
++                    <?php
++                    $stmt_cat = $conexion->prepare("SELECT * FROM categorias ORDER BY orden ASC");
++                    $stmt_cat->execute();
++                    $res_cat = $stmt_cat->get_result();
++                    while ($cat = $res_cat->fetch_assoc()):
++                        ?>
++                        <tr id="cat-<?= $cat['id_categoria'] ?>">
++                            <td data-label="Orden">
++                                <div style="display:flex; align-items:center; gap:6px;">
++                                    <span
++                                        style="font-weight:700; color:#64748b; min-width:20px;"><?= $cat['orden'] ?></span>
++                                    <button onclick="moverCategoria(<?= $cat['id_categoria'] ?>, 'subir')" class="btn-orden"
++                                        title="Subir">Ôû▓</button>
++                                    <button onclick="moverCategoria(<?= $cat['id_categoria'] ?>, 'bajar')" class="btn-orden"
++                                        title="Bajar">Ôû╝</button>
++                                </div>
++                            </td>
++                            <td data-label="Icono" style="font-size:22px;">
++                                <i class="bi <?= htmlspecialchars($cat['icono'] ?? 'bi-briefcase') ?>"></i>
++                            </td>
++                            <td data-label="Nombre"><?= htmlspecialchars($cat['nombre']) ?></td>
++                            <td data-label="Acciones">
++                                <div class="acciones">
++                                    <a href="editar_categoria.php?id=<?= $cat['id_categoria'] ?>" class="btn">Editar</a>
++                                    <button onclick="eliminarRegistro('categoria', <?= $cat['id_categoria'] ?>, this)"
++                                        class="btn btn-danger">Eliminar</button>
++                                </div>
++                            </td>
++                        </tr>
++                    <?php endwhile; ?>
++                </table>
+             </div>
+-
+-            <div class="stat-box" style="border-left-color: #f7941d;">
+-                <i class="bi bi-graph-up-arrow" style="color: #f7941d;"></i>
+-                <span class="stat-title">Top 5 Popularidad</span>
+-                <ul class="top5-list">
+-                    <?php if ($top5 && $top5->num_rows > 0): ?>
+-                        <?php while ($t = $top5->fetch_assoc()): ?>
+-                            <li class="top5-item">
+-                                <span class="top5-name"><?= htmlspecialchars(mb_strimwidth($t['nombre'], 0, 20, 'ÔÇª')) ?></span>
+-                                <span class="top5-views"><?= $t['vistas'] ?></span>
+-                            </li>
++            <br><br>
++
++            <?php
++            $res_dest = $conexion->query("SELECT id_empresa, nombre FROM empresas WHERE destacada=1");
++            $total_dest = $res_dest->num_rows;
++            ?>
++            <div class="destacadas-section">
++                <h3>Ô¡É Empresas Destacadas</h3>
++                <p class="contador-dest">
++                    <span><?= $total_dest ?></span>/3 destacadas actualmente
++                    <?= $total_dest >= 3 ? 'ÔÇö <strong style="color:#e74c3c">L├¡mite alcanzado</strong>' : '' ?>
++                </p>
++                <?php if ($total_dest > 0): ?>
++                    <div class="destacadas-lista">
++                        <?php while ($d = $res_dest->fetch_assoc()): ?>
++                            <div class="destacada-chip" id="chip-<?= $d['id_empresa'] ?>">
++                                Ô¡É <?= htmlspecialchars($d['nombre']) ?>
++                                <button onclick="toggleDestacada(<?= $d['id_empresa'] ?>, 'quitar')" title="Quitar">Ô£ò</button>
++                            </div>
+                         <?php endwhile; ?>
+-                    <?php else: ?>
+-                        <li class="top5-item">No hay datos suficientes</li>
+-                    <?php endif; ?>
+-                </ul>
++                    </div>
++                <?php else: ?>
++                    <p style="color:#aaa;font-size:13px;">No hay empresas destacadas. Haz clic en Ôÿå en la tabla para
++                        destacar una.</p>
++                <?php endif; ?>
+             </div>
+ 
+-            <div class="stat-box" style="border-left-color: #10b981;">
+-                <i class="bi bi-building" style="color: #10b981;"></i>
+-                <span class="stat-title">Activos</span>
+-                <span class="stat-value"><?= $total_emp ?></span>
+-                <span class="stat-footer">Empresas registradas actualmente</span>
+-                <div style="margin-top:auto;">
+-                    <a href="agregar_empresa.php" class="btn-reiniciar-vistas"
+-                        style="background:#dcfce7; color:#166534;">
+-                        <i class="bi bi-plus-circle"></i> Nuevo registro
+-                    </a>
++            <h2>Empresas</h2><br>
++            <div
++                style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px; margin-bottom:20px;">
++                <a href="agregar_empresa.php" class="btn">Agregar Empresa</a>
++                <div class="search-panel" style="position:relative; flex:1; max-width:400px;">
++                    <i class="bi bi-search"
++                        style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#aaa;"></i>
++                    <input type="text" id="filtroEmpresa" placeholder="Buscar por nombre o rubro..."
++                        style="width:100%; padding:10px 15px 10px 40px; border:1px solid #ddd; border-radius:8px; font-size:14px; outline:none; transition:border-color 0.3s;">
+                 </div>
+             </div>
+-        </div>
+-
+-        <div class="system-tools-grid"
+-            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 40px;">
+-            <div class="stat-box" style="border-top: 4px solid #6366f1; padding: 20px;">
+-                <h3 style="font-size: 15px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
+-                    <i class="bi bi-shield-lock"></i> Modo Mantenimiento
+-                </h3>
+-                <button id="btn-toggle-maint" onclick="toggleMantenimiento()" class="btn-reiniciar-vistas"
+-                    style="width: 100%; justify-content: center; transition: 0.3s; padding: 12px; font-weight: 700; border-radius: 12px; border: 2px solid;">
+-                    <?php $mantenimiento_activo = file_exists(__DIR__ . '/../mantenimiento.flag'); ?>
+-                    <i class="bi <?= $mantenimiento_activo ? 'bi-toggle-on' : 'bi-toggle-off' ?>"></i>
+-                    <span
+-                        id="maint-text"><?= $mantenimiento_activo ? 'Desactivar Mantenimiento' : 'Activar Mantenimiento' ?></span>
+-                </button>
+-                <script>
+-                    const isM = <?= $mantenimiento_activo ? 'true' : 'false' ?>;
+-                    const btnM = document.getElementById('btn-toggle-maint');
+-                    btnM.style.background = isM ? '#fee2e2' : '#f0fdf4';
+-                    btnM.style.color = isM ? '#ef4444' : '#16a34a';
+-                    btnM.style.borderColor = isM ? '#fecaca' : '#bbf7d0';
+-                </script>
+-            </div>
+ 
+-            <div class="stat-box" style="border-top: 4px solid #ec4899; padding: 20px;">
+-                <h3 style="font-size: 15px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
+-                    <i class="bi bi-trash3"></i> Limpiador de Im├ígenes
+-                </h3>
+-                <button onclick="escanearHuerfanos()" class="btn-reiniciar-vistas"
+-                    style="width: 100%; justify-content: center; background: #f8fafc; color: #475569; padding: 12px; border-radius: 12px;">
+-                    <i class="bi bi-search"></i> Escanear im├ígenes sin uso
+-                </button>
+-                <div id="huerfanos-info"
+-                    style="font-size: 12px; margin-top: 15px; display: none; background: #fff5f7; padding: 15px; border-radius: 12px; border: 1px solid #fecaca;">
+-                    <div id="huerfanos-lista"
+-                        style="max-height: 150px; overflow-y: auto; margin-bottom: 12px; background: #fff; border-radius: 8px; border: 1px solid #fecaca; padding: 5px;">
+-                    </div>
+-                    <button onclick="limpiarArchivos()" class="btn-reiniciar-vistas"
+-                        style="width: 100%; background: #e11d48; color: #fff; border: none; font-weight: 800; padding: 10px;">
+-                        Borrar <span id="huerfanos-count">0</span> archivos
+-                    </button>
+-                </div>
+-            </div>
+-        </div>
+-
+-
+-
+-        <h2>Administraci├│n de Usuarios</h2><br>
+-        <a href="agregar.php" class="btn">Agregar Usuario</a>
+-        <br><br>
+-
+-        <div class="table-wrap">
+-            <table>
+-                <tr>
+-                    <th>ID</th>
+-                    <th>Nombre</th>
+-                    <th>Rol</th>
+-                    <th>Acciones</th>
+-                </tr>
+-                <?php
+-                $res = $conexion->query("SELECT id_usuario, nombre, rol FROM usuarios");
+-                while ($fila = $res->fetch_assoc()):
+-                    ?>
++            <div class="table-wrap">
++                <table>
+                     <tr>
+-                        <td data-label="ID"><?= $fila['id_usuario'] ?></td>
+-                        <td data-label="Usuario"><?= htmlspecialchars($fila['nombre']) ?></td>
+-                        <td data-label="Rol"><?= htmlspecialchars($fila['rol']) ?></td>
+-                        <td data-label="Acciones">
+-                            <div class="acciones">
+-                                <a href="editar_usuario.php?id=<?= $fila['id_usuario'] ?>" class="btn">Editar</a>
+-                                <button onclick="eliminarRegistro('usuario', <?= $fila['id_usuario'] ?>, this)"
+-                                    class="btn btn-danger">Eliminar</button>
+-                            </div>
+-                        </td>
+-                    </tr>
+-                <?php endwhile; ?>
+-            </table>
+-        </div>
+-        <br><br>
+-
+-        <h2>Categor├¡as</h2><br>
+-        <a href="agregar_categoria.php" class="btn">Agregar Categor├¡a</a>
+-        <br><br>
+-
+-        <div class="table-wrap">
+-            <table>
+-                <tr>
+-                    <th>Orden</th>
+-                    <th>Icono</th>
+-                    <th>Nombre</th>
+-                    <th>Acciones</th>
+-                </tr>
+-                <?php
+-                $res_cat = $conexion->query("SELECT * FROM categorias ORDER BY orden ASC");
+-                while ($cat = $res_cat->fetch_assoc()):
+-                    ?>
+-                    <tr id="cat-<?= $cat['id_categoria'] ?>">
+-                        <td data-label="Orden">
+-                            <div style="display:flex; align-items:center; gap:6px;">
+-                                <span style="font-weight:700; color:#64748b; min-width:20px;"><?= $cat['orden'] ?></span>
+-                                <button onclick="moverCategoria(<?= $cat['id_categoria'] ?>, 'subir')" class="btn-orden"
+-                                    title="Subir">Ôû▓</button>
+-                                <button onclick="moverCategoria(<?= $cat['id_categoria'] ?>, 'bajar')" class="btn-orden"
+-                                    title="Bajar">Ôû╝</button>
+-                            </div>
+-                        </td>
+-                        <td data-label="Icono" style="font-size:22px;">
+-                            <i class="bi <?= htmlspecialchars($cat['icono'] ?? 'bi-briefcase') ?>"></i>
+-                        </td>
+-                        <td data-label="Nombre"><?= htmlspecialchars($cat['nombre']) ?></td>
+-                        <td data-label="Acciones">
+-                            <div class="acciones">
+-                                <a href="editar_categoria.php?id=<?= $cat['id_categoria'] ?>" class="btn">Editar</a>
+-                                <button onclick="eliminarRegistro('categoria', <?= $cat['id_categoria'] ?>, this)"
+-                                    class="btn btn-danger">Eliminar</button>
+-                            </div>
+-                        </td>
++                        <th>ID</th>
++                        <th>Ô¡É</th>
++                        <th>­ƒæü</th>
++                        <th>Logo</th>
++                        <th>Nombre</th>
++                        <th>Tel├®fono</th>
++                        <th>Direcci├│n</th>
++                        <th>Rubro</th>
++                        <th>Horario</th>
++                        <th>Descripci├│n</th>
++                        <th>Ubicaci├│n</th>
++                        <th>Enlace</th>
++                        <th>Acciones</th>
+                     </tr>
+-                <?php endwhile; ?>
+-            </table>
+-        </div>
+-        <br><br>
+-
+-        <?php
+-        $res_dest = $conexion->query("SELECT id_empresa, nombre FROM empresas WHERE destacada=1");
+-        $total_dest = $res_dest->num_rows;
+-        ?>
+-        <div class="destacadas-section">
+-            <h3>Ô¡É Empresas Destacadas</h3>
+-            <p class="contador-dest">
+-                <span><?= $total_dest ?></span>/3 destacadas actualmente
+-                <?= $total_dest >= 3 ? 'ÔÇö <strong style="color:#e74c3c">L├¡mite alcanzado</strong>' : '' ?>
+-            </p>
+-            <?php if ($total_dest > 0): ?>
+-                <div class="destacadas-lista">
+-                    <?php while ($d = $res_dest->fetch_assoc()): ?>
+-                        <div class="destacada-chip" id="chip-<?= $d['id_empresa'] ?>">
+-                            Ô¡É <?= htmlspecialchars($d['nombre']) ?>
+-                            <button onclick="toggleDestacada(<?= $d['id_empresa'] ?>, 'quitar')" title="Quitar">Ô£ò</button>
+-                        </div>
+-                    <?php endwhile; ?>
+-                </div>
+-            <?php else: ?>
+-                <p style="color:#aaa;font-size:13px;">No hay empresas destacadas. Haz clic en Ôÿå en la tabla para
+-                    destacar una.</p>
+-            <?php endif; ?>
+-        </div>
+-
+-        <h2>Empresas</h2><br>
+-        <div
+-            style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px; margin-bottom:20px;">
+-            <a href="agregar_empresa.php" class="btn">Agregar Empresa</a>
+-            <div class="search-panel" style="position:relative; flex:1; max-width:400px;">
+-                <i class="bi bi-search"
+-                    style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#aaa;"></i>
+-                <input type="text" id="filtroEmpresa" placeholder="Buscar por nombre o rubro..."
+-                    style="width:100%; padding:10px 15px 10px 40px; border:1px solid #ddd; border-radius:8px; font-size:14px; outline:none; transition:border-color 0.3s;">
+-            </div>
+-        </div>
+-
+-        <div class="table-wrap">
+-            <table>
+-                <tr>
+-                    <th>ID</th>
+-                    <th>Ô¡É</th>
+-                    <th>­ƒæü</th>
+-                    <th>Logo</th>
+-                    <th>Nombre</th>
+-                    <th>Tel├®fono</th>
+-                    <th>Direcci├│n</th>
+-                    <th>Rubro</th>
+-                    <th>Horario</th>
+-                    <th>Descripci├│n</th>
+-                    <th>Ubicaci├│n</th>
+-                    <th>Enlace</th>
+-                    <th>Acciones</th>
+-                </tr>
+-                <?php
+-                $res = $conexion->query("
++                    <?php
++                    $res = $conexion->query("
+     SELECT e.id_empresa, e.logo, e.nombre, e.telefono, e.direccion,
+            e.descripcion, e.horario, e.ubicacion_link, e.link_empresa,
+            e.destacada, e.vistas, c.nombre AS categoria
+@@ -593,77 +304,77 @@ $rol = $_SESSION['rol'];
+     JOIN categorias c ON e.id_categoria = c.id_categoria
+     ORDER BY e.destacada DESC, e.vistas DESC
+ ");
+-                while ($fila = $res->fetch_assoc()):
+-                    ?>
+-                    <tr id="fila-<?= $fila['id_empresa'] ?>">
+-                        <td data-label="ID"><?= $fila['id_empresa'] ?></td>
+-                        <td data-label="Destacada">
+-                            <button class="btn-estrella <?= $fila['destacada'] ? 'activa' : '' ?>"
+-                                onclick="toggleDestacada(<?= $fila['id_empresa'] ?>, '<?= $fila['destacada'] ? 'quitar' : 'destacar' ?>')"
+-                                title="<?= $fila['destacada'] ? 'Quitar destacada' : 'Destacar' ?>">
+-                                <?= $fila['destacada'] ? 'Ô¡É' : 'Ôÿå' ?>
+-                            </button>
+-                        </td>
+-                        <td data-label="Vistas">
+-                            <div style="display:flex; align-items:center; gap:8px;">
+-                                <?= number_format($fila['vistas']) ?>
+-                                <button
+-                                    onclick="customConfirm('┬┐Reiniciar vistas de esta empresa?', () => reiniciarVistas(<?= $fila['id_empresa'] ?>))"
+-                                    style="font-size:14px; color:#cbd5e1; text-decoration:none; background:none; border:none; cursor:pointer; padding:0;"
+-                                    title="Reiniciar">
+-                                    <i class="bi bi-arrow-counterclockwise"></i>
++                    while ($fila = $res->fetch_assoc()):
++                        ?>
++                        <tr id="fila-<?= $fila['id_empresa'] ?>">
++                            <td data-label="ID"><?= $fila['id_empresa'] ?></td>
++                            <td data-label="Destacada">
++                                <button class="btn-estrella <?= $fila['destacada'] ? 'activa' : '' ?>"
++                                    onclick="toggleDestacada(<?= $fila['id_empresa'] ?>, '<?= $fila['destacada'] ? 'quitar' : 'destacar' ?>')"
++                                    title="<?= $fila['destacada'] ? 'Quitar destacada' : 'Destacar' ?>">
++                                    <?= $fila['destacada'] ? 'Ô¡É' : 'Ôÿå' ?>
+                                 </button>
+-                            </div>
+-                        </td>
+-                        <td data-label="Logo">
+-                            <?php if (!empty($fila['logo'])): ?>
+-                                <img src="<?= APP_URL ?>/assets/img/<?= htmlspecialchars($fila['logo']) ?>"
+-                                    style="width:45px;height:45px;object-fit:cover;border-radius:6px;">
+-                            <?php else: ?>ÔÇö<?php endif; ?>
+-                        </td>
+-                        <td data-label="Nombre"><?= htmlspecialchars($fila['nombre']) ?></td>
+-                        <td data-label="Tel├®fono"><?= htmlspecialchars($fila['telefono'] ?? 'ÔÇö') ?></td>
+-                        <td data-label="Direcci├│n"><?= htmlspecialchars($fila['direccion'] ?? 'ÔÇö') ?></td>
+-                        <td data-label="Rubro"><?= htmlspecialchars($fila['categoria']) ?></td>
+-                        <td data-label="Horario">
+-                            <?= !empty($fila['horario']) ? htmlspecialchars($fila['horario']) : 'ÔÇö' ?>
+-                        </td>
+-                        <td data-label="Descripci├│n">
+-                            <?= !empty($fila['descripcion']) ? htmlspecialchars(mb_strimwidth($fila['descripcion'], 0, 50, 'ÔÇª')) : 'ÔÇö' ?>
+-                        </td>
+-                        <td data-label="Mapa">
+-                            <?php if (!empty($fila['ubicacion_link'])): ?>
+-                                <a href="<?= htmlspecialchars($fila['ubicacion_link']) ?>" target="_blank">Ver mapa</a>
+-                            <?php else: ?>ÔÇö<?php endif; ?>
+-                        </td>
+-                        <td data-label="Web">
+-                            <?php if (!empty($fila['link_empresa'])): ?>
+-                                <a href="<?= htmlspecialchars($fila['link_empresa']) ?>" target="_blank">Ver p├ígina</a>
+-                            <?php else: ?>ÔÇö<?php endif; ?>
+-                        </td>
+-                        <td data-label="Acciones">
+-                            <div class="acciones">
+-                                <a href="editar.php?id=<?= $fila['id_empresa'] ?>" class="btn">Editar</a>
+-                                <button onclick="eliminarRegistro('empresa', <?= $fila['id_empresa'] ?>, this)"
+-                                    class="btn btn-danger">Eliminar</button>
++                            </td>
++                            <td data-label="Vistas">
++                                <div style="display:flex; align-items:center; gap:8px;">
++                                    <?= number_format($fila['vistas']) ?>
++                                    <button
++                                        onclick="customConfirm('┬┐Reiniciar vistas de esta empresa?', () => reiniciarVistas(<?= $fila['id_empresa'] ?>))"
++                                        style="font-size:14px; color:#cbd5e1; text-decoration:none; background:none; border:none; cursor:pointer; padding:0;"
++                                        title="Reiniciar">
++                                        <i class="bi bi-arrow-counterclockwise"></i>
++                                    </button>
++                                </div>
++                            </td>
++                            <td data-label="Logo">
++                                <?php if (!empty($fila['logo'])): ?>
++                                    <img src="<?= APP_URL ?>/assets/img/<?= htmlspecialchars($fila['logo']) ?>"
++                                        style="width:45px;height:45px;object-fit:cover;border-radius:6px;">
++                                <?php else: ?>ÔÇö<?php endif; ?>
++                            </td>
++                            <td data-label="Nombre"><?= htmlspecialchars($fila['nombre']) ?></td>
++                            <td data-label="Tel├®fono"><?= htmlspecialchars($fila['telefono'] ?? 'ÔÇö') ?></td>
++                            <td data-label="Direcci├│n"><?= htmlspecialchars($fila['direccion'] ?? 'ÔÇö') ?></td>
++                            <td data-label="Rubro"><?= htmlspecialchars($fila['categoria']) ?></td>
++                            <td data-label="Horario">
++                                <?= !empty($fila['horario']) ? htmlspecialchars($fila['horario']) : 'ÔÇö' ?>
++                            </td>
++                            <td data-label="Descripci├│n">
++                                <?= !empty($fila['descripcion']) ? htmlspecialchars(mb_strimwidth($fila['descripcion'], 0, 50, 'ÔÇª')) : 'ÔÇö' ?>
++                            </td>
++                            <td data-label="Mapa">
++                                <?php if (!empty($fila['ubicacion_link'])): ?>
++                                    <a href="<?= htmlspecialchars($fila['ubicacion_link']) ?>" target="_blank">Ver mapa</a>
++                                <?php else: ?>ÔÇö<?php endif; ?>
++                            </td>
++                            <td data-label="Web">
++                                <?php if (!empty($fila['link_empresa'])): ?>
++                                    <a href="<?= htmlspecialchars($fila['link_empresa']) ?>" target="_blank">Ver p├ígina</a>
++                                <?php else: ?>ÔÇö<?php endif; ?>
++                            </td>
++                            <td data-label="Acciones">
++                                <div class="acciones">
++                                    <a href="editar.php?id=<?= $fila['id_empresa'] ?>" class="btn">Editar</a>
++                                    <button onclick="eliminarRegistro('empresa', <?= $fila['id_empresa'] ?>, this)"
++                                        class="btn btn-danger">Eliminar</button>
++                                </div>
++                            </td>
++                        </tr>
++                    <?php endwhile; ?>
++                    <tr id="noResultsAdmin" style="display:none;">
++                        <td colspan="13">
++                            <div class="empty-state">
++                                <i class="bi bi-search empty-icon"></i>
++                                <h3>Sin coincidencias</h3>
++                                <p>Prueba con un nombre o rubro diferente.</p>
+                             </div>
+                         </td>
+                     </tr>
+-                <?php endwhile; ?>
+-                <tr id="noResultsAdmin" style="display:none;">
+-                    <td colspan="13">
+-                        <div class="empty-state">
+-                            <i class="bi bi-search empty-icon"></i>
+-                            <h3>Sin coincidencias</h3>
+-                            <p>Prueba con un nombre o rubro diferente.</p>
+-                        </div>
+-                    </td>
+-                </tr>
+-            </table>
+-        </div>
+-        <br><br>
++                </table>
++            </div>
++            <br><br>
+ 
+-    </section>
++        </section>
+     </div>
+ 
+     <script src="<?= APP_URL ?>/assets/js/toast.js"></script>
+@@ -784,7 +495,7 @@ $rol = $_SESSION['rol'];
+             fetch('<?= APP_URL ?>/ajax/reordenar_categoria.php', {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+-                body: 'id=' + id + '&dir=' + dir
++                body: 'id=' + id + '&dir=' + dir + '&csrf_token=' + csrfToken
+             })
+                 .then(r => r.json())
+                 .then(data => {
+@@ -824,7 +535,11 @@ $rol = $_SESSION['rol'];
+                         btn.innerHTML = `<i class="bi bi-toggle-${isM ? 'on' : 'off'}"></i> <span id="maint-text">${isM ? 'Desactivar' : 'Activar'} Mantenimiento</span>`;
+ 
+                         banner.style.display = 'flex';
+-                        banner.style.background = isM ? '#ef4444' : '#10b981';
++                        if (isM) {
++                            banner.classList.remove('online');
++                        } else {
++                            banner.classList.add('online');
++                        }
+                         banner.innerHTML = `<i class="bi bi-${isM ? 'exclamation-triangle' : 'check-circle'}-fill"></i> ${isM ? 'EL SITIO WEB SE ENCUENTRA ACTUALMENTE EN MANTENIMIENTO (P├ÜBLICO BLOQUEADO)' : 'EL SITIO WEB EST├ü EN L├ìNEA Y ACCESIBLE PARA EL P├ÜBLICO'}`;
+ 
+                         if (!isM) {
+@@ -991,4 +706,4 @@ $rol = $_SESSION['rol'];
+     </script>
+ </body>
+ 
+-</html>
++</html>
+\ No newline at end of file
+diff --git a/login/agregar.php b/login/agregar.php
+index 8b7a507..2b222aa 100644
+--- a/login/agregar.php
++++ b/login/agregar.php
+@@ -6,15 +6,19 @@ $error = "";
+ $success = "";
+ 
+ if (!in_array($_SESSION['rol'], ['admin', 'editor'])) {
+-    header("Location: ../login/login.php");
++    header("Location: login.php");
+     exit;
+ }
+ 
+ if ($_SERVER["REQUEST_METHOD"] === "POST") {
+ 
+-    $nombre = trim($_POST['nombre']);
+-    $pass = $_POST['pass'];
+-    $rol_usuario = $_POST['rol'];
++    if (!validarCSRF()) {
++        $error = "Token de seguridad inv├ílido. Recargue la p├ígina.";
++    }
++
++    $nombre = trim($_POST['nombre'] ?? '');
++    $pass = $_POST['pass'] ?? '';
++    $rol_usuario = $_POST['rol'] ?? '';
+ 
+     if (!empty($nombre) && !empty($pass) && !empty($rol_usuario)) {
+ 
+@@ -67,6 +71,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
+                 <?php endif; ?>
+ 
+                 <form method="post">
++                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
+ 
+                     <div class="form-group">
+                         <label>Nombre</label>
+diff --git a/login/banner_actions.php b/login/banner_actions.php
+index 612f772..dc0ce26 100644
+--- a/login/banner_actions.php
++++ b/login/banner_actions.php
+@@ -115,7 +115,10 @@ if ($accion === 'reordenar') {
+     foreach ($ids as $orden => $id) {
+         $id = intval($id);
+         $orden = intval($orden) + 1;
+-        $conexion->query("UPDATE banner_carrusel SET orden = $orden WHERE id_banner = $id");
++        $stmt_r = $conexion->prepare("UPDATE banner_carrusel SET orden = ? WHERE id_banner = ?");
++        $stmt_r->bind_param("ii", $orden, $id);
++        $stmt_r->execute();
++        $stmt_r->close();
+     }
+     echo json_encode(['ok' => true]);
+     exit;
+diff --git a/login/cerrar.php b/login/cerrar.php
+index ab8dd87..75385fb 100644
+--- a/login/cerrar.php
++++ b/login/cerrar.php
+@@ -1,5 +1,6 @@
+ <?php
+ session_start();
+ session_destroy();
+-header("Location: /guiaempresarial.pe/index.php");
++require_once __DIR__ . '/../includes/config.php';
++header("Location: " . APP_URL . "/index");
+ exit;
+\ No newline at end of file
+diff --git a/login/editar.php b/login/editar.php
+index 5abef2e..c87bbbf 100644
+--- a/login/editar.php
++++ b/login/editar.php
+@@ -7,7 +7,7 @@ include '../includes/security.php';
+ $rol = $_SESSION['rol'];
+ 
+ if (!isset($_GET['id'])) {
+-    header("Location: panel.php");
++    header("Location: " . (($_SESSION['rol'] === 'admin') ? 'admin.php' : 'editor.php'));
+     exit;
+ }
+ 
+@@ -393,7 +393,7 @@ $total_destacadas = $conexion->query("SELECT COUNT(*) as total FROM empresas WHE
+                     .then(data => {
+                         if (data.trim() === 'ok') elemento.remove();
+                         else showToast('No se pudo eliminar: ' + data, 'error');
+-                    }); -
++                    });
+             });
+         }
+ 
+@@ -401,4 +401,4 @@ $total_destacadas = $conexion->query("SELECT COUNT(*) as total FROM empresas WHE
+     <script src="<?= APP_URL ?>/assets/js/toast.js"></script>
+ </body>
+ 
+-</html>
++</html>
+\ No newline at end of file
+diff --git a/login/editar_usuario.php b/login/editar_usuario.php
+index e8f6345..efbbdb6 100644
+--- a/login/editar_usuario.php
++++ b/login/editar_usuario.php
+@@ -1,7 +1,6 @@
+ <?php require_once __DIR__ . '/proteger.php'; ?>
+ <?php
+ include '../db.php';
+-include '../includes/security.php';
+ 
+ $error = "";
+ $success = "";
+diff --git a/login/editor.php b/login/editor.php
+index c8c74df..ac6e6bf 100644
+--- a/login/editor.php
++++ b/login/editor.php
+@@ -12,286 +12,14 @@ $rol = $_SESSION['rol'];
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>Panel <?= ucfirst($rol) ?></title>
+     <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
+-    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css">
++    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css?v=<?= time() ?>">
+     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+-    <style>
+-        #nprogress-bar {
+-            position: fixed;
+-            top: 0;
+-            left: 0;
+-            width: 0%;
+-            height: 4px;
+-            background: #ef4444;
+-            z-index: 10000;
+-            transition: width 0.4s ease, opacity 0.4s ease;
+-            pointer-events: none;
+-            box-shadow: 0 0 10px rgba(230, 57, 70, 0.4);
+-        }
+-
+-        .mantenimiento-top-banner {
+-            background: #ef4444;
+-            color: #fff;
+-            text-align: center;
+-            padding: 8px;
+-            font-size: 12px;
+-            font-weight: 800;
+-            letter-spacing: 0.5px;
+-            position: sticky;
+-            top: 0;
+-            z-index: 9999;
+-            display: flex;
+-            align-items: center;
+-            justify-content: center;
+-            gap: 10px;
+-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+-        }
+-
+-        .panel-header-flex {
+-            display: flex;
+-            justify-content: space-between;
+-            align-items: center;
+-            margin-bottom: 40px;
+-            padding-bottom: 20px;
+-            border-bottom: 1px solid #f1f5f9;
+-        }
+-
+-        .usuario-info-premium {
+-            display: flex;
+-            align-items: center;
+-            gap: 15px;
+-            background: #f8fafc;
+-            padding: 8px 15px;
+-            border-radius: 50px;
+-            border: 1px solid #e2e8f0;
+-        }
+-
+-        .user-details {
+-            display: flex;
+-            flex-direction: column;
+-            line-height: 1.2;
+-        }
+-
+-        .user-welcome {
+-            font-size: 11px;
+-            color: #94a3b8;
+-            text-transform: uppercase;
+-            font-weight: 700;
+-        }
+-
+-        .user-name {
+-            font-size: 14px;
+-            font-weight: 700;
+-            color: #1e293b;
+-        }
+-
+-        .btn-logout-premium {
+-            width: 35px;
+-            height: 35px;
+-            background: #fee2e2;
+-            color: #ef4444;
+-            display: flex;
+-            align-items: center;
+-            justify-content: center;
+-            border-radius: 50%;
+-            text-decoration: none;
+-            transition: 0.3s;
+-        }
+-
+-        .btn-logout-premium:hover {
+-            background: #ef4444;
+-            color: #fff;
+-            transform: scale(1.1);
+-        }
+-
+-        .quick-access-grid {
+-            display: grid;
+-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+-            gap: 15px;
+-            margin-bottom: 40px;
+-        }
+-
+-        .qa-card {
+-            background: #fff;
+-            padding: 20px;
+-            border-radius: 16px;
+-            text-decoration: none;
+-            color: #475569;
+-            display: flex;
+-            flex-direction: column;
+-            align-items: center;
+-            gap: 10px;
+-            border: 1px solid #e2e8f0;
+-            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+-        }
+-
+-        .qa-card i {
+-            font-size: 24px;
+-            color: #1B3A57;
+-        }
+-
+-        .qa-card span {
+-            font-size: 13px;
+-            font-weight: 700;
+-        }
+-
+-        .qa-card:hover {
+-            transform: translateY(-5px);
+-            border-color: #1B3A57;
+-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+-            color: #1B3A57;
+-        }
+-
+-        .stats-dashboard {
+-            display: grid;
+-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+-            gap: 20px;
+-            margin-bottom: 40px;
+-        }
+-
+-        .stat-box {
+-            background: #fff;
+-            padding: 30px;
+-            border-radius: 20px;
+-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+-            display: flex;
+-            flex-direction: column;
+-            gap: 12px;
+-            position: relative;
+-            border: 1px solid #f1f5f9;
+-            transition: 0.3s;
+-        }
+-
+-        .stat-box:hover {
+-            transform: translateY(-5px);
+-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+-        }
+-
+-        .stat-box i {
+-            font-size: 32px;
+-            color: #1B3A57;
+-        }
+-
+-        .stat-box .stat-title {
+-            font-size: 12px;
+-            font-weight: 800;
+-            color: #94a3b8;
+-            text-transform: uppercase;
+-            letter-spacing: 1px;
+-        }
+-
+-        .stat-box .stat-value {
+-            font-size: 36px;
+-            font-weight: 900;
+-            color: #1e293b;
+-            line-height: 1;
+-        }
+-
+-        .stat-box .stat-footer {
+-            font-size: 13px;
+-            color: #64748b;
+-            margin-top: auto;
+-        }
+-
+-        .top5-list {
+-            list-style: none;
+-            padding: 0;
+-            margin: 0;
+-        }
+-
+-        .top5-item {
+-            display: flex;
+-            align-items: center;
+-            justify-content: space-between;
+-            padding: 10px 0;
+-            border-bottom: 1px solid #f8fafc;
+-        }
+-
+-        .top5-item:last-child {
+-            border-bottom: none;
+-        }
+-
+-        .top5-name {
+-            font-weight: 600;
+-            font-size: 13px;
+-            color: #475569;
+-        }
+-
+-        .top5-views {
+-            background: #f1f5f9;
+-            color: #1B3A57;
+-            padding: 4px 10px;
+-            border-radius: 999px;
+-            font-size: 11px;
+-            font-weight: 800;
+-        }
+-
+-        .btn-reiniciar-vistas {
+-            background: #f8fafc;
+-            color: #64748b;
+-            padding: 8px 12px;
+-            border-radius: 8px;
+-            text-decoration: none;
+-            font-size: 12px;
+-            display: inline-flex;
+-            align-items: center;
+-            gap: 8px;
+-            margin-top: 15px;
+-            font-weight: 700;
+-            width: fit-content;
+-            border: 1px solid #e2e8f0;
+-            cursor: pointer;
+-            transition: 0.2s;
+-        }
+-
+-        .btn-reiniciar-vistas:hover {
+-            background: #fee2e2;
+-            color: #ef4444;
+-            border-color: #fecaca;
+-        }
+-
+-        .qa-card.qa-primary {
+-            background: #1B3A57;
+-            color: #fff;
+-            border-color: #1B3A57;
+-        }
+-
+-        .qa-card.qa-primary i {
+-            color: #fff;
+-        }
+-
+-        .qa-card.qa-primary:hover {
+-            background: #152e45;
+-        }
+-
+-        @media (max-width: 768px) {
+-            .panel-header-flex {
+-                flex-direction: column;
+-                gap: 20px;
+-                align-items: flex-start;
+-            }
+-
+-            .quick-access-grid {
+-                grid-template-columns: repeat(2, 1fr);
+-            }
+-        }
+-    </style>
+ </head>
+ 
+ <body>
+-    <div id="nprogress-bar"></div>
+-
+-    <?php if (file_exists(__DIR__ . '/../mantenimiento.flag')): ?>
+-        <div id="mantenimiento-banner" class="mantenimiento-top-banner">
+-            <i class="bi bi-exclamation-triangle-fill"></i>
+-            EL SITIO WEB SE ENCUENTRA ACTUALMENTE EN MANTENIMIENTO (P├ÜBLICO BLOQUEADO)
+-        </div>
+-    <?php else: ?>
+-        <div id="mantenimiento-banner" class="mantenimiento-top-banner" style="display:none; background: #10b981;">
+-            <i class="bi bi-check-circle-fill"></i>
+-            EL SITIO WEB EST├ü EN L├ìNEA Y ACCESIBLE PARA EL P├ÜBLICO
+-        </div>
+-    <?php endif; ?>
++    <?php require_once __DIR__ . '/../includes/admin_layout_top.php'; ?>
++
++
+ 
+     <div class="panel-container">
+         <section class="panel">
+@@ -310,7 +38,7 @@ $rol = $_SESSION['rol'];
+             </div>
+ 
+             <div class="quick-access-grid">
+-                <a href="<?= APP_URL ?>/index.php" class="qa-card">
++                <a href="<?= APP_URL ?>/index" class="qa-card">
+                     <i class="bi bi-house-door"></i>
+                     <span>Ver Sitio</span>
+                 </a>
+@@ -387,25 +115,20 @@ $rol = $_SESSION['rol'];
+                 </div>
+             </div>
+ 
+-            <div class="system-tools-grid"
+-                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 40px;">
+-                <div class="stat-box" style="border-top: 4px solid #6366f1; padding: 20px;">
+-                    <h3 style="font-size: 15px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
++            <div class="system-tools-grid">
++                <div class="stat-box stat-indigo">
++                    <h3 class="tool-title">
+                         <i class="bi bi-shield-lock"></i> Modo Mantenimiento
+                     </h3>
+-                    <button id="btn-toggle-maint" onclick="toggleMantenimiento()" class="btn-reiniciar-vistas"
+-                        style="width: 100%; justify-content: center; transition: 0.3s; padding: 12px; font-weight: 700; border-radius: 12px; border: 2px solid;">
++                    <button id="btn-toggle-maint" onclick="toggleMantenimiento()" class="btn-maint-toggle">
+                         <?php $mantenimiento_activo = file_exists(__DIR__ . '/../mantenimiento.flag'); ?>
+                         <i class="bi <?= $mantenimiento_activo ? 'bi-toggle-on' : 'bi-toggle-off' ?>"></i>
+-                        <span
+-                            id="maint-text"><?= $mantenimiento_activo ? 'Desactivar Mantenimiento' : 'Activar Mantenimiento' ?></span>
++                        <span id="maint-text"><?= $mantenimiento_activo ? 'Desactivar Mantenimiento' : 'Activar Mantenimiento' ?></span>
+                     </button>
+                     <script>
+                         const isM = <?= $mantenimiento_activo ? 'true' : 'false' ?>;
+                         const btnM = document.getElementById('btn-toggle-maint');
+-                        btnM.style.background = isM ? '#fee2e2' : '#f0fdf4';
+-                        btnM.style.color = isM ? '#ef4444' : '#16a34a';
+-                        btnM.style.borderColor = isM ? '#fecaca' : '#bbf7d0';
++                        btnM.classList.toggle('active', isM);
+                     </script>
+                 </div>
+             </div>
+@@ -802,4 +525,4 @@ $rol = $_SESSION['rol'];
+     </script>
+ </body>
+ 
+-</html>
++</html>
+\ No newline at end of file
+diff --git a/login/eliminar.php b/login/eliminar.php
+index a144467..e1c8e0d 100644
+--- a/login/eliminar.php
++++ b/login/eliminar.php
+@@ -33,15 +33,26 @@ if (isset($_POST['id'])) {
+     $stmt_g->execute();
+     $res_g = $stmt_g->get_result();
+     while ($f = $res_g->fetch_assoc()) {
+-        if (!empty($f['foto']) && file_exists('../assets/img/' . $f['foto'])) {
+-            unlink('../assets/img/' . $f['foto']);
++        if (!empty($f['foto']) && file_exists('../assets/img/empresascarrusel/' . $f['foto'])) {
++            unlink('../assets/img/empresascarrusel/' . $f['foto']);
+         }
+     }
+     $stmt_g->close();
+ 
+-    $conexion->query("DELETE FROM empresa_galeria WHERE id_empresa = $id");
+-    $conexion->query("DELETE FROM resenas WHERE id_empresa = $id");
+-    $conexion->query("DELETE FROM favoritos WHERE id_empresa = $id");
++    $stmt_del1 = $conexion->prepare("DELETE FROM empresa_galeria WHERE id_empresa = ?");
++    $stmt_del1->bind_param("i", $id);
++    $stmt_del1->execute();
++    $stmt_del1->close();
++
++    $stmt_del2 = $conexion->prepare("DELETE FROM resenas WHERE id_empresa = ?");
++    $stmt_del2->bind_param("i", $id);
++    $stmt_del2->execute();
++    $stmt_del2->close();
++
++    $stmt_del3 = $conexion->prepare("DELETE FROM favoritos WHERE id_empresa = ?");
++    $stmt_del3->bind_param("i", $id);
++    $stmt_del3->execute();
++    $stmt_del3->close();
+ 
+     $stmt = $conexion->prepare("DELETE FROM empresas WHERE id_empresa = ?");
+     $stmt->bind_param("i", $id);
+diff --git a/login/eliminar_categoria.php b/login/eliminar_categoria.php
+index 9867178..40bea55 100644
+--- a/login/eliminar_categoria.php
++++ b/login/eliminar_categoria.php
+@@ -15,6 +15,18 @@ if (!validarCSRF()) {
+ 
+ if (isset($_POST['id'])) {
+     $id = intval($_POST['id']);
++
++    $stmt_check = $conexion->prepare("SELECT COUNT(*) as total FROM empresas WHERE id_categoria = ?");
++    $stmt_check->bind_param("i", $id);
++    $stmt_check->execute();
++    $total = $stmt_check->get_result()->fetch_assoc()['total'];
++    $stmt_check->close();
++
++    if ($total > 0) {
++        echo json_encode(['ok' => false, 'error' => "No se puede eliminar: hay $total empresa(s) usando esta categor├¡a."]);
++        exit;
++    }
++
+     $stmt = $conexion->prepare("DELETE FROM categorias WHERE id_categoria = ?");
+     $stmt->bind_param("i", $id);
+ 
+diff --git a/login/gestionar_banner.php b/login/gestionar_banner.php
+index 3ce4d91..7bcbf40 100644
+--- a/login/gestionar_banner.php
++++ b/login/gestionar_banner.php
+@@ -51,38 +51,42 @@ $panel_url = ($rol === 'admin') ? 'admin.php' : 'editor.php';
+     </div>
+   </div>
+ 
+-  <div class="drop-zone" id="drop-zone">
+-    <i class="bi bi-cloud-arrow-up drop-icon"></i>
+-    <span class="drop-label">Arrastra una imagen aqu├¡ para subirla</span>
+-    <span class="drop-sublabel">JPG, PNG, WEBP ÔÇö m├íximo 5 MB</span>
+-
+-    <div class="drop-preview-wrap" id="drop-preview-wrap">
+-      <img id="drop-preview-img" src="" alt="preview">
+-      <span class="drop-preview-name" id="drop-preview-name"></span>
+-    </div>
++        <h2 class="section-title"><i class="bi bi-cloud-arrow-up"></i> 1. Subir Nueva Imagen</h2>
++        <div class="drop-zone" id="drop-zone">
++          <i class="bi bi-cloud-arrow-up drop-icon"></i>
++          <span class="drop-label">Arrastra una imagen aqu├¡ para subirla</span>
++          <span class="drop-sublabel">JPG, PNG, WEBP ÔÇö m├íximo 5 MB</span>
++
++          <div class="drop-preview-wrap" id="drop-preview-wrap">
++            <img id="drop-preview-img" src="" alt="Vista previa" class="drop-preview-img">
++            <span class="drop-preview-name" id="drop-preview-name"></span>
++          </div>
++        </div>
+ 
+-    <div class="drop-footer">
+-      <button class="btn btn-file-select" id="btn-file-select" type="button">
+-        <i class="bi bi-folder2-open"></i> Seleccionar archivo
+-      </button>
+-      <div class="time-upload-wrap" style="margin: 0 20px;">
+-        <label for="inp-tiempo"><i class="bi bi-clock"></i> Tiempo:</label>
+-        <input type="range" id="inp-tiempo" min="1" max="30" value="5" step="1">
+-        <span class="time-upload-val" id="inp-tiempo-val">5s</span>
++        <div class="upload-actions-bar">
++          <button class="btn btn-file-select" id="btn-file-select" type="button">
++            <i class="bi bi-folder2-open"></i> Seleccionar archivo
++          </button>
++          <div class="time-upload-wrap">
++            <label for="inp-tiempo"><i class="bi bi-clock"></i> Tiempo visible:</label>
++            <input type="range" id="inp-tiempo" min="1" max="30" value="5" step="1">
++            <span class="time-upload-val" id="inp-tiempo-val">5s</span>
++          </div>
++          <button class="btn btn-upload" id="btn-subir" disabled>
++            <i class="bi bi-plus-circle"></i> Agregar al banner
++          </button>
++        </div>
+       </div>
+-      <button class="btn btn-upload" id="btn-subir" disabled>
+-        <i class="bi bi-plus-circle"></i> Agregar al banner
+-      </button>
+-    </div>
+-  </div>
+-  <input type="file" id="inp-file" accept="image/*">
+-
+-  <div class="banner-toolbar">
+-    <span><i class="bi bi-grip-horizontal"></i> Arrastra las tarjetas para reordenar</span>
+-    <button class="btn-save-order" id="btn-guardar-orden">
+-      <i class="bi bi-check2-circle"></i> Guardar orden
+-    </button>
+-  </div>
++      <input type="file" id="inp-file" accept="image/*" style="display: none;">
++
++      <div class="management-section" style="margin-top: 50px;">
++        <h2 class="section-title"><i class="bi bi-grid-3x3-gap"></i> 2. Gestionar y Reordenar</h2>
++        <div class="banner-toolbar">
++          <span><i class="bi bi-grip-horizontal"></i> Arrastra las tarjetas para cambiar el orden de aparici├│n</span>
++          <button class="btn-save-order" id="btn-guardar-orden">
++            <i class="bi bi-check2-circle"></i> Guardar orden
++          </button>
++        </div>
+ 
+   <div class="banner-grid" id="banner-grid">
+     <?php if ($banners && $banners->num_rows > 0): ?>
+@@ -170,18 +174,22 @@ function setFile(file) {
+   const wrap = document.getElementById('drop-preview-wrap');
+   const img  = document.getElementById('drop-preview-img');
+   const name = document.getElementById('drop-preview-name');
+-  img.src  = URL.createObjectURL(file);
+-  name.textContent = file.name + ' (' + (file.size / 1024).toFixed(0) + ' KB)';
+-  wrap.classList.add('show');
+ 
++  const reader = new FileReader();
++  reader.onload = function(e) {
++    img.src = e.target.result;
++    wrap.classList.add('show');
++  };
++  reader.readAsDataURL(file);
++
++  name.textContent = file.name + ' (' + (file.size / 1024).toFixed(0) + ' KB)';
+   document.getElementById('drop-zone').classList.add('has-file');
+   document.getElementById('btn-subir').disabled = false;
+ }
+ 
+-document.getElementById('drop-zone').addEventListener('click', e => {
+-  if (e.target.closest('#btn-subir') || e.target.closest('.time-upload-wrap')) return;
+-  document.getElementById('inp-file').click();
+-});
++    document.getElementById('drop-zone').addEventListener('click', () => {
++      document.getElementById('inp-file').click();
++    });
+ document.getElementById('btn-file-select').addEventListener('click', e => {
+   e.stopPropagation();
+   document.getElementById('inp-file').click();
+@@ -288,7 +296,7 @@ Sortable.create(document.getElementById('banner-grid'), {
+   forceFallback: true,
+   fallbackOnBody: true,
+   swapThreshold: 0.65,
+-  filter: 'input, button, label, .slider-sw, .card-controls, .time-control',
++  filter: 'input, button, label, .slider-sw, .card-controls, .time-control, .rng-tiempo, .rng-tiempo *',
+   preventOnFilter: false,
+   onEnd: () => {
+     renumerarOrden();
+diff --git a/login/gestionar_resenas.php b/login/gestionar_resenas.php
+index 9d90159..e6aa3db 100644
+--- a/login/gestionar_resenas.php
++++ b/login/gestionar_resenas.php
+@@ -51,7 +51,7 @@ if (!$id_empresa):
+         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+         <title>Gestionar Rese├▒as</title>
+         <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
+-        <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css">
++        <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css?v=<?= time() ?>">
+     </head>
+ 
+     <body>
+@@ -142,7 +142,7 @@ if ($total_resenas > 0) {
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>Rese├▒as ÔÇö <?= htmlspecialchars($fila['nombre']) ?></title>
+     <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
+-    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css">
++    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css?v=<?= time() ?>">
+     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+ </head>
+ 
+diff --git a/login/limpiar_archivos.php b/login/limpiar_archivos.php
+index 4735efd..497c0d1 100644
+--- a/login/limpiar_archivos.php
++++ b/login/limpiar_archivos.php
+@@ -18,16 +18,16 @@ $accion = $_POST['accion'] ?? 'escanear';
+ $archivos_usados = [];
+ 
+ $res = $conexion->query("SELECT logo FROM empresas WHERE logo IS NOT NULL AND logo != ''");
+-while($f = $res->fetch_assoc()) $archivos_usados['assets/img/'.basename($f['logo'])] = true;
++while($f = $res->fetch_assoc()) $archivos_usados[strtolower('assets/img/'.trim(basename($f['logo'])))] = true;
+ 
+ $res = $conexion->query("SELECT foto FROM empresa_galeria WHERE foto IS NOT NULL AND foto != ''");
+-while($f = $res->fetch_assoc()) $archivos_usados['assets/img/empresascarrusel/'.basename($f['foto'])] = true;
++while($f = $res->fetch_assoc()) $archivos_usados[strtolower('assets/img/empresascarrusel/'.trim(basename($f['foto'])))] = true;
+ 
+ $res = $conexion->query("SELECT foto_perfil FROM usuarios_publicos WHERE foto_perfil IS NOT NULL AND foto_perfil != ''");
+-while($f = $res->fetch_assoc()) $archivos_usados['assets/img/avatars/'.basename($f['foto_perfil'])] = true;
++while($f = $res->fetch_assoc()) $archivos_usados[strtolower('assets/img/avatars/'.trim(basename($f['foto_perfil'])))] = true;
+ 
+ $res = $conexion->query("SELECT imagen FROM banner_carrusel WHERE imagen IS NOT NULL AND imagen != ''");
+-while($f = $res->fetch_assoc()) $archivos_usados['assets/img/banner/'.basename($f['imagen'])] = true;
++while($f = $res->fetch_assoc()) $archivos_usados[strtolower('assets/img/banner/'.trim(basename($f['imagen'])))] = true;
+ 
+ $directorios = [
+     '../assets/img' => 'assets/img/',
+@@ -54,7 +54,7 @@ foreach($directorios as $ruta_fisica => $prefijo) {
+         
+         if (strpos($file, 'icon-') === 0 || $file === 'image.png' || $file === 'whatsapp2.png' || $file === 'facebook2.png' || $file === 'messenger2.png') continue;
+ 
+-        if (!isset($archivos_usados[$ruta_relativa])) {
++        if (!isset($archivos_usados[strtolower($ruta_relativa)])) {
+             $archivos_huerfanos[] = [
+                 'nombre' => $file,
+                 'ruta' => $ruta_relativa,
+@@ -71,6 +71,7 @@ if ($accion === 'escanear') {
+     foreach($archivos_huerfanos as $h) {
+         if (file_exists($h['ruta_full'])) {
+             if (unlink($h['ruta_full'])) {
++                logSeguridad('archivo_huerfano_borrado', 'Archivo eliminado: ' . $h['ruta']);
+                 $borrados++;
+             }
+         }
+diff --git a/login/login.php b/login/login.php
+index ad236b6..a61d970 100644
+--- a/login/login.php
++++ b/login/login.php
+@@ -3,30 +3,30 @@ include __DIR__ . '/../db.php';
+ $config_file = __DIR__ . '/../includes/admin_config.php';
+ define('ACCESO_PERMITIDO', true);
+ 
+-if (isset($_GET['token'])) {
++$acceso_autorizado = false;
++
++// Verificamos el token en cada petici├│n (GET o POST)
++$token_actual = $_GET['token'] ?? ($_POST['token_admin'] ?? '');
++
++if (!empty($token_actual)) {
+     if (file_exists($config_file)) {
+         $config = include $config_file;
+-        if (password_verify($_GET['token'], $config['token_hash'])) {
+-            if (session_status() === PHP_SESSION_NONE)
+-                session_start();
+-            $_SESSION['admin_access_granted'] = true;
+-            header("Location: " . APP_URL . "/login/login.php");
+-            exit();
+-        } else {
+-            error_log("Intento de acceso con token inv├ílido desde IP: " . $_SERVER['REMOTE_ADDR']);
++        if (password_verify($token_actual, $config['token_hash'])) {
++            $acceso_autorizado = true;
+         }
+     }
+ }
+ 
+-if (session_status() === PHP_SESSION_NONE) {
+-    session_start();
+-}
+-
+-if (empty($_SESSION['admin_access_granted']) || $_SESSION['admin_access_granted'] !== true) {
+-    header("Location: " . APP_URL . "/index.php");
++// Si no hay token v├ílido, la p├ígina NO EXISTE para el usuario
++if (!$acceso_autorizado) {
++    http_response_code(404);
++    include __DIR__ . '/../404.php';
+     exit();
+ }
+ 
++if (session_status() === PHP_SESSION_NONE) {
++    session_start();
++}
+ 
+ $error = "";
+ $max_intentos = 3;
+@@ -47,7 +47,7 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo)
+     $error = "Demasiados intentos fallidos. Intenta de nuevo en {$minutos} min {$segundos} seg.";
+ } elseif (isset($_POST['usu'], $_POST['pass'])) {
+     if (!empty($_POST['segundo_nombre'])) {
+-        header("Location: " . APP_URL . "/index.php");
++        header("Location: " . APP_URL . "/index");
+         exit();
+     }
+ 
+@@ -79,14 +79,16 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo)
+                     $_SESSION['usuario'] = $fila['nombre'];
+                     $_SESSION['rol'] = $fila['rol'];
+                     $_SESSION['id_usuario'] = (int) $fila['id_usuario'];
++                    $_SESSION['admin_access_granted'] = true; // Por compatibilidad con proteger.php
++                    $_SESSION['ua_hash'] = hash('sha256', $_SERVER['HTTP_USER_AGENT'] ?? '');
+ 
+                     $_SESSION['intentos'] = 0;
+                     $_SESSION['ultimo_intento'] = 0;
+ 
+                     if ($fila['rol'] === 'admin') {
+-                        header("Location: " . APP_URL . "/login/admin.php");
++                        header("Location: " . APP_URL . "/login/admin");
+                     } else {
+-                        header("Location: " . APP_URL . "/login/editor.php");
++                        header("Location: " . APP_URL . "/login/editor");
+                     }
+                     exit();
+                 } else {
+@@ -100,7 +102,6 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo)
+                 $error = "Credenciales incorrectas.";
+             }
+         }
+-
+         $stmt->close();
+     }
+ }
+@@ -114,7 +115,7 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo)
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>Inicio de sesi├│n</title>
+     <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
+-    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css">
++    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css?v=<?= time() ?>">
+ </head>
+ 
+ <body>
+@@ -127,7 +128,9 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo)
+             <?php endif; ?>
+ 
+             <?php if (!($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo)): ?>
+-                <form action="" method="post" class="login-form">
++                <form action="login?token=<?= htmlspecialchars($token_actual) ?>" method="post" class="login-form">
++                    <input type="hidden" name="token_admin" value="<?= htmlspecialchars($token_actual) ?>">
++
+                     <div style="display:none; visibility:hidden; opacity:0; position:absolute; left:-9999px;">
+                         <label for="segundo_nombre">Segundo Nombre</label>
+                         <input type="text" name="segundo_nombre" id="segundo_nombre" tabindex="-1" autocomplete="off">
+diff --git a/login/proteger.php b/login/proteger.php
+index 969122b..59ed92a 100644
+--- a/login/proteger.php
++++ b/login/proteger.php
+@@ -7,15 +7,15 @@ if (session_status() === PHP_SESSION_NONE) {
+     session_start();
+ }
+ 
+-if (!isset($_SESSION['usuario']) || !isset($_SESSION['rol'])) {
+-    logSeguridad('acceso_no_autorizado', 'Intento de acceso sin sesi├│n al panel admin');
+-    header("Location: " . APP_URL . "/index.php");
++if (!isset($_SESSION['usuario']) || !isset($_SESSION['rol']) || empty($_SESSION['admin_access_granted'])) {
++    logSeguridad('acceso_no_autorizado', 'Intento de acceso al panel sin autorizaci├│n de token o sesi├│n');
++    header("Location: " . APP_URL . "/index");
+     exit();
+ }
+ 
+ if (!in_array($_SESSION['rol'], ['admin', 'editor'])) {
+     logSeguridad('rol_no_autorizado', 'Usuario con rol ' . $_SESSION['rol'] . ' intent├│ acceder al panel');
+-    header("Location: " . APP_URL . "/index.php");
++    header("Location: " . APP_URL . "/index");
+     exit();
+ }
+ 
+diff --git a/login/toggle_destacada.php b/login/toggle_destacada.php
+index 5adc6af..90ef538 100644
+--- a/login/toggle_destacada.php
++++ b/login/toggle_destacada.php
+@@ -28,9 +28,15 @@ if ($accion === 'destacar') {
+         echo json_encode(['ok' => false, 'error' => 'Ya hay 3 destacadas. Quita una primero.']);
+         exit;
+     }
+-    $conexion->query("UPDATE empresas SET destacada=1 WHERE id_empresa=$id");
++    $stmt_d = $conexion->prepare("UPDATE empresas SET destacada=1 WHERE id_empresa=?");
++    $stmt_d->bind_param("i", $id);
++    $stmt_d->execute();
++    $stmt_d->close();
+ } else {
+-    $conexion->query("UPDATE empresas SET destacada=0 WHERE id_empresa=$id");
++    $stmt_d = $conexion->prepare("UPDATE empresas SET destacada=0 WHERE id_empresa=?");
++    $stmt_d->bind_param("i", $id);
++    $stmt_d->execute();
++    $stmt_d->close();
+ }
+ 
+ echo json_encode(['ok' => true]);
+\ No newline at end of file
+diff --git a/login_usuario.php b/login_usuario.php
+index f575c82..f6fd22b 100644
+--- a/login_usuario.php
++++ b/login_usuario.php
+@@ -13,7 +13,7 @@ if (isset($_SESSION['usuario_publico_id'])) {
+ $error = '';
+ $exito = '';
+ if (isset($_GET['exito']) && $_GET['exito'] === 'pw_cambiada') {
+-    $exito = 'Contrase├▒a actualizada correctamente. Inicia sesi├│n con tu nueva clave.';
++  $exito = 'Contrase├▒a actualizada correctamente. Inicia sesi├│n con tu nueva clave.';
+ }
+ $redir = validarRedireccionLocal($_GET['redir'] ?? '');
+ $paso = $_GET['paso'] ?? 'email';
+@@ -126,11 +126,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
+ 
+             $cuerpo = plantillaCorreoOTP($u['nombre'], $codigo, 'acceso');
+             enviarCorreo($email, $u['nombre'], 'Acceso a Gu├¡a Empresarial', $cuerpo);
+-            
++
+             $limits['count']++;
+             $limits['daily_count']++;
+             $limits['last_time'] = $now;
+-            
++
+             header("Location: login_usuario?paso=codigo&email=" . urlencode($email) . ($redir ? '&redir=' . urlencode($redir) : ''));
+             exit;
+           } else {
+@@ -156,7 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
+             header("Location: login_usuario?paso=password&email=" . urlencode($email) . ($redir ? '&redir=' . urlencode($redir) : ''));
+             exit;
+           } else {
+-            // Si no tiene password pero existe (raro), mandamos c├│digo
++
+             header("Location: login_usuario?paso=codigo&email=" . urlencode($email) . ($redir ? '&redir=' . urlencode($redir) : ''));
+             exit;
+           }
+@@ -209,7 +209,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
+       if ($res && $res->num_rows === 1) {
+         $u = $res->fetch_assoc();
+         if ($codigo === $u['codigo_verificacion'] && time() < $u['codigo_expira']) {
+-          $conexion->query("UPDATE usuarios_publicos SET verificado=1, codigo_verificacion=NULL, codigo_expira=NULL WHERE id=" . $u['id']);
++          $stmt_upd = $conexion->prepare("UPDATE usuarios_publicos SET verificado=1, codigo_verificacion=NULL, codigo_expira=NULL WHERE id=?");
++          $stmt_upd->bind_param("i", $u['id']);
++          $stmt_upd->execute();
++          $stmt_upd->close();
+           $_SESSION['usuario_publico_id'] = $u['id'];
+           $_SESSION['usuario_publico_nombre'] = $u['nombre'];
+           $_SESSION['usuario_publico_pw_hash'] = $u['password_hash'];
+@@ -396,7 +399,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
+           otpBoxes.forEach((box, i) => box.value = digits[i]);
+           collectOTP();
+           if (window.showToast) showToast('C├│digo pegado correctamente.', 'success');
+-          // No auto-enviamos, dejamos que el usuario lo vea
++
+         } else {
+           if (window.showToast) showToast('No se encontr├│ un c├│digo de 6 d├¡gitos en el portapapeles.', 'error');
+         }
+@@ -439,7 +442,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
+ 
+     function resendOTP() {
+       const btn = document.getElementById('btn-resend');
+-      const email = "<?= $email_param ?>";
++      const email = "<?= htmlspecialchars($email_param, ENT_QUOTES, 'UTF-8') ?>";
+       const formData = new FormData();
+       formData.append('accion', 'reenviar_codigo_ajax');
+       formData.append('email', email);
+diff --git a/logs/seguridad.log b/logs/seguridad.log
+index 90e7bc1..1b4d02a 100644
+--- a/logs/seguridad.log
++++ b/logs/seguridad.log
+@@ -10,3 +10,5 @@
+ [2026-04-23 20:45:11] [INFO] Usuario: ejemplo | IP: ::1 | Acci├│n: acceso_no_autorizado | Detalle: Intento de acceso sin sesi├│n al panel admin | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36
+ [2026-05-05 17:37:36] [WARNING] Usuario: admin | IP: ::1 | Acci├│n: rate_limit_excedido | Detalle: Acci├│n: envio_otp_pw | Intentos: 4 | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36
+ [2026-05-05 17:37:43] [WARNING] Usuario: admin | IP: ::1 | Acci├│n: rate_limit_excedido | Detalle: Acci├│n: envio_otp_pw | Intentos: 5 | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36
++[2026-05-06 19:18:08] [INFO] Usuario: anonimo | IP: ::1 | Acci├│n: acceso_no_autorizado | Detalle: Intento de acceso sin sesi├│n al panel admin | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36
++[2026-05-08 17:22:43] [INFO] Usuario: anonimo | IP: ::1 | Acci├│n: acceso_no_autorizado | Detalle: Intento de acceso al panel sin autorizaci├│n de token o sesi├│n | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36
+diff --git a/mi_cuenta.php b/mi_cuenta.php
+index ac04011..1c0b356 100644
+--- a/mi_cuenta.php
++++ b/mi_cuenta.php
+@@ -53,7 +53,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
+       $res_u = $stmt_check->get_result()->fetch_assoc();
+ 
+       if ($codigo === $res_u['codigo_verificacion'] && time() < $res_u['codigo_expira']) {
+-        $conexion->query("UPDATE usuarios_publicos SET codigo_verificacion=NULL, codigo_expira=NULL WHERE id=" . $id_u);
++        $stmt_clear = $conexion->prepare("UPDATE usuarios_publicos SET codigo_verificacion=NULL, codigo_expira=NULL WHERE id=?");
++        $stmt_clear->bind_param("i", $id_u);
++        $stmt_clear->execute();
++        $stmt_clear->close();
+         $_SESSION['login_bypass_pw'] = true;
+         unset($_SESSION['esperando_otp_pw']);
+         $exito = 'C├│digo verificado. Ahora puede establecer su nueva contrase├▒a.';
+@@ -64,8 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
+ 
+     if ($_POST['accion'] === 'borrar_cuenta') {
+       $pw_confirm = $_POST['password_confirm'] ?? '';
+-      
+-      // Verificar contrase├▒a
++
+       $stmt_v = $conexion->prepare("SELECT password_hash FROM usuarios_publicos WHERE id = ?");
+       $stmt_v->bind_param("i", $id_u);
+       $stmt_v->execute();
+@@ -74,27 +76,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
+       if (!password_verify($pw_confirm, $u_v['password_hash'])) {
+         $error = 'La contrase├▒a de confirmaci├│n es incorrecta.';
+       } else {
+-        // Eliminar rese├▒as
++
+         $stmt_del_r = $conexion->prepare("DELETE FROM resenas WHERE id_usuario_publico = ?");
+         $stmt_del_r->bind_param("i", $id_u);
+         $stmt_del_r->execute();
+ 
+-        // Eliminar favoritos
++
+         $stmt_del_f = $conexion->prepare("DELETE FROM favoritos WHERE id_usuario_publico = ?");
+         $stmt_del_f->bind_param("i", $id_u);
+         $stmt_del_f->execute();
+ 
+-        // Eliminar votos
++
+         $stmt_del_v = $conexion->prepare("DELETE FROM resena_votos WHERE id_usuario_publico = ?");
+         $stmt_del_v->bind_param("i", $id_u);
+         $stmt_del_v->execute();
+ 
+-        // Eliminar foto f├¡sica
++
+         if (!empty($u['foto_perfil']) && file_exists('assets/img/avatars/' . $u['foto_perfil'])) {
+           unlink('assets/img/avatars/' . $u['foto_perfil']);
+         }
+ 
+-        // Eliminar usuario
++
+         $stmt_del_u = $conexion->prepare("DELETE FROM usuarios_publicos WHERE id = ?");
+         $stmt_del_u->bind_param("i", $id_u);
+         $stmt_del_u->execute();
+@@ -149,8 +151,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
+         $stmt_pw = $conexion->prepare("UPDATE usuarios_publicos SET password_hash = ? WHERE id = ?");
+         $stmt_pw->bind_param("si", $hash, $id_u);
+         $stmt_pw->execute();
+-        
+-        // Destruimos la sesi├│n y redirigimos al login para confirmar
++
++
+         session_unset();
+         session_destroy();
+         header('Location: login_usuario?exito=pw_cambiada');
+@@ -262,49 +264,55 @@ include 'includes/Header.php';
+ ?>
+ 
+ <style>
+-.mc-avatar-preview {
+-  position: relative !important;
+-  width: 120px !important;
+-  height: 120px !important;
+-  border-radius: 50% !important;
+-  overflow: hidden !important;
+-  background: #f0f2f5 !important;
+-  border: 4px solid #ffffff !important;
+-  box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+-  display: block !important;
+-}
+-.mc-avatar-preview img, .mc-avatar-preview span {
+-  position: absolute !important;
+-  top: 50% !important;
+-  left: 50% !important;
+-  transform: translate(-50%, -50%) !important;
+-  width: 100% !important;
+-  height: 100% !important;
+-  object-fit: cover !important;
+-  display: flex !important;
+-  align-items: center !important;
+-  justify-content: center !important;
+-  font-size: 48px !important;
+-  font-weight: 800 !important;
+-  color: #3b5998 !important;
+-  margin: 0 !important;
+-}
+-.mc-avatar-overlay {
+-  position: absolute !important;
+-  top: 0 !important;
+-  left: 0 !important;
+-  width: 100% !important;
+-  height: 100% !important;
+-  background: rgba(0, 0, 0, 0.45) !important;
+-  backdrop-filter: blur(2px) !important;
+-  display: flex !important;
+-  align-items: center !important;
+-  justify-content: center !important;
+-  opacity: 0 !important;
+-  transition: all 0.3s ease !important;
+-  z-index: 5 !important;
+-}
+-.mc-avatar-preview:hover .mc-avatar-overlay { opacity: 1 !important; }
++  .mc-avatar-preview {
++    position: relative !important;
++    width: 120px !important;
++    height: 120px !important;
++    border-radius: 50% !important;
++    overflow: hidden !important;
++    background: #f0f2f5 !important;
++    border: 4px solid #ffffff !important;
++    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
++    display: block !important;
++  }
++
++  .mc-avatar-preview img,
++  .mc-avatar-preview span {
++    position: absolute !important;
++    top: 50% !important;
++    left: 50% !important;
++    transform: translate(-50%, -50%) !important;
++    width: 100% !important;
++    height: 100% !important;
++    object-fit: cover !important;
++    display: flex !important;
++    align-items: center !important;
++    justify-content: center !important;
++    font-size: 48px !important;
++    font-weight: 800 !important;
++    color: #3b5998 !important;
++    margin: 0 !important;
++  }
++
++  .mc-avatar-overlay {
++    position: absolute !important;
++    top: 0 !important;
++    left: 0 !important;
++    width: 100% !important;
++    height: 100% !important;
++    background: rgba(0, 0, 0, 0.45) !important;
++    backdrop-filter: blur(2px) !important;
++    display: flex !important;
++    align-items: center !important;
++    justify-content: center !important;
++    opacity: 0 !important;
++    transition: all 0.3s ease !important;
++    z-index: 5 !important;
++  }
++
++  .mc-avatar-preview:hover .mc-avatar-overlay {
++    opacity: 1 !important;
++  }
+ </style>
+ 
+ <div class="mc-page">
+@@ -376,7 +384,8 @@ include 'includes/Header.php';
+       <div class="mc-panel active" id="mc-panel-perfil">
+ 
+         <div class="mc-avatar-row">
+-          <div class="mc-avatar-preview" id="mc-avatar-preview" onclick="document.getElementById('foto_input').click()" style="cursor:pointer; position:relative; overflow:hidden;">
++          <div class="mc-avatar-preview" id="mc-avatar-preview" onclick="document.getElementById('foto_input').click()"
++            style="cursor:pointer; position:relative; overflow:hidden;">
+             <?php if (!empty($u['foto_perfil'])): ?>
+               <img src="assets/img/avatars/<?= htmlspecialchars($u['foto_perfil']) ?>?t=<?= time() ?>" alt="Avatar">
+             <?php else: ?>
+@@ -386,11 +395,14 @@ include 'includes/Header.php';
+               <i class="bi bi-camera"></i>
+             </div>
+           </div>
+-          <div id="avatar-confirm-wrap" style="display:none; margin-top:15px; text-align:center; animation:fadeIn 0.3s;">
+-             <button type="button" onclick="document.getElementById('form-foto').submit()" class="mc-btn-primary" style="padding: 8px 16px; font-size:12px; background: #10b981; border:none; border-radius:8px; color:white; font-weight:700; cursor:pointer;">
+-               <i class="bi bi-check-circle"></i> Confirmar foto
+-             </button>
+-             <button type="button" onclick="location.reload()" style="background:none; border:none; color:#ef4444; font-size:11px; cursor:pointer; margin-left:12px; font-weight:600;">Cancelar</button>
++          <div id="avatar-confirm-wrap"
++            style="display:none; margin-top:15px; text-align:center; animation:fadeIn 0.3s;">
++            <button type="button" onclick="document.getElementById('form-foto').submit()" class="mc-btn-primary"
++              style="padding: 8px 16px; font-size:12px; background: #10b981; border:none; border-radius:8px; color:white; font-weight:700; cursor:pointer;">
++              <i class="bi bi-check-circle"></i> Confirmar foto
++            </button>
++            <button type="button" onclick="location.reload()"
++              style="background:none; border:none; color:#ef4444; font-size:11px; cursor:pointer; margin-left:12px; font-weight:600;">Cancelar</button>
+           </div>
+           <div class="mc-avatar-actions">
+             <form method="POST" enctype="multipart/form-data" id="form-foto">
+@@ -453,7 +465,8 @@ include 'includes/Header.php';
+             <input type="hidden" name="actual" value="bypass">
+ 
+             <?php if ($error === 'MISMA_PW'): ?>
+-              <div class="mc-alerta mc-alerta-warning" style="margin-bottom: 20px; border-left: 4px solid var(--aura-yellow);">
++              <div class="mc-alerta mc-alerta-warning"
++                style="margin-bottom: 20px; border-left: 4px solid var(--aura-yellow);">
+                 <div style="display:flex; align-items:center; gap:10px;">
+                   <i class="bi bi-exclamation-triangle" style="font-size: 20px;"></i>
+                   <div>
+@@ -512,7 +525,8 @@ include 'includes/Header.php';
+             <div class="mc-form-footer">
+               <button type="submit" class="mc-btn-primary">Verificar c├│digo</button>
+               <div style="display:inline-block; margin-left: 10px;">
+-                <button type="submit" name="accion" value="enviar_codigo_pw" class="mc-btn-ghost mc-btn-sm" id="btn-resend-pw" formnovalidate>
++                <button type="submit" name="accion" value="enviar_codigo_pw" class="mc-btn-ghost mc-btn-sm"
++                  id="btn-resend-pw" formnovalidate>
+                   Reenviar c├│digo
+                 </button>
+                 <span id="timer-resend-pw" style="font-size: 12px; color: rgba(255,255,255,0.4); display: none;">
+@@ -633,21 +647,25 @@ include 'includes/Header.php';
+ 
+         <div class="mc-danger-zone">
+           <h3>Eliminar cuenta</h3>
+-          <p>Una vez eliminada, no hay marcha atr├ís. Por seguridad, ingresa tu contrase├▒a para confirmar la eliminaci├│n definitiva.</p>
++          <p>Una vez eliminada, no hay marcha atr├ís. Por seguridad, ingresa tu contrase├▒a para confirmar la eliminaci├│n
++            definitiva.</p>
+           <form method="POST" id="form-borrar-cuenta">
+             <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
+             <input type="hidden" name="accion" value="borrar_cuenta">
+-            
++
+             <div id="confirm-del-wrap" style="display: none; margin-bottom: 15px; animation: fadeIn 0.3s ease;">
+-              <input type="password" name="password_confirm" placeholder="Confirma tu contrase├▒a actual" 
+-                     style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; color: white; outline: none;">
++              <input type="password" name="password_confirm" placeholder="Confirma tu contrase├▒a actual"
++                style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; color: white; outline: none;">
+             </div>
+ 
+-            <button type="button" class="mc-btn-delete" id="btn-pre-delete" onclick="mostrarConfirmacionBorrado()">Eliminar cuenta</button>
+-            
++            <button type="button" class="mc-btn-delete" id="btn-pre-delete"
++              onclick="mostrarConfirmacionBorrado()">Eliminar cuenta</button>
++
+             <div id="final-del-actions" style="display: none; gap: 10px; animation: fadeIn 0.3s ease;">
+-               <button type="submit" class="mc-btn-delete" style="background: #ef4444; flex: 1;">Confirmar eliminaci├│n</button>
+-               <button type="button" class="mc-btn-ghost" style="flex: 1;" onclick="cancelarBorrarCuenta()">Cancelar</button>
++              <button type="submit" class="mc-btn-delete" style="background: #ef4444; flex: 1;">Confirmar
++                eliminaci├│n</button>
++              <button type="button" class="mc-btn-ghost" style="flex: 1;"
++                onclick="cancelarBorrarCuenta()">Cancelar</button>
+             </div>
+           </form>
+         </div>
+@@ -732,7 +750,7 @@ include 'includes/Header.php';
+     if (!file) return;
+     const reader = new FileReader();
+     reader.onload = ev => {
+-      // Actualizar imagen en el panel lateral (preview principal)
++
+       const previewImg = document.querySelector('#mc-avatar-preview img');
+       if (previewImg) {
+         previewImg.src = ev.target.result;
+@@ -748,7 +766,7 @@ include 'includes/Header.php';
+         img.style.width = '100%';
+         img.style.height = '100%';
+         img.style.objectFit = 'cover';
+-        
++
+         preview.insertBefore(img, preview.firstChild);
+         const span = preview.querySelector('span');
+         if (span) span.style.display = 'none';
+diff --git a/registro_usuario.php b/registro_usuario.php
+index 59e2da3..f7c6f66 100644
+--- a/registro_usuario.php
++++ b/registro_usuario.php
+@@ -30,51 +30,29 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'reenviar_codigo_ajax') {
+   }
+   $email = trim($_POST['email']);
+ 
+-  if (!isset($_SESSION['otp_limits'])) {
+-    $_SESSION['otp_limits'] = ['count' => 0, 'last_time' => 0, 'daily_count' => 0, 'daily_start' => time()];
+-  }
+-  $limits = &$_SESSION['otp_limits'];
+-  $now = time();
+-
+-  if ($now - $limits['daily_start'] > 86400) {
+-    $limits['daily_count'] = 0;
+-    $limits['daily_start'] = $now;
+-    $limits['count'] = 0;
++  if (!verificarBloqueoOTP($email)) {
++    echo json_encode(['success' => false, 'error' => 'Demasiados intentos. Tu cuenta ha sido bloqueada temporalmente por 15 minutos.']);
++    exit;
+   }
+ 
+-  if ($limits['daily_count'] >= 20) {
+-    echo json_encode(['success' => false, 'error' => 'L├¡mite diario alcanzado. Intenta en 24 horas.']);
+-  } elseif ($limits['count'] >= 10) {
+-    if ($now - $limits['last_time'] < 43200) {
+-      echo json_encode(['success' => false, 'error' => 'L├¡mite de 10 intentos alcanzado. Espera 12 horas.']);
+-    } else {
+-      $limits['count'] = 0;
+-    }
+-  } elseif ($limits['count'] >= 7 && ($now - $limits['last_time'] < 1800)) {
+-    echo json_encode(['success' => false, 'error' => 'Demasiados intentos. Espera 30 minutos.']);
+-  }
+ 
+-  if (!isset($error) || !$error) {
+-    $codigo = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+-    $expira = time() + 600;
+-    $stmt_name = $conexion->prepare("SELECT nombre FROM usuarios_publicos WHERE email = ?");
+-    $stmt_name->bind_param("s", $email);
+-    $stmt_name->execute();
+-    $res_name = $stmt_name->get_result();
+-    $nombre_real = ($res_name->num_rows > 0) ? $res_name->fetch_assoc()['nombre'] : 'Usuario';
+-
+-    $stmt = $conexion->prepare("UPDATE usuarios_publicos SET codigo_verificacion=?, codigo_expira=? WHERE email=? AND verificado=0");
+-    $stmt->bind_param("sis", $codigo, $expira, $email);
+-    if ($stmt->execute()) {
+-      $cuerpo = plantillaCorreoOTP($nombre_real, $codigo, 'registro');
+-      enviarCorreo($email, $nombre_real, 'C├│digo de Acceso - Gu├¡a Empresarial', $cuerpo);
+-      $limits['count']++;
+-      $limits['daily_count']++;
+-      $limits['last_time'] = $now;
+-      echo json_encode(['success' => true]);
+-    } else {
+-      echo json_encode(['success' => false, 'error' => 'Error al procesar el env├¡o.']);
+-    }
++  $codigo = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
++  $expira = time() + 600;
++  $stmt_name = $conexion->prepare("SELECT nombre FROM usuarios_publicos WHERE email = ?");
++  $stmt_name->bind_param("s", $email);
++  $stmt_name->execute();
++  $res_name = $stmt_name->get_result();
++  $nombre_real = ($res_name->num_rows > 0) ? $res_name->fetch_assoc()['nombre'] : 'Usuario';
++
++  $stmt = $conexion->prepare("UPDATE usuarios_publicos SET codigo_verificacion=?, codigo_expira=? WHERE email=? AND verificado=0");
++  $stmt->bind_param("sis", $codigo, $expira, $email);
++  if ($stmt->execute()) {
++    $cuerpo = plantillaCorreoOTP($nombre_real, $codigo, 'registro');
++    enviarCorreo($email, $nombre_real, 'C├│digo de Acceso - Gu├¡a Empresarial', $cuerpo);
++    registrarIntentoOTP($email);
++    echo json_encode(['success' => true]);
++  } else {
++    echo json_encode(['success' => false, 'error' => 'Error al procesar el env├¡o.']);
+   }
+   exit;
+ }
+@@ -94,23 +72,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
+       $password = $_POST['password'];
+       $confirm = $_POST['confirm'];
+ 
+-      if (!isset($_SESSION['otp_limits'])) {
+-        $_SESSION['otp_limits'] = ['count' => 0, 'last_time' => 0, 'daily_count' => 0, 'daily_start' => time()];
+-      }
+-      $limits = &$_SESSION['otp_limits'];
+-      $now = time();
+-      if ($now - $limits['daily_start'] > 86400) {
+-        $limits['daily_count'] = 0;
+-        $limits['daily_start'] = $now;
+-        $limits['count'] = 0;
+-      }
+-
+-      if ($limits['daily_count'] >= 20) {
+-        $error = 'L├¡mite diario alcanzado. Intenta ma├▒ana.';
+-      } elseif ($limits['count'] >= 10 && ($now - $limits['last_time'] < 43200)) {
+-        $error = 'L├¡mite de 10 intentos alcanzado. Espera 12 horas.';
+-      } elseif ($limits['count'] >= 7 && ($now - $limits['last_time'] < 1800)) {
+-        $error = 'Demasiados intentos. Espera 30 minutos.';
++      if (!verificarBloqueoOTP($email)) {
++        $error = 'Has superado el l├¡mite de intentos permitidos. Por seguridad, tu cuenta ha sido bloqueada temporalmente por 15 minutos.';
+       } elseif (strlen($password) < 6) {
+         $error = 'La contrase├▒a debe tener al menos 6 caracteres.';
+       } elseif ($password !== $confirm) {
+@@ -130,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
+           if ($stmt->execute()) {
+             $cuerpo = plantillaCorreoOTP($nombre, $codigo, 'registro');
+             enviarCorreo($email, $nombre, 'Verificaci├│n - Gu├¡a Empresarial', $cuerpo);
+-            $limits['count']++;
++            registrarIntentoOTP($email);
+             header("Location: registro_usuario?paso=verificar&email=" . urlencode($email));
+             exit;
+           } else {
+@@ -150,16 +113,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
+       if ($res->num_rows === 1) {
+         $u = $res->fetch_assoc();
+         if ($codigo === $u['codigo_verificacion'] && time() < $u['codigo_expira']) {
+-          $conexion->query("UPDATE usuarios_publicos SET verificado=1, codigo_verificacion=NULL, codigo_expira=NULL WHERE id=" . $u['id']);
++          $stmt_ver = $conexion->prepare("UPDATE usuarios_publicos SET verificado=1, codigo_verificacion=NULL, codigo_expira=NULL WHERE id=?");
++          $stmt_ver->bind_param("i", $u['id']);
++          $stmt_ver->execute();
++          $stmt_ver->close();
+           $_SESSION['usuario_publico_id'] = $u['id'];
+           $_SESSION['usuario_publico_nombre'] = $u['nombre'];
++          $_SESSION['usuario_publico_pw_hash'] = $u['password_hash'];
+           if (isset($_POST['ajax'])) {
+             echo json_encode(['success' => true, 'redirect' => 'mi_cuenta']);
+             exit;
+           }
++          limpiarIntentosOTP($email);
+           header("Location: mi_cuenta");
+           exit;
+         } else {
++          registrarIntentoOTP($email);
+           if (isset($_POST['ajax'])) {
+             echo json_encode(['success' => false, 'error' => 'C├│digo incorrecto o expirado.']);
+             exit;
+@@ -394,7 +363,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
+ 
+     function resendOTP() {
+       const btn = document.getElementById('btn-resend');
+-      const email = "<?= $email_param ?>";
++      const email = "<?= htmlspecialchars($email_param, ENT_QUOTES, 'UTF-8') ?>";
+       const formData = new FormData();
+       formData.append('accion', 'reenviar_codigo_ajax');
+       formData.append('email', email);
+diff --git a/service-worker.js b/service-worker.js
+index 8759803..5db054c 100644
+--- a/service-worker.js
++++ b/service-worker.js
+@@ -1,8 +1,11 @@
+-const CACHE_NAME = "guia-empresarial-v6";
++const CACHE_NAME = "guia-empresarial-v7";
+ 
+ const assetsToCache = [
+   "assets/css/style.css",
+   "assets/css/registro_usuario.css",
++  "assets/css/login.css",
++  "assets/css/login_usuario.css",
++  "assets/css/mi_cuenta.css",
+   "assets/img/image.png",
+   "assets/img/icon-192.png",
+   "assets/img/icon-512.png",
+diff --git a/sobre.php b/sobre.php
+index 97f3d98..866274f 100644
+--- a/sobre.php
++++ b/sobre.php
+@@ -44,7 +44,7 @@ $total_categorias = !empty($info['stat_categorias']) ? $info['stat_categorias']
+ <section class="page-section" style="padding-top: 0;">
+     <div class="container">
+         <div class="section-header">
+-            <h1>En N├║meros</h1>
++            <h2>En N├║meros</h2>
+             <p>El crecimiento de nuestra comunidad empresarial</p>
+         </div>
+         <div class="stats-grid">
+@@ -71,7 +71,7 @@ $total_categorias = !empty($info['stat_categorias']) ? $info['stat_categorias']
+ <section class="page-section" style="padding-top: 0;">
+     <div class="container">
+         <div class="section-header">
+-            <h1>┬┐Por qu├® elegirnos?</h1>
++            <h2>┬┐Por qu├® elegirnos?</h2>
+             <p>Razones para formar parte de Gu├¡a Empresarial</p>
+         </div>
+         <div class="sobre-grid">
+@@ -91,4 +91,4 @@ $total_categorias = !empty($info['stat_categorias']) ? $info['stat_categorias']
+     </div>
+ </section>
+ 
+-<?php include 'includes/footer.php'; ?>
++<?php include 'includes/footer.php'; ?>
+\ No newline at end of file

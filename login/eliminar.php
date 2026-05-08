@@ -33,15 +33,26 @@ if (isset($_POST['id'])) {
     $stmt_g->execute();
     $res_g = $stmt_g->get_result();
     while ($f = $res_g->fetch_assoc()) {
-        if (!empty($f['foto']) && file_exists('../assets/img/' . $f['foto'])) {
-            unlink('../assets/img/' . $f['foto']);
+        if (!empty($f['foto']) && file_exists('../assets/img/empresascarrusel/' . $f['foto'])) {
+            unlink('../assets/img/empresascarrusel/' . $f['foto']);
         }
     }
     $stmt_g->close();
 
-    $conexion->query("DELETE FROM empresa_galeria WHERE id_empresa = $id");
-    $conexion->query("DELETE FROM resenas WHERE id_empresa = $id");
-    $conexion->query("DELETE FROM favoritos WHERE id_empresa = $id");
+    $stmt_del1 = $conexion->prepare("DELETE FROM empresa_galeria WHERE id_empresa = ?");
+    $stmt_del1->bind_param("i", $id);
+    $stmt_del1->execute();
+    $stmt_del1->close();
+
+    $stmt_del2 = $conexion->prepare("DELETE FROM resenas WHERE id_empresa = ?");
+    $stmt_del2->bind_param("i", $id);
+    $stmt_del2->execute();
+    $stmt_del2->close();
+
+    $stmt_del3 = $conexion->prepare("DELETE FROM favoritos WHERE id_empresa = ?");
+    $stmt_del3->bind_param("i", $id);
+    $stmt_del3->execute();
+    $stmt_del3->close();
 
     $stmt = $conexion->prepare("DELETE FROM empresas WHERE id_empresa = ?");
     $stmt->bind_param("i", $id);

@@ -3,30 +3,30 @@ include __DIR__ . '/../db.php';
 $config_file = __DIR__ . '/../includes/admin_config.php';
 define('ACCESO_PERMITIDO', true);
 
-if (isset($_GET['token'])) {
+$acceso_autorizado = false;
+
+// Verificamos el token en cada petición (GET o POST)
+$token_actual = $_GET['token'] ?? ($_POST['token_admin'] ?? '');
+
+if (!empty($token_actual)) {
     if (file_exists($config_file)) {
         $config = include $config_file;
-        if (password_verify($_GET['token'], $config['token_hash'])) {
-            if (session_status() === PHP_SESSION_NONE)
-                session_start();
-            $_SESSION['admin_access_granted'] = true;
-            header("Location: " . APP_URL . "/login/login.php");
-            exit();
-        } else {
-            error_log("Intento de acceso con token inválido desde IP: " . $_SERVER['REMOTE_ADDR']);
+        if (password_verify($token_actual, $config['token_hash'])) {
+            $acceso_autorizado = true;
         }
     }
+}
+
+// Si no hay token válido, la página NO EXISTE para el usuario
+if (!$acceso_autorizado) {
+    http_response_code(404);
+    include __DIR__ . '/../404.php';
+    exit();
 }
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-
-if (empty($_SESSION['admin_access_granted']) || $_SESSION['admin_access_granted'] !== true) {
-    header("Location: " . APP_URL . "/index.php");
-    exit();
-}
-
 
 $error = "";
 $max_intentos = 3;
@@ -47,7 +47,7 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) 
     $error = "Demasiados intentos fallidos. Intenta de nuevo en {$minutos} min {$segundos} seg.";
 } elseif (isset($_POST['usu'], $_POST['pass'])) {
     if (!empty($_POST['segundo_nombre'])) {
-        header("Location: " . APP_URL . "/index.php");
+        header("Location: " . APP_URL . "/index");
         exit();
     }
 
@@ -79,14 +79,16 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) 
                     $_SESSION['usuario'] = $fila['nombre'];
                     $_SESSION['rol'] = $fila['rol'];
                     $_SESSION['id_usuario'] = (int) $fila['id_usuario'];
+                    $_SESSION['admin_access_granted'] = true; // Por compatibilidad con proteger.php
+                    $_SESSION['ua_hash'] = hash('sha256', $_SERVER['HTTP_USER_AGENT'] ?? '');
 
                     $_SESSION['intentos'] = 0;
                     $_SESSION['ultimo_intento'] = 0;
 
                     if ($fila['rol'] === 'admin') {
-                        header("Location: " . APP_URL . "/login/admin.php");
+                        header("Location: " . APP_URL . "/login/admin");
                     } else {
-                        header("Location: " . APP_URL . "/login/editor.php");
+                        header("Location: " . APP_URL . "/login/editor");
                     }
                     exit();
                 } else {
@@ -100,7 +102,6 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) 
                 $error = "Credenciales incorrectas.";
             }
         }
-
         $stmt->close();
     }
 }
@@ -114,7 +115,7 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inicio de sesión</title>
     <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
-    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css">
+    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css?v=<?= time() ?>">
 </head>
 
 <body>
@@ -127,7 +128,9 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) 
             <?php endif; ?>
 
             <?php if (!($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo)): ?>
-                <form action="" method="post" class="login-form">
+                <form action="login?token=<?= htmlspecialchars($token_actual) ?>" method="post" class="login-form">
+                    <input type="hidden" name="token_admin" value="<?= htmlspecialchars($token_actual) ?>">
+
                     <div style="display:none; visibility:hidden; opacity:0; position:absolute; left:-9999px;">
                         <label for="segundo_nombre">Segundo Nombre</label>
                         <input type="text" name="segundo_nombre" id="segundo_nombre" tabindex="-1" autocomplete="off">

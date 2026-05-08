@@ -6,15 +6,19 @@ $error = "";
 $success = "";
 
 if (!in_array($_SESSION['rol'], ['admin', 'editor'])) {
-    header("Location: ../login/login.php");
+    header("Location: login.php");
     exit;
 }
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
-    $nombre = trim($_POST['nombre']);
-    $pass = $_POST['pass'];
-    $rol_usuario = $_POST['rol'];
+    if (!validarCSRF()) {
+        $error = "Token de seguridad inválido. Recargue la página.";
+    }
+
+    $nombre = trim($_POST['nombre'] ?? '');
+    $pass = $_POST['pass'] ?? '';
+    $rol_usuario = $_POST['rol'] ?? '';
 
     if (!empty($nombre) && !empty($pass) && !empty($rol_usuario)) {
 
@@ -67,6 +71,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 <?php endif; ?>
 
                 <form method="post">
+                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
 
                     <div class="form-group">
                         <label>Nombre</label>

@@ -12,286 +12,14 @@ $rol = $_SESSION['rol'];
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel <?= ucfirst($rol) ?></title>
     <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
-    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css">
+    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css?v=<?= time() ?>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <style>
-        #nprogress-bar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 0%;
-            height: 4px;
-            background: #ef4444;
-            z-index: 10000;
-            transition: width 0.4s ease, opacity 0.4s ease;
-            pointer-events: none;
-            box-shadow: 0 0 10px rgba(230, 57, 70, 0.4);
-        }
-
-        .mantenimiento-top-banner {
-            background: #ef4444;
-            color: #fff;
-            text-align: center;
-            padding: 8px;
-            font-size: 12px;
-            font-weight: 800;
-            letter-spacing: 0.5px;
-            position: sticky;
-            top: 0;
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .panel-header-flex {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 40px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #f1f5f9;
-        }
-
-        .usuario-info-premium {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            background: #f8fafc;
-            padding: 8px 15px;
-            border-radius: 50px;
-            border: 1px solid #e2e8f0;
-        }
-
-        .user-details {
-            display: flex;
-            flex-direction: column;
-            line-height: 1.2;
-        }
-
-        .user-welcome {
-            font-size: 11px;
-            color: #94a3b8;
-            text-transform: uppercase;
-            font-weight: 700;
-        }
-
-        .user-name {
-            font-size: 14px;
-            font-weight: 700;
-            color: #1e293b;
-        }
-
-        .btn-logout-premium {
-            width: 35px;
-            height: 35px;
-            background: #fee2e2;
-            color: #ef4444;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            text-decoration: none;
-            transition: 0.3s;
-        }
-
-        .btn-logout-premium:hover {
-            background: #ef4444;
-            color: #fff;
-            transform: scale(1.1);
-        }
-
-        .quick-access-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 15px;
-            margin-bottom: 40px;
-        }
-
-        .qa-card {
-            background: #fff;
-            padding: 20px;
-            border-radius: 16px;
-            text-decoration: none;
-            color: #475569;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            border: 1px solid #e2e8f0;
-            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        }
-
-        .qa-card i {
-            font-size: 24px;
-            color: #1B3A57;
-        }
-
-        .qa-card span {
-            font-size: 13px;
-            font-weight: 700;
-        }
-
-        .qa-card:hover {
-            transform: translateY(-5px);
-            border-color: #1B3A57;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            color: #1B3A57;
-        }
-
-        .stats-dashboard {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-
-        .stat-box {
-            background: #fff;
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            position: relative;
-            border: 1px solid #f1f5f9;
-            transition: 0.3s;
-        }
-
-        .stat-box:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-        }
-
-        .stat-box i {
-            font-size: 32px;
-            color: #1B3A57;
-        }
-
-        .stat-box .stat-title {
-            font-size: 12px;
-            font-weight: 800;
-            color: #94a3b8;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .stat-box .stat-value {
-            font-size: 36px;
-            font-weight: 900;
-            color: #1e293b;
-            line-height: 1;
-        }
-
-        .stat-box .stat-footer {
-            font-size: 13px;
-            color: #64748b;
-            margin-top: auto;
-        }
-
-        .top5-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .top5-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #f8fafc;
-        }
-
-        .top5-item:last-child {
-            border-bottom: none;
-        }
-
-        .top5-name {
-            font-weight: 600;
-            font-size: 13px;
-            color: #475569;
-        }
-
-        .top5-views {
-            background: #f1f5f9;
-            color: #1B3A57;
-            padding: 4px 10px;
-            border-radius: 999px;
-            font-size: 11px;
-            font-weight: 800;
-        }
-
-        .btn-reiniciar-vistas {
-            background: #f8fafc;
-            color: #64748b;
-            padding: 8px 12px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-size: 12px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 15px;
-            font-weight: 700;
-            width: fit-content;
-            border: 1px solid #e2e8f0;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .btn-reiniciar-vistas:hover {
-            background: #fee2e2;
-            color: #ef4444;
-            border-color: #fecaca;
-        }
-
-        .qa-card.qa-primary {
-            background: #1B3A57;
-            color: #fff;
-            border-color: #1B3A57;
-        }
-
-        .qa-card.qa-primary i {
-            color: #fff;
-        }
-
-        .qa-card.qa-primary:hover {
-            background: #152e45;
-        }
-
-        @media (max-width: 768px) {
-            .panel-header-flex {
-                flex-direction: column;
-                gap: 20px;
-                align-items: flex-start;
-            }
-
-            .quick-access-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-    </style>
 </head>
 
 <body>
-    <div id="nprogress-bar"></div>
+    <?php require_once __DIR__ . '/../includes/admin_layout_top.php'; ?>
 
-    <?php if (file_exists(__DIR__ . '/../mantenimiento.flag')): ?>
-        <div id="mantenimiento-banner" class="mantenimiento-top-banner">
-            <i class="bi bi-exclamation-triangle-fill"></i>
-            EL SITIO WEB SE ENCUENTRA ACTUALMENTE EN MANTENIMIENTO (PÚBLICO BLOQUEADO)
-        </div>
-    <?php else: ?>
-        <div id="mantenimiento-banner" class="mantenimiento-top-banner" style="display:none; background: #10b981;">
-            <i class="bi bi-check-circle-fill"></i>
-            EL SITIO WEB ESTÁ EN LÍNEA Y ACCESIBLE PARA EL PÚBLICO
-        </div>
-    <?php endif; ?>
+
 
     <div class="panel-container">
         <section class="panel">
@@ -310,7 +38,7 @@ $rol = $_SESSION['rol'];
             </div>
 
             <div class="quick-access-grid">
-                <a href="<?= APP_URL ?>/index.php" class="qa-card">
+                <a href="<?= APP_URL ?>/index" class="qa-card">
                     <i class="bi bi-house-door"></i>
                     <span>Ver Sitio</span>
                 </a>
@@ -387,25 +115,20 @@ $rol = $_SESSION['rol'];
                 </div>
             </div>
 
-            <div class="system-tools-grid"
-                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 40px;">
-                <div class="stat-box" style="border-top: 4px solid #6366f1; padding: 20px;">
-                    <h3 style="font-size: 15px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
+            <div class="system-tools-grid">
+                <div class="stat-box stat-indigo">
+                    <h3 class="tool-title">
                         <i class="bi bi-shield-lock"></i> Modo Mantenimiento
                     </h3>
-                    <button id="btn-toggle-maint" onclick="toggleMantenimiento()" class="btn-reiniciar-vistas"
-                        style="width: 100%; justify-content: center; transition: 0.3s; padding: 12px; font-weight: 700; border-radius: 12px; border: 2px solid;">
+                    <button id="btn-toggle-maint" onclick="toggleMantenimiento()" class="btn-maint-toggle">
                         <?php $mantenimiento_activo = file_exists(__DIR__ . '/../mantenimiento.flag'); ?>
                         <i class="bi <?= $mantenimiento_activo ? 'bi-toggle-on' : 'bi-toggle-off' ?>"></i>
-                        <span
-                            id="maint-text"><?= $mantenimiento_activo ? 'Desactivar Mantenimiento' : 'Activar Mantenimiento' ?></span>
+                        <span id="maint-text"><?= $mantenimiento_activo ? 'Desactivar Mantenimiento' : 'Activar Mantenimiento' ?></span>
                     </button>
                     <script>
                         const isM = <?= $mantenimiento_activo ? 'true' : 'false' ?>;
                         const btnM = document.getElementById('btn-toggle-maint');
-                        btnM.style.background = isM ? '#fee2e2' : '#f0fdf4';
-                        btnM.style.color = isM ? '#ef4444' : '#16a34a';
-                        btnM.style.borderColor = isM ? '#fecaca' : '#bbf7d0';
+                        btnM.classList.toggle('active', isM);
                     </script>
                 </div>
             </div>

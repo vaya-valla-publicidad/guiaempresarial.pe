@@ -15,6 +15,18 @@ if (!validarCSRF()) {
 
 if (isset($_POST['id'])) {
     $id = intval($_POST['id']);
+
+    $stmt_check = $conexion->prepare("SELECT COUNT(*) as total FROM empresas WHERE id_categoria = ?");
+    $stmt_check->bind_param("i", $id);
+    $stmt_check->execute();
+    $total = $stmt_check->get_result()->fetch_assoc()['total'];
+    $stmt_check->close();
+
+    if ($total > 0) {
+        echo json_encode(['ok' => false, 'error' => "No se puede eliminar: hay $total empresa(s) usando esta categoría."]);
+        exit;
+    }
+
     $stmt = $conexion->prepare("DELETE FROM categorias WHERE id_categoria = ?");
     $stmt->bind_param("i", $id);
 

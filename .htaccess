@@ -5,17 +5,18 @@ ErrorDocument 500 /guiaempresarial.pe/500.php
 Options +FollowSymLinks -Indexes -MultiViews
 ServerSignature Off
 
-# Protección contra acceso a archivos por extensión
 <FilesMatch "\.(log|sql|md|git|env)$">
     Require all denied
 </FilesMatch>
 
-# Proteger archivos específicos
+<Files ".env">
+    Require all denied
+</Files>
+
 <Files "README.md">
     Require all denied
 </Files>
 
-# Headers de seguridad adicionales
 <IfModule mod_headers.c>
     Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
@@ -23,25 +24,24 @@ ServerSignature Off
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    RewriteBase /guiaempresarial.pe/
     DirectoryIndex index.php
 
-    # Redirigir /index a la raíz /
     RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s(.*)/index(\.php)? [NC]
     RewriteRule ^ %1/ [R=301,L]
 
     RewriteRule ^negocio/([^/]+)/?$ empresas.php?slug=$1 [L,QSA]
     RewriteRule ^rubro/([^/]+)/?$ empresas.php?cat_slug=$1 [L,QSA]
 
-    # Ocultar extensión .php: Si se pide .php manualmente, redireccionar a la versión limpia
-    RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s([^.]+)\.php [NC]
-    RewriteRule ^ %1 [R=301,L]
+    RewriteCond %{THE_REQUEST} \s([^.]+)\.php [NC]
+    RewriteRule ^ %1 [R=301,L,QSA]
 
-    # Mapeo interno: Si se pide un archivo sin extensión, servir el .php si existe
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME}\.php -f
-    RewriteRule ^([^\.]+)$ $1.php [NC,L]
+    RewriteRule ^(.*?)/?$ $1.php [L,QSA]
 
-    # Redirección de archivos no encontrados
+    RewriteRule ^login/?$ index.php [R=302,L]
+
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^(.*)$ 404.php [L]

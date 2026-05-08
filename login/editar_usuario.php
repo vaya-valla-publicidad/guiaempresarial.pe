@@ -1,7 +1,6 @@
 <?php require_once __DIR__ . '/proteger.php'; ?>
 <?php
 include '../db.php';
-include '../includes/security.php';
 
 $error = "";
 $success = "";

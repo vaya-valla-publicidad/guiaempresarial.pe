@@ -1,8 +1,11 @@
-const CACHE_NAME = "guia-empresarial-v6";
+const CACHE_NAME = "guia-empresarial-v7";
 
 const assetsToCache = [
   "assets/css/style.css",
   "assets/css/registro_usuario.css",
+  "assets/css/login.css",
+  "assets/css/login_usuario.css",
+  "assets/css/mi_cuenta.css",
   "assets/img/image.png",
   "assets/img/icon-192.png",
   "assets/img/icon-512.png",

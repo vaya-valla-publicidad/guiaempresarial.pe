@@ -51,38 +51,42 @@ $panel_url = ($rol === 'admin') ? 'admin.php' : 'editor.php';
     </div>
   </div>
 
-  <div class="drop-zone" id="drop-zone">
-    <i class="bi bi-cloud-arrow-up drop-icon"></i>
-    <span class="drop-label">Arrastra una imagen aquí para subirla</span>
-    <span class="drop-sublabel">JPG, PNG, WEBP — máximo 5 MB</span>
+        <h2 class="section-title"><i class="bi bi-cloud-arrow-up"></i> 1. Subir Nueva Imagen</h2>
+        <div class="drop-zone" id="drop-zone">
+          <i class="bi bi-cloud-arrow-up drop-icon"></i>
+          <span class="drop-label">Arrastra una imagen aquí para subirla</span>
+          <span class="drop-sublabel">JPG, PNG, WEBP — máximo 5 MB</span>
 
-    <div class="drop-preview-wrap" id="drop-preview-wrap">
-      <img id="drop-preview-img" src="" alt="preview">
-      <span class="drop-preview-name" id="drop-preview-name"></span>
-    </div>
+          <div class="drop-preview-wrap" id="drop-preview-wrap">
+            <img id="drop-preview-img" src="" alt="Vista previa" class="drop-preview-img">
+            <span class="drop-preview-name" id="drop-preview-name"></span>
+          </div>
+        </div>
 
-    <div class="drop-footer">
-      <button class="btn btn-file-select" id="btn-file-select" type="button">
-        <i class="bi bi-folder2-open"></i> Seleccionar archivo
-      </button>
-      <div class="time-upload-wrap" style="margin: 0 20px;">
-        <label for="inp-tiempo"><i class="bi bi-clock"></i> Tiempo:</label>
-        <input type="range" id="inp-tiempo" min="1" max="30" value="5" step="1">
-        <span class="time-upload-val" id="inp-tiempo-val">5s</span>
+        <div class="upload-actions-bar">
+          <button class="btn btn-file-select" id="btn-file-select" type="button">
+            <i class="bi bi-folder2-open"></i> Seleccionar archivo
+          </button>
+          <div class="time-upload-wrap">
+            <label for="inp-tiempo"><i class="bi bi-clock"></i> Tiempo visible:</label>
+            <input type="range" id="inp-tiempo" min="1" max="30" value="5" step="1">
+            <span class="time-upload-val" id="inp-tiempo-val">5s</span>
+          </div>
+          <button class="btn btn-upload" id="btn-subir" disabled>
+            <i class="bi bi-plus-circle"></i> Agregar al banner
+          </button>
+        </div>
       </div>
-      <button class="btn btn-upload" id="btn-subir" disabled>
-        <i class="bi bi-plus-circle"></i> Agregar al banner
-      </button>
-    </div>
-  </div>
-  <input type="file" id="inp-file" accept="image/*">
+      <input type="file" id="inp-file" accept="image/*" style="display: none;">
 
-  <div class="banner-toolbar">
-    <span><i class="bi bi-grip-horizontal"></i> Arrastra las tarjetas para reordenar</span>
-    <button class="btn-save-order" id="btn-guardar-orden">
-      <i class="bi bi-check2-circle"></i> Guardar orden
-    </button>
-  </div>
+      <div class="management-section" style="margin-top: 50px;">
+        <h2 class="section-title"><i class="bi bi-grid-3x3-gap"></i> 2. Gestionar y Reordenar</h2>
+        <div class="banner-toolbar">
+          <span><i class="bi bi-grip-horizontal"></i> Arrastra las tarjetas para cambiar el orden de aparición</span>
+          <button class="btn-save-order" id="btn-guardar-orden">
+            <i class="bi bi-check2-circle"></i> Guardar orden
+          </button>
+        </div>
 
   <div class="banner-grid" id="banner-grid">
     <?php if ($banners && $banners->num_rows > 0): ?>
@@ -170,18 +174,22 @@ function setFile(file) {
   const wrap = document.getElementById('drop-preview-wrap');
   const img  = document.getElementById('drop-preview-img');
   const name = document.getElementById('drop-preview-name');
-  img.src  = URL.createObjectURL(file);
-  name.textContent = file.name + ' (' + (file.size / 1024).toFixed(0) + ' KB)';
-  wrap.classList.add('show');
 
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    img.src = e.target.result;
+    wrap.classList.add('show');
+  };
+  reader.readAsDataURL(file);
+
+  name.textContent = file.name + ' (' + (file.size / 1024).toFixed(0) + ' KB)';
   document.getElementById('drop-zone').classList.add('has-file');
   document.getElementById('btn-subir').disabled = false;
 }
 
-document.getElementById('drop-zone').addEventListener('click', e => {
-  if (e.target.closest('#btn-subir') || e.target.closest('.time-upload-wrap')) return;
-  document.getElementById('inp-file').click();
-});
+    document.getElementById('drop-zone').addEventListener('click', () => {
+      document.getElementById('inp-file').click();
+    });
 document.getElementById('btn-file-select').addEventListener('click', e => {
   e.stopPropagation();
   document.getElementById('inp-file').click();
@@ -288,7 +296,7 @@ Sortable.create(document.getElementById('banner-grid'), {
   forceFallback: true,
   fallbackOnBody: true,
   swapThreshold: 0.65,
-  filter: 'input, button, label, .slider-sw, .card-controls, .time-control',
+  filter: 'input, button, label, .slider-sw, .card-controls, .time-control, .rng-tiempo, .rng-tiempo *',
   preventOnFilter: false,
   onEnd: () => {
     renumerarOrden();

@@ -520,9 +520,10 @@ include 'includes/Header.php';
                     <?php if (isset($_SESSION['usuario_publico_id'])): ?>
                         <?php if ($usuario_tiene_resena): ?>
                             <div id="resenaEditHint" class="resena-alerta resena-alerta-info">Ya tienes tu reseña enviada. Presiona
-                                <strong>Editar</strong> en tu comentario para actualizarla.</div>
+                                <strong>Editar</strong> en tu comentario para actualizarla.
+                            </div>
                         <?php endif; ?>
-                        <form id="formResena" method="POST" action="<?= APP_URL ?>/empresas.php?empresa=<?= $id_empresa ?>"
+                        <form id="formResena" method="POST" action="<?= APP_URL ?>/empresas?empresa=<?= $id_empresa ?>"
                             style="<?= $usuario_tiene_resena ? 'display:none;' : '' ?>">
                             <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
                             <input type="hidden" name="id_empresa" value="<?= $id_empresa ?>">
@@ -556,12 +557,12 @@ include 'includes/Header.php';
                             <p style="color:var(--muted);margin-bottom:16px;font-size:15px;">
                                 Inicia sesión para dejar tu reseña
                             </p>
-                            <a href="<?= APP_URL ?>/login_usuario.php?redir=<?= urlencode('negocio/' . ($slug_param ?? $id_empresa) . '#resenas') ?>"
+                            <a href="<?= APP_URL ?>/login_usuario?redir=<?= urlencode('negocio/' . ($slug_param ?? $id_empresa) . '#resenas') ?>"
                                 class="btn-enviar-resena" style="text-decoration:none;display:inline-block;">
                                 Iniciar sesión
                             </a>
                             <p style="margin-top:12px;font-size:13px;color:var(--muted);">
-                                ¿No tienes cuenta? <a href="<?= APP_URL ?>/registro_usuario.php"
+                                ¿No tienes cuenta? <a href="<?= APP_URL ?>/registro_usuario"
                                     style="color:var(--rojo);font-weight:700;">Regístrate gratis</a>
                             </p>
                         </div>

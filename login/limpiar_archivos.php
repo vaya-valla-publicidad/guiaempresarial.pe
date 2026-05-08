@@ -18,16 +18,16 @@ $accion = $_POST['accion'] ?? 'escanear';
 $archivos_usados = [];
 
 $res = $conexion->query("SELECT logo FROM empresas WHERE logo IS NOT NULL AND logo != ''");
-while($f = $res->fetch_assoc()) $archivos_usados['assets/img/'.basename($f['logo'])] = true;
+while($f = $res->fetch_assoc()) $archivos_usados[strtolower('assets/img/'.trim(basename($f['logo'])))] = true;
 
 $res = $conexion->query("SELECT foto FROM empresa_galeria WHERE foto IS NOT NULL AND foto != ''");
-while($f = $res->fetch_assoc()) $archivos_usados['assets/img/empresascarrusel/'.basename($f['foto'])] = true;
+while($f = $res->fetch_assoc()) $archivos_usados[strtolower('assets/img/empresascarrusel/'.trim(basename($f['foto'])))] = true;
 
 $res = $conexion->query("SELECT foto_perfil FROM usuarios_publicos WHERE foto_perfil IS NOT NULL AND foto_perfil != ''");
-while($f = $res->fetch_assoc()) $archivos_usados['assets/img/avatars/'.basename($f['foto_perfil'])] = true;
+while($f = $res->fetch_assoc()) $archivos_usados[strtolower('assets/img/avatars/'.trim(basename($f['foto_perfil'])))] = true;
 
 $res = $conexion->query("SELECT imagen FROM banner_carrusel WHERE imagen IS NOT NULL AND imagen != ''");
-while($f = $res->fetch_assoc()) $archivos_usados['assets/img/banner/'.basename($f['imagen'])] = true;
+while($f = $res->fetch_assoc()) $archivos_usados[strtolower('assets/img/banner/'.trim(basename($f['imagen'])))] = true;
 
 $directorios = [
     '../assets/img' => 'assets/img/',
@@ -54,7 +54,7 @@ foreach($directorios as $ruta_fisica => $prefijo) {
         
         if (strpos($file, 'icon-') === 0 || $file === 'image.png' || $file === 'whatsapp2.png' || $file === 'facebook2.png' || $file === 'messenger2.png') continue;
 
-        if (!isset($archivos_usados[$ruta_relativa])) {
+        if (!isset($archivos_usados[strtolower($ruta_relativa)])) {
             $archivos_huerfanos[] = [
                 'nombre' => $file,
                 'ruta' => $ruta_relativa,
@@ -71,6 +71,7 @@ if ($accion === 'escanear') {
     foreach($archivos_huerfanos as $h) {
         if (file_exists($h['ruta_full'])) {
             if (unlink($h['ruta_full'])) {
+                logSeguridad('archivo_huerfano_borrado', 'Archivo eliminado: ' . $h['ruta']);
                 $borrados++;
             }
         }

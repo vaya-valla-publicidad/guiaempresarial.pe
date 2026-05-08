@@ -115,7 +115,10 @@ if ($accion === 'reordenar') {
     foreach ($ids as $orden => $id) {
         $id = intval($id);
         $orden = intval($orden) + 1;
-        $conexion->query("UPDATE banner_carrusel SET orden = $orden WHERE id_banner = $id");
+        $stmt_r = $conexion->prepare("UPDATE banner_carrusel SET orden = ? WHERE id_banner = ?");
+        $stmt_r->bind_param("ii", $orden, $id);
+        $stmt_r->execute();
+        $stmt_r->close();
     }
     echo json_encode(['ok' => true]);
     exit;

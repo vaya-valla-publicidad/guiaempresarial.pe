@@ -7,7 +7,7 @@ include '../includes/security.php';
 $rol = $_SESSION['rol'];
 
 if (!isset($_GET['id'])) {
-    header("Location: panel.php");
+    header("Location: " . (($_SESSION['rol'] === 'admin') ? 'admin.php' : 'editor.php'));
     exit;
 }
 
@@ -393,7 +393,7 @@ $total_destacadas = $conexion->query("SELECT COUNT(*) as total FROM empresas WHE
                     .then(data => {
                         if (data.trim() === 'ok') elemento.remove();
                         else showToast('No se pudo eliminar: ' + data, 'error');
-                    }); -
+                    });
             });
         }
 

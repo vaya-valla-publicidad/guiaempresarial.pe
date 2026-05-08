@@ -26,7 +26,7 @@ echo renderBreadcrumbs($bc_items);
                 $nombre = htmlspecialchars($fila['nombre']);
                 $icono = htmlspecialchars($fila['icono'] ?? 'bi-briefcase');
                 ?>
-                <a href="<?= APP_URL ?>/rubro/<?= $fila['slug'] ?>" class="categoria-card reveal">
+                <a href="<?= APP_URL ?>/rubro/<?= htmlspecialchars($fila['slug']) ?>" class="categoria-card reveal">
                     <div class="categoria-icono-wrap">
                         <i class="bi <?= $icono ?>"></i>
                     </div>

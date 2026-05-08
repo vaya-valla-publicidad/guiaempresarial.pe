@@ -44,7 +44,7 @@ $total_categorias = !empty($info['stat_categorias']) ? $info['stat_categorias'] 
 <section class="page-section" style="padding-top: 0;">
     <div class="container">
         <div class="section-header">
-            <h1>En Números</h1>
+            <h2>En Números</h2>
             <p>El crecimiento de nuestra comunidad empresarial</p>
         </div>
         <div class="stats-grid">
@@ -71,7 +71,7 @@ $total_categorias = !empty($info['stat_categorias']) ? $info['stat_categorias'] 
 <section class="page-section" style="padding-top: 0;">
     <div class="container">
         <div class="section-header">
-            <h1>¿Por qué elegirnos?</h1>
+            <h2>¿Por qué elegirnos?</h2>
             <p>Razones para formar parte de Guía Empresarial</p>
         </div>
         <div class="sobre-grid">

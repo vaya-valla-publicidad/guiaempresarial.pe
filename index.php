@@ -94,7 +94,7 @@ $total_slides = count($slides);
 <section id="empresas" class="page-section empresas-section">
     <div class="container">
         <div class="section-header">
-            <h1>⭐ Empresas Destacadas</h1>
+            <h2>⭐ Empresas Destacadas</h2>
         </div>
         <?php
         $sql_destacadas = "SELECT e.*, c.nombre AS categoria, c.slug AS cat_slug,
@@ -122,7 +122,7 @@ $total_slides = count($slides);
 <section class="page-section empresas-section" style="padding-top:0;">
     <div class="container">
         <div class="section-header">
-            <h1>👁 Más Vistas</h1>
+            <h2>👁 Más Vistas</h2>
             <p>Las empresas más populares de nuestra guía</p>
         </div>
         <?php
@@ -152,7 +152,7 @@ $total_slides = count($slides);
 <section id="categorias" class="page-section">
     <div class="container">
         <div class="section-header">
-            <h1>Categorías</h1>
+            <h2>Categorías</h2>
             <p>Explora los rubros destacados</p>
         </div>
         <div class="categorias-modern">

@@ -55,8 +55,9 @@ if (!function_exists('inputLimpio')) {
 if (!function_exists('limpiarParaLike')) {
     function limpiarParaLike($data)
     {
-        $data = str_replace(['%', '_', '\\'], ['\%', '\_', '\\\\'], $data);
-        return inputLimpio($data);
+        $data = trim(strip_tags($data));
+        $data = str_replace(['%', '_', '\\'], ['\\%', '\\_', '\\\\'], $data);
+        return $data;
     }
 }
 
@@ -240,6 +241,10 @@ if (!function_exists('logSeguridad')) {
         if (!is_dir($dirLog)) {
             mkdir($dirLog, 0755, true);
         }
+        if (file_exists($archivoLog) && filesize($archivoLog) > 5 * 1024 * 1024) {
+            $nuevoNombre = str_replace('.log', '_' . date('Y-m-d_H-i-s') . '.log', $archivoLog);
+            rename($archivoLog, $nuevoNombre);
+        }
         file_put_contents($archivoLog, $entrada, FILE_APPEND);
     }
 }
@@ -334,11 +339,11 @@ if (isset($_SESSION['usuario_publico_id']) && isset($conexion)) {
     $stmt_check_session->bind_param("i", $_SESSION['usuario_publico_id']);
     $stmt_check_session->execute();
     $res_check_session = $stmt_check_session->get_result()->fetch_assoc();
-    
+
     if ($res_check_session) {
         $hash_actual = $res_check_session['password_hash'];
         $hash_sesion = $_SESSION['usuario_publico_pw_hash'] ?? '';
-        
+
         if ($hash_actual !== $hash_sesion) {
             // La contraseña ha cambiado, invalidamos esta sesión
             session_unset();
@@ -346,5 +351,74 @@ if (isset($_SESSION['usuario_publico_id']) && isset($conexion)) {
             header('Location: login_usuario?error=sesion_expirada');
             exit;
         }
+    }
+}
+
+if (!function_exists('registrarIntentoOTP')) {
+    function registrarIntentoOTP($identificador)
+    {
+        global $conexion;
+        if (!$conexion) return;
+        $stmt = $conexion->prepare("INSERT INTO otp_intentos (identificador, intentos, ultimo_intento) 
+                                   VALUES (?, 1, NOW()) 
+                                   ON DUPLICATE KEY UPDATE 
+                                   intentos = intentos + 1, 
+                                   ultimo_intento = NOW()");
+        $stmt->bind_param("s", $identificador);
+        $stmt->execute();
+        $stmt->close();
+    }
+}
+
+if (!function_exists('verificarBloqueoOTP')) {
+    function verificarBloqueoOTP($identificador)
+    {
+        global $conexion;
+        if (!$conexion) return true;
+        $stmt = $conexion->prepare("SELECT intentos, ultimo_intento, bloqueado_hasta FROM otp_intentos WHERE identificador = ?");
+        $stmt->bind_param("s", $identificador);
+        $stmt->execute();
+        $res = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        if (!$res) return true;
+
+        $now = time();
+        if ($res['bloqueado_hasta']) {
+            $bloqueo = strtotime($res['bloqueado_hasta']);
+            if ($now < $bloqueo) return false;
+        }
+
+        if ($res['intentos'] >= 5) {
+            $ultimo = strtotime($res['ultimo_intento']);
+            if ($now - $ultimo < 900) { // 15 minutos
+                if (!$res['bloqueado_hasta']) {
+                    $bloqueo_hasta = date('Y-m-d H:i:s', $now + 900);
+                    $stmt_upd = $conexion->prepare("UPDATE otp_intentos SET bloqueado_hasta = ? WHERE identificador = ?");
+                    $stmt_upd->bind_param("ss", $bloqueo_hasta, $identificador);
+                    $stmt_upd->execute();
+                    $stmt_upd->close();
+                }
+                return false;
+            } else {
+                $stmt_res = $conexion->prepare("UPDATE otp_intentos SET intentos = 0, bloqueado_hasta = NULL WHERE identificador = ?");
+                $stmt_res->bind_param("s", $identificador);
+                $stmt_res->execute();
+                $stmt_res->close();
+            }
+        }
+        return true;
+    }
+}
+
+if (!function_exists('limpiarIntentosOTP')) {
+    function limpiarIntentosOTP($identificador)
+    {
+        global $conexion;
+        if (!$conexion) return;
+        $stmt = $conexion->prepare("DELETE FROM otp_intentos WHERE identificador = ?");
+        $stmt->bind_param("s", $identificador);
+        $stmt->execute();
+        $stmt->close();
     }
 }

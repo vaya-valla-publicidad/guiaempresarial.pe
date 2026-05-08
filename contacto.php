@@ -1,4 +1,5 @@
 <?php
+include 'db.php';
 $seo_title = "Contacto Oficial - Guía Empresarial";
 $seo_description = "Comunícate con Guía Empresarial a través de WhatsApp, Facebook y Messenger. Horario de atención: Lunes a Sábado de 9:00 AM a 6:00 PM.";
 include 'includes/Header.php';

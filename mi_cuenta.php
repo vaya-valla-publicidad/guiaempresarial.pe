@@ -53,7 +53,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
       $res_u = $stmt_check->get_result()->fetch_assoc();
 
       if ($codigo === $res_u['codigo_verificacion'] && time() < $res_u['codigo_expira']) {
-        $conexion->query("UPDATE usuarios_publicos SET codigo_verificacion=NULL, codigo_expira=NULL WHERE id=" . $id_u);
+        $stmt_clear = $conexion->prepare("UPDATE usuarios_publicos SET codigo_verificacion=NULL, codigo_expira=NULL WHERE id=?");
+        $stmt_clear->bind_param("i", $id_u);
+        $stmt_clear->execute();
+        $stmt_clear->close();
         $_SESSION['login_bypass_pw'] = true;
         unset($_SESSION['esperando_otp_pw']);
         $exito = 'Código verificado. Ahora puede establecer su nueva contraseña.';
@@ -64,8 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
 
     if ($_POST['accion'] === 'borrar_cuenta') {
       $pw_confirm = $_POST['password_confirm'] ?? '';
-      
-      // Verificar contraseña
+
       $stmt_v = $conexion->prepare("SELECT password_hash FROM usuarios_publicos WHERE id = ?");
       $stmt_v->bind_param("i", $id_u);
       $stmt_v->execute();
@@ -74,27 +76,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
       if (!password_verify($pw_confirm, $u_v['password_hash'])) {
         $error = 'La contraseña de confirmación es incorrecta.';
       } else {
-        // Eliminar reseñas
+
         $stmt_del_r = $conexion->prepare("DELETE FROM resenas WHERE id_usuario_publico = ?");
         $stmt_del_r->bind_param("i", $id_u);
         $stmt_del_r->execute();
 
-        // Eliminar favoritos
+
         $stmt_del_f = $conexion->prepare("DELETE FROM favoritos WHERE id_usuario_publico = ?");
         $stmt_del_f->bind_param("i", $id_u);
         $stmt_del_f->execute();
 
-        // Eliminar votos
+
         $stmt_del_v = $conexion->prepare("DELETE FROM resena_votos WHERE id_usuario_publico = ?");
         $stmt_del_v->bind_param("i", $id_u);
         $stmt_del_v->execute();
 
-        // Eliminar foto física
+
         if (!empty($u['foto_perfil']) && file_exists('assets/img/avatars/' . $u['foto_perfil'])) {
           unlink('assets/img/avatars/' . $u['foto_perfil']);
         }
 
-        // Eliminar usuario
+
         $stmt_del_u = $conexion->prepare("DELETE FROM usuarios_publicos WHERE id = ?");
         $stmt_del_u->bind_param("i", $id_u);
         $stmt_del_u->execute();
@@ -149,8 +151,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
         $stmt_pw = $conexion->prepare("UPDATE usuarios_publicos SET password_hash = ? WHERE id = ?");
         $stmt_pw->bind_param("si", $hash, $id_u);
         $stmt_pw->execute();
-        
-        // Destruimos la sesión y redirigimos al login para confirmar
+
+
         session_unset();
         session_destroy();
         header('Location: login_usuario?exito=pw_cambiada');
@@ -262,49 +264,55 @@ include 'includes/Header.php';
 ?>
 
 <style>
-.mc-avatar-preview {
-  position: relative !important;
-  width: 120px !important;
-  height: 120px !important;
-  border-radius: 50% !important;
-  overflow: hidden !important;
-  background: #f0f2f5 !important;
-  border: 4px solid #ffffff !important;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-  display: block !important;
-}
-.mc-avatar-preview img, .mc-avatar-preview span {
-  position: absolute !important;
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) !important;
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  font-size: 48px !important;
-  font-weight: 800 !important;
-  color: #3b5998 !important;
-  margin: 0 !important;
-}
-.mc-avatar-overlay {
-  position: absolute !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  background: rgba(0, 0, 0, 0.45) !important;
-  backdrop-filter: blur(2px) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  opacity: 0 !important;
-  transition: all 0.3s ease !important;
-  z-index: 5 !important;
-}
-.mc-avatar-preview:hover .mc-avatar-overlay { opacity: 1 !important; }
+  .mc-avatar-preview {
+    position: relative !important;
+    width: 120px !important;
+    height: 120px !important;
+    border-radius: 50% !important;
+    overflow: hidden !important;
+    background: #f0f2f5 !important;
+    border: 4px solid #ffffff !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    display: block !important;
+  }
+
+  .mc-avatar-preview img,
+  .mc-avatar-preview span {
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 48px !important;
+    font-weight: 800 !important;
+    color: #3b5998 !important;
+    margin: 0 !important;
+  }
+
+  .mc-avatar-overlay {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: rgba(0, 0, 0, 0.45) !important;
+    backdrop-filter: blur(2px) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    opacity: 0 !important;
+    transition: all 0.3s ease !important;
+    z-index: 5 !important;
+  }
+
+  .mc-avatar-preview:hover .mc-avatar-overlay {
+    opacity: 1 !important;
+  }
 </style>
 
 <div class="mc-page">
@@ -376,7 +384,8 @@ include 'includes/Header.php';
       <div class="mc-panel active" id="mc-panel-perfil">
 
         <div class="mc-avatar-row">
-          <div class="mc-avatar-preview" id="mc-avatar-preview" onclick="document.getElementById('foto_input').click()" style="cursor:pointer; position:relative; overflow:hidden;">
+          <div class="mc-avatar-preview" id="mc-avatar-preview" onclick="document.getElementById('foto_input').click()"
+            style="cursor:pointer; position:relative; overflow:hidden;">
             <?php if (!empty($u['foto_perfil'])): ?>
               <img src="assets/img/avatars/<?= htmlspecialchars($u['foto_perfil']) ?>?t=<?= time() ?>" alt="Avatar">
             <?php else: ?>
@@ -386,11 +395,14 @@ include 'includes/Header.php';
               <i class="bi bi-camera"></i>
             </div>
           </div>
-          <div id="avatar-confirm-wrap" style="display:none; margin-top:15px; text-align:center; animation:fadeIn 0.3s;">
-             <button type="button" onclick="document.getElementById('form-foto').submit()" class="mc-btn-primary" style="padding: 8px 16px; font-size:12px; background: #10b981; border:none; border-radius:8px; color:white; font-weight:700; cursor:pointer;">
-               <i class="bi bi-check-circle"></i> Confirmar foto
-             </button>
-             <button type="button" onclick="location.reload()" style="background:none; border:none; color:#ef4444; font-size:11px; cursor:pointer; margin-left:12px; font-weight:600;">Cancelar</button>
+          <div id="avatar-confirm-wrap"
+            style="display:none; margin-top:15px; text-align:center; animation:fadeIn 0.3s;">
+            <button type="button" onclick="document.getElementById('form-foto').submit()" class="mc-btn-primary"
+              style="padding: 8px 16px; font-size:12px; background: #10b981; border:none; border-radius:8px; color:white; font-weight:700; cursor:pointer;">
+              <i class="bi bi-check-circle"></i> Confirmar foto
+            </button>
+            <button type="button" onclick="location.reload()"
+              style="background:none; border:none; color:#ef4444; font-size:11px; cursor:pointer; margin-left:12px; font-weight:600;">Cancelar</button>
           </div>
           <div class="mc-avatar-actions">
             <form method="POST" enctype="multipart/form-data" id="form-foto">
@@ -453,7 +465,8 @@ include 'includes/Header.php';
             <input type="hidden" name="actual" value="bypass">
 
             <?php if ($error === 'MISMA_PW'): ?>
-              <div class="mc-alerta mc-alerta-warning" style="margin-bottom: 20px; border-left: 4px solid var(--aura-yellow);">
+              <div class="mc-alerta mc-alerta-warning"
+                style="margin-bottom: 20px; border-left: 4px solid var(--aura-yellow);">
                 <div style="display:flex; align-items:center; gap:10px;">
                   <i class="bi bi-exclamation-triangle" style="font-size: 20px;"></i>
                   <div>
@@ -512,7 +525,8 @@ include 'includes/Header.php';
             <div class="mc-form-footer">
               <button type="submit" class="mc-btn-primary">Verificar código</button>
               <div style="display:inline-block; margin-left: 10px;">
-                <button type="submit" name="accion" value="enviar_codigo_pw" class="mc-btn-ghost mc-btn-sm" id="btn-resend-pw" formnovalidate>
+                <button type="submit" name="accion" value="enviar_codigo_pw" class="mc-btn-ghost mc-btn-sm"
+                  id="btn-resend-pw" formnovalidate>
                   Reenviar código
                 </button>
                 <span id="timer-resend-pw" style="font-size: 12px; color: rgba(255,255,255,0.4); display: none;">
@@ -633,21 +647,25 @@ include 'includes/Header.php';
 
         <div class="mc-danger-zone">
           <h3>Eliminar cuenta</h3>
-          <p>Una vez eliminada, no hay marcha atrás. Por seguridad, ingresa tu contraseña para confirmar la eliminación definitiva.</p>
+          <p>Una vez eliminada, no hay marcha atrás. Por seguridad, ingresa tu contraseña para confirmar la eliminación
+            definitiva.</p>
           <form method="POST" id="form-borrar-cuenta">
             <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
             <input type="hidden" name="accion" value="borrar_cuenta">
-            
+
             <div id="confirm-del-wrap" style="display: none; margin-bottom: 15px; animation: fadeIn 0.3s ease;">
-              <input type="password" name="password_confirm" placeholder="Confirma tu contraseña actual" 
-                     style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; color: white; outline: none;">
+              <input type="password" name="password_confirm" placeholder="Confirma tu contraseña actual"
+                style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; color: white; outline: none;">
             </div>
 
-            <button type="button" class="mc-btn-delete" id="btn-pre-delete" onclick="mostrarConfirmacionBorrado()">Eliminar cuenta</button>
-            
+            <button type="button" class="mc-btn-delete" id="btn-pre-delete"
+              onclick="mostrarConfirmacionBorrado()">Eliminar cuenta</button>
+
             <div id="final-del-actions" style="display: none; gap: 10px; animation: fadeIn 0.3s ease;">
-               <button type="submit" class="mc-btn-delete" style="background: #ef4444; flex: 1;">Confirmar eliminación</button>
-               <button type="button" class="mc-btn-ghost" style="flex: 1;" onclick="cancelarBorrarCuenta()">Cancelar</button>
+              <button type="submit" class="mc-btn-delete" style="background: #ef4444; flex: 1;">Confirmar
+                eliminación</button>
+              <button type="button" class="mc-btn-ghost" style="flex: 1;"
+                onclick="cancelarBorrarCuenta()">Cancelar</button>
             </div>
           </form>
         </div>
@@ -732,7 +750,7 @@ include 'includes/Header.php';
     if (!file) return;
     const reader = new FileReader();
     reader.onload = ev => {
-      // Actualizar imagen en el panel lateral (preview principal)
+
       const previewImg = document.querySelector('#mc-avatar-preview img');
       if (previewImg) {
         previewImg.src = ev.target.result;
@@ -748,7 +766,7 @@ include 'includes/Header.php';
         img.style.width = '100%';
         img.style.height = '100%';
         img.style.objectFit = 'cover';
-        
+
         preview.insertBefore(img, preview.firstChild);
         const span = preview.querySelector('span');
         if (span) span.style.display = 'none';

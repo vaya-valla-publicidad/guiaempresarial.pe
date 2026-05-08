@@ -28,9 +28,15 @@ if ($accion === 'destacar') {
         echo json_encode(['ok' => false, 'error' => 'Ya hay 3 destacadas. Quita una primero.']);
         exit;
     }
-    $conexion->query("UPDATE empresas SET destacada=1 WHERE id_empresa=$id");
+    $stmt_d = $conexion->prepare("UPDATE empresas SET destacada=1 WHERE id_empresa=?");
+    $stmt_d->bind_param("i", $id);
+    $stmt_d->execute();
+    $stmt_d->close();
 } else {
-    $conexion->query("UPDATE empresas SET destacada=0 WHERE id_empresa=$id");
+    $stmt_d = $conexion->prepare("UPDATE empresas SET destacada=0 WHERE id_empresa=?");
+    $stmt_d->bind_param("i", $id);
+    $stmt_d->execute();
+    $stmt_d->close();
 }
 
 echo json_encode(['ok' => true]);
