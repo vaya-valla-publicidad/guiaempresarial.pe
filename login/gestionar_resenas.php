@@ -102,12 +102,15 @@ if (!$id_empresa):
     return;
 endif;
 
-$res = $conexion->query("
+$stmt_emp = $conexion->prepare("
     SELECT e.*, c.nombre AS categoria
     FROM empresas e
     JOIN categorias c ON e.id_categoria = c.id_categoria
-    WHERE e.id_empresa = $id_empresa
+    WHERE e.id_empresa = ?
 ");
+$stmt_emp->bind_param("i", $id_empresa);
+$stmt_emp->execute();
+$res = $stmt_emp->get_result();
 if (!$res || $res->num_rows === 0) {
     header("Location: gestionar_resenas.php");
     exit;
@@ -117,18 +120,27 @@ $logo = !empty($fila['logo']) ? htmlspecialchars($fila['logo']) : null;
 $telefono = $fila['telefono'] ?? null;
 $numero = $telefono ? preg_replace('/[^0-9]/', '', $telefono) : null;
 
-$fotos_q = $conexion->query("SELECT foto FROM empresa_galeria WHERE id_empresa = $id_empresa ORDER BY orden ASC, id_foto ASC");
+$stmt_fotos = $conexion->prepare("SELECT foto FROM empresa_galeria WHERE id_empresa = ? ORDER BY orden ASC, id_foto ASC");
+$stmt_fotos->bind_param("i", $id_empresa);
+$stmt_fotos->execute();
+$fotos_q = $stmt_fotos->get_result();
 $fotos_arr = [];
 if ($fotos_q && $fotos_q->num_rows > 0)
     while ($f = $fotos_q->fetch_assoc())
         $fotos_arr[] = $f['foto'];
 
-$resenas_q = $conexion->query("SELECT * FROM resenas WHERE id_empresa = $id_empresa ORDER BY fecha DESC");
+$stmt_resenas = $conexion->prepare("SELECT * FROM resenas WHERE id_empresa = ? ORDER BY fecha DESC");
+$stmt_resenas->bind_param("i", $id_empresa);
+$stmt_resenas->execute();
+$resenas_q = $stmt_resenas->get_result();
 $total_resenas = $resenas_q ? $resenas_q->num_rows : 0;
 $promedio = 0;
 $resenas_arr = [];
 if ($total_resenas > 0) {
-    $sum_q = $conexion->query("SELECT AVG(estrellas) as prom FROM resenas WHERE id_empresa = $id_empresa");
+    $stmt_prom = $conexion->prepare("SELECT AVG(estrellas) as prom FROM resenas WHERE id_empresa = ?");
+    $stmt_prom->bind_param("i", $id_empresa);
+    $stmt_prom->execute();
+    $sum_q = $stmt_prom->get_result();
     $promedio = round($sum_q->fetch_assoc()['prom'], 1);
     while ($r = $resenas_q->fetch_assoc())
         $resenas_arr[] = $r;

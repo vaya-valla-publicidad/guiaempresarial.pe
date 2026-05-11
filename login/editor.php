@@ -123,7 +123,8 @@ $rol = $_SESSION['rol'];
                     <button id="btn-toggle-maint" onclick="toggleMantenimiento()" class="btn-maint-toggle">
                         <?php $mantenimiento_activo = file_exists(__DIR__ . '/../mantenimiento.flag'); ?>
                         <i class="bi <?= $mantenimiento_activo ? 'bi-toggle-on' : 'bi-toggle-off' ?>"></i>
-                        <span id="maint-text"><?= $mantenimiento_activo ? 'Desactivar Mantenimiento' : 'Activar Mantenimiento' ?></span>
+                        <span
+                            id="maint-text"><?= $mantenimiento_activo ? 'Desactivar Mantenimiento' : 'Activar Mantenimiento' ?></span>
                     </button>
                     <script>
                         const isM = <?= $mantenimiento_activo ? 'true' : 'false' ?>;
@@ -394,12 +395,12 @@ $rol = $_SESSION['rol'];
                         }
                     })
                     .catch(e => {
-                        showToast('Error de red al intentar eliminar.', 'error'));
-                btn.disabled = false;
-                btn.innerText = 'Eliminar';
-                btn.style.opacity = '1';
+                        showToast('Error de red al intentar eliminar.', 'error');
+                        btn.disabled = false;
+                        btn.innerText = 'Eliminar';
+                        btn.style.opacity = '1';
+                    });
             });
-        });
         }
 
         function toggleMantenimiento() {

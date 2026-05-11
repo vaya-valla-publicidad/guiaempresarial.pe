@@ -19,8 +19,8 @@ $redir = validarRedireccionLocal($_GET['redir'] ?? '');
 $paso = $_GET['paso'] ?? 'email';
 $email_param = $_GET['email'] ?? '';
 
-$max_30m = 50; // Aumentado para pruebas
-$max_24h = 100; // Aumentado para pruebas
+$max_30m = 5;
+$max_24h = 10;
 
 if (isset($_POST['accion']) && $_POST['accion'] === 'reenviar_codigo_ajax') {
   if (!validarCSRF()) {
@@ -41,7 +41,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'reenviar_codigo_ajax') {
     $limits['count'] = 0;
   }
 
-  if ($limits['daily_count'] >= 20) {
+  if ($limits['daily_count'] >= $max_24h) {
     echo json_encode(['success' => false, 'error' => 'Límite diario alcanzado. Intenta en 24 horas.']);
   } elseif ($limits['count'] >= 10) {
     if ($now - $limits['last_time'] < 3600) {
@@ -49,7 +49,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'reenviar_codigo_ajax') {
     } else {
       $limits['count'] = 0;
     }
-  } elseif ($limits['count'] >= 7 && ($now - $limits['last_time'] < 1800)) {
+  } elseif ($limits['count'] >= $max_30m && ($now - $limits['last_time'] < 1800)) {
     echo json_encode(['success' => false, 'error' => 'Demasiados intentos. Espera 30 minutos.']);
   } else {
     $stmt = $conexion->prepare("SELECT nombre FROM usuarios_publicos WHERE email = ?");
@@ -105,11 +105,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
           $limits['count'] = 0;
         }
 
-        if ($limits['daily_count'] >= 20) {
+        if ($limits['daily_count'] >= $max_24h) {
           $error = 'Límite diario de 20 intentos alcanzado. Intenta en 24 horas.';
         } elseif ($limits['count'] >= 10 && ($now - $limits['last_time'] < 43200)) {
           $error = 'Has superado el límite de 10 intentos. Por seguridad, espera 12 horas.';
-        } elseif ($limits['count'] >= 7 && ($now - $limits['last_time'] < 1800)) {
+        } elseif ($limits['count'] >= $max_30m && ($now - $limits['last_time'] < 1800)) {
           $error = 'Demasiados intentos. Espera 30 minutos.';
         } else {
           $stmt = $conexion->prepare("SELECT id, nombre, verificado FROM usuarios_publicos WHERE email = ?");

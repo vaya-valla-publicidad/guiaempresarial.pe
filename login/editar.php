@@ -70,19 +70,21 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
 
         if (!empty($_FILES['logo']['name'])) {
-            if (!validarImagen($_FILES['logo']['tmp_name'], $_FILES['logo']['name'])) {
-                $error = "El logo debe ser una imagen válida (jpg, jpeg, png, webp, gif).";
-            } else {
-                $nombreArchivo = uniqid() . "_" . basename($_FILES['logo']['name']);
-                $rutaDestino = __DIR__ . "/../assets/img/" . $nombreArchivo;
-                if (move_uploaded_file($_FILES['logo']['tmp_name'], $rutaDestino)) {
-                    if (!empty($empresa['logo']) && file_exists(__DIR__ . "/../assets/img/" . $empresa['logo'])) {
-                        unlink(__DIR__ . "/../assets/img/" . $empresa['logo']);
-                    }
-                    $logo = $nombreArchivo;
-                } else {
-                    $error = "No se pudo guardar el logo. Intenta nuevamente.";
+            $resultado = subirImagenSegura($_FILES['logo'], __DIR__ . '/../assets/img/', [
+                'tamano_max' => 2 * 1024 * 1024,
+                'redimensionar' => true,
+                'ancho_max' => 800,
+                'alto_max' => 600,
+                'webp' => true
+            ]);
+
+            if ($resultado['success']) {
+                if (!empty($empresa['logo']) && file_exists(__DIR__ . "/../assets/img/" . $empresa['logo'])) {
+                    unlink(__DIR__ . "/../assets/img/" . $empresa['logo']);
                 }
+                $logo = $resultado['nombre'];
+            } else {
+                $error = "Error con el logo: " . $resultado['error'];
             }
         }
 
@@ -131,16 +133,27 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         }
 
                         foreach ($_FILES['fotos']['tmp_name'] as $key => $tmp) {
-                            if (empty($_FILES['fotos']['name'][$key])) {
+                            if (empty($_FILES['fotos']['name'][$key]))
                                 continue;
-                            }
-                            if (!validarImagen($tmp, $_FILES['fotos']['name'][$key])) {
-                                continue;
-                            }
-                            $nombreFoto = uniqid() . "_" . basename($_FILES['fotos']['name'][$key]);
-                            $ruta = $carpeta . $nombreFoto;
-                            if (move_uploaded_file($tmp, $ruta)) {
+
+                            $foto_file = [
+                                'name' => $_FILES['fotos']['name'][$key],
+                                'type' => $_FILES['fotos']['type'][$key],
+                                'tmp_name' => $_FILES['fotos']['tmp_name'][$key],
+                                'error' => $_FILES['fotos']['error'][$key],
+                                'size' => $_FILES['fotos']['size'][$key]
+                            ];
+
+                            $res_f = subirImagenSegura($foto_file, $carpeta, [
+                                'redimensionar' => true,
+                                'ancho_max' => 1200,
+                                'alto_max' => 900,
+                                'webp' => true
+                            ]);
+
+                            if ($res_f['success']) {
                                 $orden_actual++;
+                                $nombreFoto = $res_f['nombre'];
                                 $stmtFoto = $conexion->prepare("INSERT INTO empresa_galeria (id_empresa, foto, orden) VALUES (?, ?, ?)");
                                 if ($stmtFoto) {
                                     $stmtFoto->bind_param("isi", $id, $nombreFoto, $orden_actual);
