@@ -358,7 +358,8 @@ if (!function_exists('registrarIntentoOTP')) {
     function registrarIntentoOTP($identificador)
     {
         global $conexion;
-        if (!$conexion) return;
+        if (!$conexion)
+            return;
         $stmt = $conexion->prepare("INSERT INTO otp_intentos (identificador, intentos, ultimo_intento) 
                                    VALUES (?, 1, NOW()) 
                                    ON DUPLICATE KEY UPDATE 
@@ -374,19 +375,22 @@ if (!function_exists('verificarBloqueoOTP')) {
     function verificarBloqueoOTP($identificador)
     {
         global $conexion;
-        if (!$conexion) return true;
+        if (!$conexion)
+            return true;
         $stmt = $conexion->prepare("SELECT intentos, ultimo_intento, bloqueado_hasta FROM otp_intentos WHERE identificador = ?");
         $stmt->bind_param("s", $identificador);
         $stmt->execute();
         $res = $stmt->get_result()->fetch_assoc();
         $stmt->close();
 
-        if (!$res) return true;
+        if (!$res)
+            return true;
 
         $now = time();
         if ($res['bloqueado_hasta']) {
             $bloqueo = strtotime($res['bloqueado_hasta']);
-            if ($now < $bloqueo) return false;
+            if ($now < $bloqueo)
+                return false;
         }
 
         if ($res['intentos'] >= 5) {
@@ -415,7 +419,8 @@ if (!function_exists('limpiarIntentosOTP')) {
     function limpiarIntentosOTP($identificador)
     {
         global $conexion;
-        if (!$conexion) return;
+        if (!$conexion)
+            return;
         $stmt = $conexion->prepare("DELETE FROM otp_intentos WHERE identificador = ?");
         $stmt->bind_param("s", $identificador);
         $stmt->execute();

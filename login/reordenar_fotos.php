@@ -28,14 +28,18 @@ if (empty($data['orden']) || !is_array($data['orden'])) {
 $orden = array_map('intval', $data['orden']);
 
 $stmt = $conexion->prepare("UPDATE empresa_galeria SET orden = ? WHERE id_foto = ?");
-
+$check = $conexion->prepare("SELECT id_foto FROM empresa_galeria WHERE id_foto = ? LIMIT 1");
 foreach ($orden as $posicion => $id_foto) {
-    if ($id_foto <= 0)
-        continue;
+    if ($id_foto <= 0) continue;
+    $check->bind_param("i", $id_foto);
+    $check->execute();
+    if ($check->get_result()->num_rows === 0) continue;
+
     $pos = intval($posicion) + 1;
     $stmt->bind_param("ii", $pos, $id_foto);
     $stmt->execute();
 }
+$check->close();
 
 $stmt->close();
 echo json_encode(['ok' => true]);

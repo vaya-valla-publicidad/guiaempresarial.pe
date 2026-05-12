@@ -44,6 +44,11 @@ if (isset($_POST['id'])) {
     $stmt_del1->execute();
     $stmt_del1->close();
 
+    $stmt_votos = $conexion->prepare("DELETE rv FROM resena_votos rv INNER JOIN resenas r ON rv.id_resena = r.id_resena WHERE r.id_empresa = ?");
+    $stmt_votos->bind_param("i", $id);
+    $stmt_votos->execute();
+    $stmt_votos->close();
+
     $stmt_del2 = $conexion->prepare("DELETE FROM resenas WHERE id_empresa = ?");
     $stmt_del2->bind_param("i", $id);
     $stmt_del2->execute();

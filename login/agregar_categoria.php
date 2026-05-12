@@ -8,42 +8,46 @@ $error = "";
 $success = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $nombre = inputLimpio($_POST['nombre'] ?? '');
-    $icono = inputLimpio($_POST['icono'] ?? '') ?: 'bi-briefcase';
-    $slug = generarSlug($nombre);
+    if (!validarCSRF($_POST['csrf_token'] ?? '')) {
+        $error = "Token inválido.";
+    } else {
+        $nombre = inputLimpio($_POST['nombre'] ?? '');
+        $icono = inputLimpio($_POST['icono'] ?? '') ?: 'bi-briefcase';
+        $slug = generarSlug($nombre);
 
-    if (!empty($nombre)) {
-        $slug_base = $slug;
-        $contador = 1;
-        $check = $conexion->prepare("SELECT id_categoria FROM categorias WHERE slug = ?");
-        $check->bind_param("s", $slug);
-        $check->execute();
-        $check->store_result();
-        while ($check->num_rows > 0) {
-            $slug = $slug_base . '-' . $contador;
-            $contador++;
-            $check->close();
+        if (!empty($nombre)) {
+            $slug_base = $slug;
+            $contador = 1;
             $check = $conexion->prepare("SELECT id_categoria FROM categorias WHERE slug = ?");
             $check->bind_param("s", $slug);
             $check->execute();
             $check->store_result();
-        }
-        $check->close();
-
-        $stmt = $conexion->prepare("INSERT INTO categorias (nombre, icono, slug) VALUES (?, ?, ?)");
-        $stmt->bind_param("sss", $nombre, $icono, $slug);
-        try {
-            if (!$stmt->execute()) {
-                $error = "Error: " . $stmt->error;
-            } else {
-                $success = "Categoría agregada correctamente ✅";
+            while ($check->num_rows > 0) {
+                $slug = $slug_base . '-' . $contador;
+                $contador++;
+                $check->close();
+                $check = $conexion->prepare("SELECT id_categoria FROM categorias WHERE slug = ?");
+                $check->bind_param("s", $slug);
+                $check->execute();
+                $check->store_result();
             }
-        } catch (mysqli_sql_exception $e) {
-            $error = "Ya existe una categoría con ese nombre.";
+            $check->close();
+
+            $stmt = $conexion->prepare("INSERT INTO categorias (nombre, icono, slug) VALUES (?, ?, ?)");
+            $stmt->bind_param("sss", $nombre, $icono, $slug);
+            try {
+                if (!$stmt->execute()) {
+                    $error = "Error: " . $stmt->error;
+                } else {
+                    $success = "Categoría agregada correctamente ✅";
+                }
+            } catch (mysqli_sql_exception $e) {
+                $error = "Ya existe una categoría con ese nombre.";
+            }
+            $stmt->close();
+        } else {
+            $error = "El nombre no puede estar vacío.";
         }
-        $stmt->close();
-    } else {
-        $error = "El nombre no puede estar vacío.";
     }
 }
 ?>
@@ -96,6 +100,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 <?php endif; ?>
 
                 <form method="post">
+                    <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
                     <div class="form-group">
                         <label>Nombre de la categoría</label>
                         <input type="text" name="nombre" required>

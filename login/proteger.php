@@ -22,3 +22,12 @@ if (!in_array($_SESSION['rol'], ['admin', 'editor'])) {
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
+
+if (!empty($_SESSION['ua_hash'])) {
+    $ua_actual = hash('sha256', $_SERVER['HTTP_USER_AGENT'] ?? '');
+    if (!hash_equals($_SESSION['ua_hash'], $ua_actual)) {
+        session_destroy();
+        header("Location: " . APP_URL . "/index");
+        exit();
+    }
+}

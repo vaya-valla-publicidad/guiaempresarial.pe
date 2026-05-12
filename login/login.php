@@ -1,5 +1,6 @@
 <?php
 include __DIR__ . '/../db.php';
+require_once __DIR__ . '/../includes/security.php';
 $config_file = __DIR__ . '/../includes/admin_config.php';
 define('ACCESO_PERMITIDO', true);
 
@@ -31,6 +32,11 @@ if (session_status() === PHP_SESSION_NONE) {
 $error = "";
 $max_intentos = 3;
 $bloqueo_minutos = 5;
+
+if (!verificarRateLimit('login_admin', 10, 300)) {
+    http_response_code(429);
+    die('Demasiados intentos. Espera 5 minutos.');
+}
 
 if (!isset($_SESSION['intentos'])) {
     $_SESSION['intentos'] = 0;
@@ -128,7 +134,7 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) 
             <?php endif; ?>
 
             <?php if (!($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo)): ?>
-                <form action="login?token=<?= htmlspecialchars($token_actual) ?>" method="post" class="login-form">
+                <form action="login" method="post" class="login-form">
                     <input type="hidden" name="token_admin" value="<?= htmlspecialchars($token_actual) ?>">
 
                     <div style="display:none; visibility:hidden; opacity:0; position:absolute; left:-9999px;">

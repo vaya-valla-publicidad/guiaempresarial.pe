@@ -17,25 +17,20 @@ if ($accion === 'subir') {
         echo json_encode(['ok' => false, 'error' => 'No se recibió ningún archivo.']);
         exit;
     }
-    $file = $_FILES['imagen'];
-    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
-    if (!in_array($ext, $allowed)) {
-        echo json_encode(['ok' => false, 'error' => 'Formato no permitido. Usa JPG, PNG, WEBP o GIF.']);
-        exit;
-    }
-    if ($file['size'] > 5 * 1024 * 1024) {
-        echo json_encode(['ok' => false, 'error' => 'El archivo supera los 5 MB.']);
-        exit;
-    }
     $carpeta = __DIR__ . '/../assets/img/banner/';
-    if (!is_dir($carpeta))
-        mkdir($carpeta, 0755, true);
-    $nombre = 'banner_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
-    if (!move_uploaded_file($file['tmp_name'], $carpeta . $nombre)) {
-        echo json_encode(['ok' => false, 'error' => 'Error al guardar la imagen.']);
+    if (!is_dir($carpeta)) mkdir($carpeta, 0755, true);
+    $resultado = subirImagenSegura($_FILES['imagen'], $carpeta, [
+        'tamano_max' => 5 * 1024 * 1024,
+        'redimensionar' => true,
+        'ancho_max' => 1920,
+        'alto_max' => 600,
+        'webp' => true
+    ]);
+    if (!$resultado['success']) {
+        echo json_encode(['ok' => false, 'error' => $resultado['error']]);
         exit;
     }
+    $nombre = $resultado['nombre'];
     $res_orden = $conexion->query("SELECT COALESCE(MAX(orden),0)+1 AS sig FROM banner_carrusel");
     $sig_orden = (int) $res_orden->fetch_assoc()['sig'];
     $tiempo = max(1000, min(30000, intval($_POST['tiempo_ms'] ?? 5000)));
