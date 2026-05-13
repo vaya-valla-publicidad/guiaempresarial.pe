@@ -161,7 +161,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
             exit;
           }
         } else {
-          header("Location: registro_usuario?email=" . urlencode($email));
+          header("Location: login_usuario?paso=codigo&email=" . urlencode($email) . ($redir ? '&redir=' . urlencode($redir) : ''));
           exit;
         }
       }

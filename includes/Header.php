@@ -52,8 +52,10 @@ if (isset($_SESSION['usuario_publico_id'])) {
   <meta property="twitter:description" content="<?= htmlspecialchars($seo_description) ?>">
   <meta property="twitter:image" content="<?= htmlspecialchars($seo_image) ?>">
 
-  <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css?v=<?= time() ?>">
-  <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/mi_cuenta.css?v=<?= time() ?>">
+  <link rel="stylesheet"
+    href="<?= APP_URL ?>/assets/css/style.css?v=<?= filemtime(__DIR__ . '/../assets/css/style.css') ?>">
+  <link rel="stylesheet"
+    href="<?= APP_URL ?>/assets/css/mi_cuenta.css?v=<?= filemtime(__DIR__ . '/../assets/css/mi_cuenta.css') ?>">
   <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -173,7 +175,6 @@ if (isset($_SESSION['usuario_publico_id'])) {
         link.addEventListener('click', cerrarMenu);
       });
 
-      // Cerrar menú automáticamente al pasar a vista de PC
       window.addEventListener('resize', () => {
         if (window.innerWidth > 900) {
           if (navActions && navActions.classList.contains('open')) {

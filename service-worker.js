@@ -1,4 +1,4 @@
-const CACHE_NAME = "guia-empresarial-v7";
+const CACHE_NAME = 'guiaempresarial-v8.2.2';
 
 const assetsToCache = [
   "assets/css/style.css",
@@ -22,13 +22,11 @@ self.addEventListener("install", event => {
   self.skipWaiting();
 });
 
-self.addEventListener("activate", event => {
+self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
-        keys.map(key => {
-          if (key !== CACHE_NAME) return caches.delete(key);
-        })
+        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
       )
     )
   );
@@ -38,7 +36,6 @@ self.addEventListener("activate", event => {
 self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
 
-  // No cachear las peticiones de navegación (HTML/PHP dinámico)
   if (event.request.mode === 'navigate') {
     event.respondWith(fetch(event.request));
     return;

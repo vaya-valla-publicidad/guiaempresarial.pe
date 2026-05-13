@@ -51,7 +51,7 @@ if (!$id_empresa):
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Gestionar Reseñas</title>
         <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
-        <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css?v=<?= time() ?>">
+        <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css?v=<?= filemtime(__DIR__ . '/../assets/css/login.css') ?>">
     </head>
 
     <body>
@@ -154,7 +154,7 @@ if ($total_resenas > 0) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reseñas — <?= htmlspecialchars($fila['nombre']) ?></title>
     <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
-    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css?v=<?= filemtime(__DIR__ . '/../assets/css/style.css') ?>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
 

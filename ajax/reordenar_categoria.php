@@ -1,5 +1,4 @@
 <?php
-session_start();
 if (empty($_SESSION['rol']) || $_SESSION['rol'] !== 'admin') {
     echo json_encode(['ok' => false, 'error' => 'Sin permisos']);
     exit;

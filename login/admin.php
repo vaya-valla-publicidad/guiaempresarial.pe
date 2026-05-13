@@ -12,7 +12,7 @@ $rol = $_SESSION['rol'];
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel <?= ucfirst($rol) ?></title>
     <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
-    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css?v=<?= filemtime(__DIR__ . '/../assets/css/login.css') ?>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
 
@@ -66,10 +66,16 @@ $rol = $_SESSION['rol'];
 
 
             <?php
-            $stats_global = $conexion->query("SELECT SUM(vistas) as total, COUNT(*) as empresas FROM empresas")->fetch_assoc();
+            $stmt_stats = $conexion->prepare("SELECT SUM(vistas) as total, COUNT(*) as empresas FROM empresas");
+            $stmt_stats->execute();
+            $stats_global = $stmt_stats->get_result()->fetch_assoc();
+            
             $total_visitas = $stats_global['total'] ?? 0;
             $total_emp = $stats_global['empresas'] ?? 0;
-            $top5 = $conexion->query("SELECT nombre, vistas FROM empresas ORDER BY vistas DESC LIMIT 5");
+
+            $stmt_top5 = $conexion->prepare("SELECT nombre, vistas FROM empresas ORDER BY vistas DESC LIMIT 5");
+            $stmt_top5->execute();
+            $top5 = $stmt_top5->get_result();
             ?>
 
             <div class="stats-dashboard">
@@ -242,7 +248,9 @@ $rol = $_SESSION['rol'];
             <br><br>
 
             <?php
-            $res_dest = $conexion->query("SELECT id_empresa, nombre FROM empresas WHERE destacada=1");
+            $stmt_dest = $conexion->prepare("SELECT id_empresa, nombre FROM empresas WHERE destacada=1");
+            $stmt_dest->execute();
+            $res_dest = $stmt_dest->get_result();
             $total_dest = $res_dest->num_rows;
             ?>
             <div class="destacadas-section">
@@ -296,14 +304,16 @@ $rol = $_SESSION['rol'];
                         <th>Acciones</th>
                     </tr>
                     <?php
-                    $res = $conexion->query("
-    SELECT e.id_empresa, e.logo, e.nombre, e.telefono, e.direccion,
-           e.descripcion, e.horario, e.ubicacion_link, e.link_empresa,
-           e.destacada, e.vistas, c.nombre AS categoria
-    FROM empresas e
-    JOIN categorias c ON e.id_categoria = c.id_categoria
-    ORDER BY e.destacada DESC, e.vistas DESC
-");
+                    $stmt_emp = $conexion->prepare("
+                        SELECT e.id_empresa, e.logo, e.nombre, e.telefono, e.direccion,
+                               e.descripcion, e.horario, e.ubicacion_link, e.link_empresa,
+                               e.destacada, e.vistas, c.nombre AS categoria
+                        FROM empresas e
+                        JOIN categorias c ON e.id_categoria = c.id_categoria
+                        ORDER BY e.destacada DESC, e.vistas DESC
+                    ");
+                    $stmt_emp->execute();
+                    $res = $stmt_emp->get_result();
                     while ($fila = $res->fetch_assoc()):
                         ?>
                         <tr id="fila-<?= $fila['id_empresa'] ?>">

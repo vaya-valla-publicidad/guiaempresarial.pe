@@ -44,11 +44,17 @@ if (!function_exists('validarImagen')) {
         return in_array($mime, $mimesPermitidos);
     }
 }
-
 if (!function_exists('inputLimpio')) {
     function inputLimpio($data)
     {
-        return htmlspecialchars(strip_tags(trim($data)), ENT_QUOTES, 'UTF-8');
+        return strip_tags(trim($data));
+    }
+}
+
+if (!function_exists('esc')) {
+    function esc($data)
+    {
+        return htmlspecialchars($data ?? '', ENT_QUOTES, 'UTF-8');
     }
 }
 
@@ -333,7 +339,6 @@ if (!function_exists('validarRedireccionLocal')) {
     }
 }
 
-// Verificación de integridad de sesión (Cerrar sesiones si cambia la contraseña)
 if (isset($_SESSION['usuario_publico_id']) && isset($conexion)) {
     $stmt_check_session = $conexion->prepare("SELECT password_hash FROM usuarios_publicos WHERE id = ?");
     $stmt_check_session->bind_param("i", $_SESSION['usuario_publico_id']);
@@ -345,7 +350,6 @@ if (isset($_SESSION['usuario_publico_id']) && isset($conexion)) {
         $hash_sesion = $_SESSION['usuario_publico_pw_hash'] ?? '';
 
         if ($hash_actual !== $hash_sesion) {
-            // La contraseña ha cambiado, invalidamos esta sesión
             session_unset();
             session_destroy();
             header('Location: login_usuario?error=sesion_expirada');

@@ -1,8 +1,4 @@
 <?php
-/**
- * Bloque común para la parte superior de los paneles administrativos
- * Incluye: Barra de progreso NProgress y Banner de Mantenimiento
- */
 ?>
 <div id="nprogress-bar"></div>
 <?php if (file_exists(__DIR__ . '/../mantenimiento.flag')): ?>

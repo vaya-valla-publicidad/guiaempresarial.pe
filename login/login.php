@@ -6,7 +6,6 @@ define('ACCESO_PERMITIDO', true);
 
 $acceso_autorizado = false;
 
-// Verificamos el token en cada petición (GET o POST)
 $token_actual = $_GET['token'] ?? ($_POST['token_admin'] ?? '');
 
 if (!empty($token_actual)) {
@@ -18,7 +17,6 @@ if (!empty($token_actual)) {
     }
 }
 
-// Si no hay token válido, la página NO EXISTE para el usuario
 if (!$acceso_autorizado) {
     http_response_code(404);
     include __DIR__ . '/../404.php';
@@ -121,7 +119,7 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inicio de sesión</title>
     <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
-    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css?v=<?= filemtime(__DIR__ . '/../assets/css/login.css') ?>">
 </head>
 
 <body>

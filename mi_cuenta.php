@@ -66,36 +66,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
     }
 
     if ($_POST['accion'] === 'borrar_cuenta') {
-      $pw_confirm = $_POST['password_confirm'] ?? '';
-
-      $stmt_v = $conexion->prepare("SELECT password_hash FROM usuarios_publicos WHERE id = ?");
+      $stmt_v = $conexion->prepare("SELECT password_hash, email, nombre, codigo_verificacion, codigo_expira FROM usuarios_publicos WHERE id = ?");
       $stmt_v->bind_param("i", $id_u);
       $stmt_v->execute();
       $u_v = $stmt_v->get_result()->fetch_assoc();
 
-      if (!password_verify($pw_confirm, $u_v['password_hash'])) {
-        $error = 'La contraseña de confirmación es incorrecta.';
-      } else {
+      $autorizado = false;
 
+      if ($u_v['password_hash']) {
+        $pw_confirm = $_POST['password_confirm'] ?? '';
+        if (password_verify($pw_confirm, $u_v['password_hash'])) {
+          $autorizado = true;
+        } else {
+          $error = 'La contraseña de confirmación es incorrecta.';
+        }
+      } else {
+        $codigo_input = trim($_POST['codigo_borrar'] ?? '');
+        if ($codigo_input && $codigo_input === $u_v['codigo_verificacion'] && time() < $u_v['codigo_expira']) {
+          $autorizado = true;
+        } else {
+          $error = 'Código de verificación incorrecto o expirado.';
+        }
+      }
+
+      if ($autorizado) {
         $stmt_del_r = $conexion->prepare("DELETE FROM resenas WHERE id_usuario_publico = ?");
         $stmt_del_r->bind_param("i", $id_u);
         $stmt_del_r->execute();
-
 
         $stmt_del_f = $conexion->prepare("DELETE FROM favoritos WHERE id_usuario_publico = ?");
         $stmt_del_f->bind_param("i", $id_u);
         $stmt_del_f->execute();
 
-
         $stmt_del_v = $conexion->prepare("DELETE FROM resena_votos WHERE id_usuario_publico = ?");
         $stmt_del_v->bind_param("i", $id_u);
         $stmt_del_v->execute();
 
-
         if (!empty($u['foto_perfil']) && file_exists('assets/img/avatars/' . $u['foto_perfil'])) {
           unlink('assets/img/avatars/' . $u['foto_perfil']);
         }
-
 
         $stmt_del_u = $conexion->prepare("DELETE FROM usuarios_publicos WHERE id = ?");
         $stmt_del_u->bind_param("i", $id_u);
@@ -104,6 +113,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
         session_destroy();
         header('Location: index?msg=cuenta_eliminada');
         exit;
+      }
+    }
+
+    if ($_POST['accion'] === 'enviar_codigo_borrar') {
+      if (!verificarRateLimit('envio_otp_del', 5, 300)) {
+        $error = 'Demasiados intentos. Espera unos minutos.';
+      } else {
+        $codigo = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $expira = time() + 600;
+        $stmt_upd = $conexion->prepare("UPDATE usuarios_publicos SET codigo_verificacion=?, codigo_expira=? WHERE id=?");
+        $stmt_upd->bind_param("sii", $codigo, $expira, $id_u);
+        if ($stmt_upd->execute()) {
+          $cuerpo = plantillaCorreoOTP($u['nombre'], $codigo, 'borrado');
+          if (enviarCorreo($u['email'], $u['nombre'], 'Código de Confirmación - Eliminar Cuenta', $cuerpo)) {
+            $exito = 'Código de seguridad enviado a su correo.';
+            $_SESSION['esperando_otp_del'] = true;
+          } else {
+            $error = 'No se pudo enviar el correo.';
+          }
+        }
       }
     }
 
@@ -647,26 +676,41 @@ include 'includes/Header.php';
 
         <div class="mc-danger-zone">
           <h3>Eliminar cuenta</h3>
-          <p>Una vez eliminada, no hay marcha atrás. Por seguridad, ingresa tu contraseña para confirmar la eliminación
-            definitiva.</p>
+          <p>Una vez eliminada, no hay marcha atrás. Por seguridad, confirma la eliminación definitiva.</p>
           <form method="POST" id="form-borrar-cuenta">
             <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
-            <input type="hidden" name="accion" value="borrar_cuenta">
 
-            <div id="confirm-del-wrap" style="display: none; margin-bottom: 15px; animation: fadeIn 0.3s ease;">
-              <input type="password" name="password_confirm" placeholder="Confirma tu contraseña actual"
-                style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; color: white; outline: none;">
-            </div>
+            <?php if ($u['password_hash']): ?>
+              <input type="hidden" name="accion" value="borrar_cuenta">
+              <div id="confirm-del-wrap" style="display: none; margin-bottom: 15px; animation: fadeIn 0.3s ease;">
+                <input type="password" name="password_confirm" placeholder="Confirma tu contraseña actual"
+                  style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; color: white; outline: none;">
+              </div>
+              <button type="button" class="mc-btn-delete" id="btn-pre-delete"
+                onclick="mostrarConfirmacionBorrado()">Eliminar cuenta</button>
+            <?php else: ?>
+              <?php if (isset($_SESSION['esperando_otp_del'])): ?>
+                <input type="hidden" name="accion" value="borrar_cuenta">
+                <div style="margin-bottom: 15px;">
+                  <input type="text" name="codigo_borrar" placeholder="Ingresa el código de 6 dígitos" maxlength="6"
+                    style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; color: white; outline: none; text-align: center; letter-spacing: 4px;">
+                </div>
+                <button type="submit" class="mc-btn-delete" style="background: #ef4444;">Confirmar eliminación
+                  definitiva</button>
+              <?php else: ?>
+                <input type="hidden" name="accion" value="enviar_codigo_borrar">
+                <button type="submit" class="mc-btn-delete">Enviar código de confirmación para eliminar</button>
+              <?php endif; ?>
+            <?php endif; ?>
 
-            <button type="button" class="mc-btn-delete" id="btn-pre-delete"
-              onclick="mostrarConfirmacionBorrado()">Eliminar cuenta</button>
-
-            <div id="final-del-actions" style="display: none; gap: 10px; animation: fadeIn 0.3s ease;">
-              <button type="submit" class="mc-btn-delete" style="background: #ef4444; flex: 1;">Confirmar
-                eliminación</button>
-              <button type="button" class="mc-btn-ghost" style="flex: 1;"
-                onclick="cancelarBorrarCuenta()">Cancelar</button>
-            </div>
+            <?php if ($u['password_hash']): ?>
+              <div id="final-del-actions" style="display: none; gap: 10px; animation: fadeIn 0.3s ease;">
+                <button type="submit" class="mc-btn-delete" style="background: #ef4444; flex: 1;">Confirmar
+                  eliminación</button>
+                <button type="button" class="mc-btn-ghost" style="flex: 1;"
+                  onclick="cancelarBorrarCuenta()">Cancelar</button>
+              </div>
+            <?php endif; ?>
           </form>
         </div>
 

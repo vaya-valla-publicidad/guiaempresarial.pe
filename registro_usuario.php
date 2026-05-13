@@ -14,8 +14,19 @@ $exito = '';
 $paso = $_GET['paso'] ?? 'registro';
 $email_param = $_GET['email'] ?? '';
 
-if (isset($_GET['check_email'])) {
-  $email = trim($_GET['check_email']);
+if (isset($_POST['accion']) && $_POST['accion'] === 'check_email_ajax') {
+  header('Content-Type: application/json');
+  if (!validarCSRF()) {
+    echo json_encode(['error' => 'CSRF invalido']);
+    exit;
+  }
+
+  if (!verificarRateLimit('check_email_reg', 20, 60)) {
+    echo json_encode(['error' => 'Demasiadas consultas.']);
+    exit;
+  }
+
+  $email = trim($_POST['email'] ?? '');
   $stmt = $conexion->prepare("SELECT id FROM usuarios_publicos WHERE email = ?");
   $stmt->bind_param("s", $email);
   $stmt->execute();
@@ -348,9 +359,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
     async function checkEmail(email) {
       if (!email || !email.includes('@')) return;
       const indicator = document.getElementById('email-status');
+      const formData = new FormData();
+      formData.append('accion', 'check_email_ajax');
+      formData.append('email', email);
+      formData.append('csrf_token', '<?= generarTokenCSRF() ?>');
+
       try {
-        const r = await fetch(`registro_usuario?check_email=${encodeURIComponent(email)}`);
+        const r = await fetch('registro_usuario', {
+          method: 'POST',
+          body: formData
+        });
         const data = await r.json();
+        if (data.error) return;
+
         if (data.exists) {
           indicator.innerHTML = '<i class="bi bi-exclamation-circle-fill"></i> Ya registrado';
           indicator.className = 'email-indicator error';

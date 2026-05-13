@@ -12,7 +12,7 @@ $rol = $_SESSION['rol'];
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel <?= ucfirst($rol) ?></title>
     <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
-    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css?v=<?= filemtime(__DIR__ . '/../assets/css/login.css') ?>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
 
