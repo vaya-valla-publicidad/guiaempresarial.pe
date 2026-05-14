@@ -544,7 +544,8 @@ include 'includes/Header.php';
                             <div class="form-group">
                                 <label>Comentario</label>
                                 <textarea name="comentario" id="resenaComentario" rows="3"
-                                    placeholder="Cuéntanos tu experiencia..." required maxlength="500"></textarea>
+                                    placeholder="Cuéntanos tu experiencia..." required maxlength="1000"></textarea>
+                                <div id="charCount" style="text-align: right; font-size: 12px; color: var(--muted); margin-top: 5px;">1000 caracteres restantes</div>
                             </div>
                             <div class="resena-form-actions">
                                 <button type="submit" class="btn-enviar-resena" id="btnEnviarResena">Enviar reseña</button>
@@ -802,6 +803,16 @@ include 'includes/Header.php';
         const idResenaInput = document.getElementById('idResena');
         const cancelEditBtn = document.getElementById('btnCancelarEdicion');
         const resenaFormTitulo = document.getElementById('resenaFormTitulo');
+        const resenaComentario = document.getElementById('resenaComentario');
+        const charCount = document.getElementById('charCount');
+
+        if (resenaComentario && charCount) {
+            resenaComentario.addEventListener('input', () => {
+                const remaining = 1000 - resenaComentario.value.length;
+                charCount.textContent = `${remaining} caracteres restantes`;
+                charCount.style.color = remaining < 50 ? '#ef4444' : 'var(--muted)';
+            });
+        }
 
         function restablecerEstrellas(valor) {
             starsValue.value = valor;
@@ -824,6 +835,7 @@ include 'includes/Header.php';
             form.reset();
             restablecerEstrellas(0);
             btns.forEach(b => b.classList.remove('activa'));
+            if (charCount) charCount.textContent = '1000 caracteres restantes';
             document.getElementById('btnEnviarResena').innerText = 'Enviar reseña';
             if (resenaFormTitulo) {
                 resenaFormTitulo.innerText = resenaFormTitulo.dataset.defaultText || 'Enviar reseña';
@@ -847,6 +859,10 @@ include 'includes/Header.php';
                 resenaFormTitulo.innerText = 'Edita tu reseña';
             }
             document.getElementById('resenaComentario').focus();
+            if (charCount) {
+                const remaining = 1000 - comentario.length;
+                charCount.textContent = `${remaining} caracteres restantes`;
+            }
         }
 
         if (!form) return;
@@ -935,6 +951,7 @@ include 'includes/Header.php';
                         cancelEditBtn.style.display = 'none';
                         starsValue.value = '';
                         btns.forEach(b => b.classList.remove('activa'));
+                        if (charCount) charCount.textContent = '1000 caracteres restantes';
 
                         if (!data.updated) {
                             usuarioTieneResena = true;

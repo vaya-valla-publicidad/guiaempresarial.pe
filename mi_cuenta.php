@@ -169,8 +169,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
 
       if (!$bypass && !password_verify($actual, $u['password_hash'])) {
         $error = 'La contraseña actual no es correcta.';
-      } elseif (strlen($nueva) < 6) {
-        $error = 'La nueva contraseña debe tener al menos 6 caracteres.';
+      } elseif (strlen($nueva) < 8) {
+        $error = 'La nueva contraseña debe tener al menos 8 caracteres.';
       } elseif ($nueva !== $confirm) {
         $error = 'Las contraseñas nuevas no coinciden.';
       } elseif (password_verify($nueva, $u['password_hash']) && !$confirmar_misma) {
@@ -521,7 +521,7 @@ include 'includes/Header.php';
                   <i class="bi bi-eye" id="pw-nueva-icon"></i>
                 </button>
               </div>
-              <span class="mc-hint">Mínimo 6 caracteres.</span>
+              <span class="mc-hint">Mínimo 8 caracteres.</span>
             </div>
             <div class="mc-field">
               <label>Confirmar nueva contraseña</label>
@@ -720,6 +720,21 @@ include 'includes/Header.php';
   </div>
 </div>
 
+<!-- Custom Modal para Confirmación de Eliminación -->
+<div id="delete-modal" class="mc-modal-overlay">
+  <div class="mc-modal">
+    <div class="mc-modal-icon">
+      <i class="bi bi-trash3-fill"></i>
+    </div>
+    <h3 class="mc-modal-title">¿Eliminar reseña?</h3>
+    <p class="mc-modal-text">¿Seguro que deseas eliminar esta reseña permanentemente? Esta acción no se puede deshacer.</p>
+    <div class="mc-modal-actions">
+      <button type="button" class="mc-btn-ghost" onclick="closeDeleteModal()">Cancelar</button>
+      <button type="button" class="mc-btn-primary" style="background: var(--mc-red);" id="btn-confirm-delete">Eliminar ahora</button>
+    </div>
+  </div>
+</div>
+
 <script>
   function mostrarConfirmacionBorrado() {
     document.getElementById('confirm-del-wrap').style.display = 'block';
@@ -829,8 +844,23 @@ include 'includes/Header.php';
     reader.readAsDataURL(file);
   }
 
+  let resenaToDelete = null;
   function eliminarResenaAjax(btn, id_resena) {
-    if (!confirm('¿Seguro que deseas eliminar esta reseña permanentemente?')) return;
+    resenaToDelete = { btn, id: id_resena };
+    const modal = document.getElementById('delete-modal');
+    modal.classList.add('open');
+    document.getElementById('btn-confirm-delete').onclick = ejecutarEliminacion;
+  }
+
+  function closeDeleteModal() {
+    document.getElementById('delete-modal').classList.remove('open');
+    resenaToDelete = null;
+  }
+
+  function ejecutarEliminacion() {
+    if (!resenaToDelete) return;
+    const { btn, id: id_resena } = resenaToDelete;
+    closeDeleteModal();
 
     const resenaDiv = btn.closest('.mc-resena');
     btn.innerText = 'Eliminando...';
@@ -872,13 +902,13 @@ include 'includes/Header.php';
             }
           }, 400);
         } else {
-          alert('Hubo un error al eliminar la reseña.');
+          if (window.showToast) showToast(data.error || 'Hubo un error al eliminar la reseña.', 'error');
           resetBtn();
         }
       })
       .catch(err => {
         console.error(err);
-        alert('Error de conexión con el servidor.');
+        if (window.showToast) showToast('Error de conexión con el servidor.', 'error');
         resetBtn();
       });
 

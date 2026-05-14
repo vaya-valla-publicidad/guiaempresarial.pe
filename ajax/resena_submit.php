@@ -24,6 +24,11 @@ if ($id_e <= 0 || $estrellas < 1 || $estrellas > 5 || empty($comentario)) {
     exit;
 }
 
+if (mb_strlen($comentario) > 1000) {
+    echo json_encode(['success' => false, 'error' => 'El comentario no puede superar los 1000 caracteres.']);
+    exit;
+}
+
 $stmt_u = $conexion->prepare("SELECT nombre FROM usuarios_publicos WHERE id = ?");
 $stmt_u->bind_param("i", $id_u);
 $stmt_u->execute();

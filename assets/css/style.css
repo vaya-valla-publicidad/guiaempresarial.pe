@@ -2994,6 +2994,8 @@ body.dark-mode .form-group textarea {
     color: var(--azul);
     line-height: 1.6;
     margin: 0;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 body.dark-mode .resena-comentario {

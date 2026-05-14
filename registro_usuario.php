@@ -85,8 +85,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
 
       if (!verificarBloqueoOTP($email)) {
         $error = 'Has superado el límite de intentos permitidos. Por seguridad, tu cuenta ha sido bloqueada temporalmente por 15 minutos.';
-      } elseif (strlen($password) < 6) {
-        $error = 'La contraseña debe tener al menos 6 caracteres.';
+      } elseif (strlen($password) < 8) {
+        $error = 'La contraseña debe tener al menos 8 caracteres.';
       } elseif ($password !== $confirm) {
         $error = 'Las contraseñas no coinciden.';
       } else {
@@ -300,7 +300,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
       const bar = document.getElementById('str-line');
       if (!val) { bar.style.width = '0%'; return; }
       let score = 0;
-      if (val.length >= 6) score++;
+      if (val.length >= 8) score++;
       if (val.length >= 10) score++;
       if (/[A-Z]/.test(val)) score++;
       if (/[0-9]/.test(val) || /[^A-Za-z0-9]/.test(val)) score++;

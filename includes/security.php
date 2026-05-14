@@ -233,6 +233,7 @@ if (!function_exists('logSeguridad')) {
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
         $usuario = $_SESSION['usuario'] ?? ($_SESSION['usuario_publico_nombre'] ?? 'anonimo');
         $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
+        $userAgent = preg_replace('/[\r\n\t]/', ' ', $userAgent);
         $entrada = sprintf(
             "[%s] [%s] Usuario: %s | IP: %s | Acción: %s | Detalle: %s | UA: %s\n",
             $fecha,
