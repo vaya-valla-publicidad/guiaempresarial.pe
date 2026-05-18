@@ -1,5 +1,4 @@
 <?php
-session_start();
 include 'db.php';
 include_once 'libs/mailer.php';
 include_once 'includes/security.php';
@@ -35,6 +34,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'check_email_ajax') {
 }
 
 if (isset($_POST['accion']) && $_POST['accion'] === 'reenviar_codigo_ajax') {
+  header('Content-Type: application/json');
   if (!validarCSRF()) {
     echo json_encode(['success' => false, 'error' => 'Error de seguridad.']);
     exit;
@@ -131,11 +131,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
           $_SESSION['usuario_publico_id'] = $u['id'];
           $_SESSION['usuario_publico_nombre'] = $u['nombre'];
           $_SESSION['usuario_publico_pw_hash'] = $u['password_hash'];
+          limpiarIntentosOTP($email);
           if (isset($_POST['ajax'])) {
             echo json_encode(['success' => true, 'redirect' => 'mi_cuenta']);
             exit;
           }
-          limpiarIntentosOTP($email);
           header("Location: mi_cuenta");
           exit;
         } else {
@@ -197,7 +197,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
       </header>
 
       <?php if ($error): ?>
-        <script>document.addEventListener('DOMContentLoaded', () => { if (window.showToast) showToast("<?= addslashes($error) ?>", "error"); });</script>
+        <script>document.addEventListener('DOMContentLoaded', () => { if (window.showToast) showToast(<?= json_encode($error) ?>, "error"); });</script>
       <?php endif; ?>
 
       <?php if ($paso === 'registro'): ?>

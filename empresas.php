@@ -1,5 +1,4 @@
 <?php
-session_start();
 include 'db.php';
 include 'includes/security.php';
 include 'includes/components/empresa_card.php';
@@ -135,7 +134,7 @@ include 'includes/Header.php';
             $params[] = intval($id_categoria);
             $types .= "i";
         } elseif ($buscar) {
-            $texto = limpiarParaLike($buscar);
+            $texto = escaparLike($buscar);
             $where[] = "(e.nombre LIKE ? OR e.descripcion LIKE ? OR c.nombre LIKE ?)";
             $busqueda = "%$texto%";
             $params[] = $busqueda;

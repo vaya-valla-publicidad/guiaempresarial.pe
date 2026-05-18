@@ -4,8 +4,8 @@ include '../db.php';
 
 header('Content-Type: application/json');
 
-$accion = $_POST['accion'] ?? '';
 require_once __DIR__ . '/../includes/security.php';
+$accion = $_POST['accion'] ?? '';
 
 if (!validarCSRF($_POST['csrf_token'] ?? '')) {
     echo json_encode(['ok' => false, 'error' => 'Error de seguridad (CSRF). Recargue la página e intente de nuevo.']);

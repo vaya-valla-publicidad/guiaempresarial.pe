@@ -58,15 +58,6 @@ if (!function_exists('esc')) {
     }
 }
 
-if (!function_exists('limpiarParaLike')) {
-    function limpiarParaLike($data)
-    {
-        $data = trim(strip_tags($data));
-        $data = str_replace(['%', '_', '\\'], ['\\%', '\\_', '\\\\'], $data);
-        return $data;
-    }
-}
-
 if (!function_exists('validarEmail')) {
     function validarEmail($email)
     {
@@ -282,49 +273,6 @@ if (!function_exists('escaparLike')) {
     }
 }
 
-if (!function_exists('verificarLimiteCorreo')) {
-    function verificarLimiteCorreo($email)
-    {
-        if (session_status() === PHP_SESSION_NONE)
-            session_start();
-        $clave = 'limite_correo_' . md5($email);
-
-        if (!isset($_SESSION[$clave])) {
-            $_SESSION[$clave] = [
-                'count_12h' => 0,
-                'first_request_12h' => time(),
-                'locked_until' => 0
-            ];
-        }
-
-        $now = time();
-        $s = &$_SESSION[$clave];
-
-        if ($now > $s['first_request_12h'] + 43200) {
-            $s['count_12h'] = 0;
-            $s['first_request_12h'] = $now;
-        }
-
-        if ($now < $s['locked_until']) {
-            return false;
-        }
-
-        if ($s['count_12h'] >= 10) {
-            $s['locked_until'] = max($now, $s['first_request_12h'] + 43200);
-            return false;
-        }
-
-        $s['count_12h']++;
-
-        if ($s['count_12h'] == 7) {
-            $s['locked_until'] = $now + 1800;
-        } else if ($s['count_12h'] == 10) {
-            $s['locked_until'] = max($now, $s['first_request_12h'] + 43200);
-        }
-
-        return true;
-    }
-}
 
 if (!function_exists('validarRedireccionLocal')) {
     function validarRedireccionLocal($url)
@@ -400,7 +348,7 @@ if (!function_exists('verificarBloqueoOTP')) {
 
         if ($res['intentos'] >= 5) {
             $ultimo = strtotime($res['ultimo_intento']);
-            if ($now - $ultimo < 900) { // 15 minutos
+            if ($now - $ultimo < 900) {
                 if (!$res['bloqueado_hasta']) {
                     $bloqueo_hasta = date('Y-m-d H:i:s', $now + 900);
                     $stmt_upd = $conexion->prepare("UPDATE otp_intentos SET bloqueado_hasta = ? WHERE identificador = ?");

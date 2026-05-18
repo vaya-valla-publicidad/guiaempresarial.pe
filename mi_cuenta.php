@@ -1,5 +1,4 @@
 <?php
-session_start();
 include 'db.php';
 include 'includes/security.php';
 include_once 'libs/mailer.php';
@@ -25,209 +24,265 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
     logSeguridad('csrf_invalido', 'Intento de POST en mi_cuenta sin token');
     $error = 'Error de seguridad. Intente nuevamente.';
   } else {
-    if ($_POST['accion'] === 'enviar_codigo_pw') {
-      if (!verificarRateLimit('envio_otp_pw', 10, 600)) {
-        $error = 'Demasiados intentos. Espera unos minutos.';
-      } else {
-        $codigo = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-        $expira = time() + 600;
-        $stmt_upd = $conexion->prepare("UPDATE usuarios_publicos SET codigo_verificacion=?, codigo_expira=? WHERE id=?");
-        $stmt_upd->bind_param("sii", $codigo, $expira, $id_u);
-        if ($stmt_upd->execute()) {
-          $cuerpo = plantillaCorreoOTP($u['nombre'], $codigo, 'password');
-          if (enviarCorreo($u['email'], $u['nombre'], 'Código de Seguridad - Cambio de Contraseña', $cuerpo)) {
-            $exito = 'Código enviado a su correo electrónico.';
-            $_SESSION['esperando_otp_pw'] = true;
-          } else {
-            $error = 'No se pudo enviar el correo. Intente más tarde.';
+    switch ($_POST['accion']) {
+      case 'enviar_codigo_pw':
+        if (!verificarRateLimit('envio_otp_pw', 10, 600)) {
+          $error = 'Demasiados intentos. Espera unos minutos.';
+        } else {
+          $codigo = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+          $expira = time() + 600;
+          $stmt_upd = $conexion->prepare("UPDATE usuarios_publicos SET codigo_verificacion=?, codigo_expira=? WHERE id=?");
+          $stmt_upd->bind_param("sii", $codigo, $expira, $id_u);
+          if ($stmt_upd->execute()) {
+            $cuerpo = plantillaCorreoOTP($u['nombre'], $codigo, 'password');
+            if (enviarCorreo($u['email'], $u['nombre'], 'Código de Seguridad - Cambio de Contraseña', $cuerpo)) {
+              $exito = 'Código enviado a su correo electrónico.';
+              $_SESSION['esperando_otp_pw'] = true;
+            } else {
+              $error = 'No se pudo enviar el correo. Intente más tarde.';
+            }
           }
         }
-      }
-    }
+        break;
 
-    if ($_POST['accion'] === 'verificar_codigo_pw') {
-      $codigo = trim($_POST['codigo_otp'] ?? '');
-      $stmt_check = $conexion->prepare("SELECT * FROM usuarios_publicos WHERE id = ?");
-      $stmt_check->bind_param("i", $id_u);
-      $stmt_check->execute();
-      $res_u = $stmt_check->get_result()->fetch_assoc();
+      case 'verificar_codigo_pw':
+        $codigo = trim($_POST['codigo_otp'] ?? '');
+        $stmt_check = $conexion->prepare("SELECT * FROM usuarios_publicos WHERE id = ?");
+        $stmt_check->bind_param("i", $id_u);
+        $stmt_check->execute();
+        $res_u = $stmt_check->get_result()->fetch_assoc();
 
-      if ($codigo === $res_u['codigo_verificacion'] && time() < $res_u['codigo_expira']) {
-        $stmt_clear = $conexion->prepare("UPDATE usuarios_publicos SET codigo_verificacion=NULL, codigo_expira=NULL WHERE id=?");
-        $stmt_clear->bind_param("i", $id_u);
-        $stmt_clear->execute();
-        $stmt_clear->close();
-        $_SESSION['login_bypass_pw'] = true;
-        unset($_SESSION['esperando_otp_pw']);
-        $exito = 'Código verificado. Ahora puede establecer su nueva contraseña.';
-      } else {
-        $error = 'Código incorrecto o expirado.';
-      }
-    }
-
-    if ($_POST['accion'] === 'borrar_cuenta') {
-      $stmt_v = $conexion->prepare("SELECT password_hash, email, nombre, codigo_verificacion, codigo_expira FROM usuarios_publicos WHERE id = ?");
-      $stmt_v->bind_param("i", $id_u);
-      $stmt_v->execute();
-      $u_v = $stmt_v->get_result()->fetch_assoc();
-
-      $autorizado = false;
-
-      if ($u_v['password_hash']) {
-        $pw_confirm = $_POST['password_confirm'] ?? '';
-        if (password_verify($pw_confirm, $u_v['password_hash'])) {
-          $autorizado = true;
+        if ($codigo === $res_u['codigo_verificacion'] && time() < $res_u['codigo_expira']) {
+          $stmt_clear = $conexion->prepare("UPDATE usuarios_publicos SET codigo_verificacion=NULL, codigo_expira=NULL WHERE id=?");
+          $stmt_clear->bind_param("i", $id_u);
+          $stmt_clear->execute();
+          $stmt_clear->close();
+          $_SESSION['login_bypass_pw'] = true;
+          unset($_SESSION['esperando_otp_pw']);
+          $exito = 'Código verificado. Ahora puede establecer su nueva contraseña.';
         } else {
-          $error = 'La contraseña de confirmación es incorrecta.';
+          $error = 'Código incorrecto o expirado.';
         }
-      } else {
-        $codigo_input = trim($_POST['codigo_borrar'] ?? '');
-        if ($codigo_input && $codigo_input === $u_v['codigo_verificacion'] && time() < $u_v['codigo_expira']) {
-          $autorizado = true;
+        break;
+
+      case 'borrar_cuenta':
+        $stmt_v = $conexion->prepare("SELECT password_hash, email, nombre, codigo_verificacion, codigo_expira FROM usuarios_publicos WHERE id = ?");
+        $stmt_v->bind_param("i", $id_u);
+        $stmt_v->execute();
+        $u_v = $stmt_v->get_result()->fetch_assoc();
+
+        $autorizado = false;
+
+        if ($u_v['password_hash']) {
+          $pw_confirm = $_POST['password_confirm'] ?? '';
+          if (password_verify($pw_confirm, $u_v['password_hash'])) {
+            $autorizado = true;
+          } else {
+            $error = 'La contraseña de confirmación es incorrecta.';
+          }
         } else {
-          $error = 'Código de verificación incorrecto o expirado.';
+          $codigo_input = trim($_POST['codigo_borrar'] ?? '');
+          if ($codigo_input && $codigo_input === $u_v['codigo_verificacion'] && time() < $u_v['codigo_expira']) {
+            $autorizado = true;
+          } else {
+            $error = 'Código de verificación incorrecto o expirado.';
+          }
         }
-      }
 
-      if ($autorizado) {
-        $stmt_del_r = $conexion->prepare("DELETE FROM resenas WHERE id_usuario_publico = ?");
-        $stmt_del_r->bind_param("i", $id_u);
-        $stmt_del_r->execute();
+        if ($autorizado) {
+          $conexion->begin_transaction();
+          try {
+            $stmt_del_r = $conexion->prepare("DELETE FROM resenas WHERE id_usuario_publico = ?");
+            $stmt_del_r->bind_param("i", $id_u);
+            $stmt_del_r->execute();
+            $stmt_del_r->close();
 
-        $stmt_del_f = $conexion->prepare("DELETE FROM favoritos WHERE id_usuario_publico = ?");
-        $stmt_del_f->bind_param("i", $id_u);
-        $stmt_del_f->execute();
+            $stmt_del_f = $conexion->prepare("DELETE FROM favoritos WHERE id_usuario_publico = ?");
+            $stmt_del_f->bind_param("i", $id_u);
+            $stmt_del_f->execute();
+            $stmt_del_f->close();
 
-        $stmt_del_v = $conexion->prepare("DELETE FROM resena_votos WHERE id_usuario_publico = ?");
-        $stmt_del_v->bind_param("i", $id_u);
-        $stmt_del_v->execute();
+            $stmt_del_v = $conexion->prepare("DELETE FROM resena_votos WHERE id_usuario_publico = ?");
+            $stmt_del_v->bind_param("i", $id_u);
+            $stmt_del_v->execute();
+            $stmt_del_v->close();
 
+            $stmt_del_u = $conexion->prepare("DELETE FROM usuarios_publicos WHERE id = ?");
+            $stmt_del_u->bind_param("i", $id_u);
+            $stmt_del_u->execute();
+            $stmt_del_u->close();
+
+            $conexion->commit();
+
+            if (!empty($u['foto_perfil']) && file_exists('assets/img/avatars/' . $u['foto_perfil'])) {
+              unlink('assets/img/avatars/' . $u['foto_perfil']);
+            }
+
+            session_destroy();
+            header('Location: index?msg=cuenta_eliminada');
+            exit;
+          } catch (Exception $ex) {
+            $conexion->rollback();
+            $error = 'No se pudo eliminar la cuenta. Intente nuevamente más tarde.';
+          }
+        }
+        break;
+
+      case 'enviar_codigo_borrar':
+        if (!verificarRateLimit('envio_otp_del', 5, 300)) {
+          $error = 'Demasiados intentos. Espera unos minutos.';
+        } else {
+          $codigo = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+          $expira = time() + 600;
+          $stmt_upd = $conexion->prepare("UPDATE usuarios_publicos SET codigo_verificacion=?, codigo_expira=? WHERE id=?");
+          $stmt_upd->bind_param("sii", $codigo, $expira, $id_u);
+          if ($stmt_upd->execute()) {
+            $cuerpo = plantillaCorreoOTP($u['nombre'], $codigo, 'borrado');
+            if (enviarCorreo($u['email'], $u['nombre'], 'Código de Confirmación - Eliminar Cuenta', $cuerpo)) {
+              $exito = 'Código de seguridad enviado a su correo.';
+              $_SESSION['esperando_otp_del'] = true;
+            } else {
+              $error = 'No se pudo enviar el correo.';
+            }
+          }
+        }
+        break;
+
+      case 'borrar_foto':
         if (!empty($u['foto_perfil']) && file_exists('assets/img/avatars/' . $u['foto_perfil'])) {
           unlink('assets/img/avatars/' . $u['foto_perfil']);
         }
+        $stmt_bf = $conexion->prepare("UPDATE usuarios_publicos SET foto_perfil = NULL WHERE id = ?");
+        $stmt_bf->bind_param("i", $id_u);
+        $stmt_bf->execute();
+        $_SESSION['usuario_publico_foto'] = null;
+        $u['foto_perfil'] = null;
+        $exito = 'Foto de perfil eliminada.';
+        break;
 
-        $stmt_del_u = $conexion->prepare("DELETE FROM usuarios_publicos WHERE id = ?");
-        $stmt_del_u->bind_param("i", $id_u);
-        $stmt_del_u->execute();
+      case 'datos':
+        $nombre_nuevo = trim($_POST['nombre'] ?? '');
+        if ($nombre_nuevo && $nombre_nuevo !== $u['nombre']) {
+          $stmt_dn = $conexion->prepare("UPDATE usuarios_publicos SET nombre = ? WHERE id = ?");
+          $stmt_dn->bind_param("si", $nombre_nuevo, $id_u);
+          $stmt_dn->execute();
+          $_SESSION['usuario_publico_nombre'] = $nombre_nuevo;
+          $exito = 'Nombre actualizado.';
+          $u['nombre'] = $nombre_nuevo;
+        }
+        break;
 
-        session_destroy();
-        header('Location: index?msg=cuenta_eliminada');
-        exit;
-      }
-    }
+      case 'password':
+        $bypass = isset($_SESSION['login_bypass_pw']) && $_SESSION['login_bypass_pw'] === true;
+        $actual = $_POST['actual'] ?? '';
+        $nueva = $_POST['nueva'] ?? '';
+        $confirm = $_POST['confirm'] ?? '';
+        $confirmar_misma = isset($_POST['confirmar_misma']) && $_POST['confirmar_misma'] === '1';
 
-    if ($_POST['accion'] === 'enviar_codigo_borrar') {
-      if (!verificarRateLimit('envio_otp_del', 5, 300)) {
-        $error = 'Demasiados intentos. Espera unos minutos.';
-      } else {
-        $codigo = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-        $expira = time() + 600;
-        $stmt_upd = $conexion->prepare("UPDATE usuarios_publicos SET codigo_verificacion=?, codigo_expira=? WHERE id=?");
-        $stmt_upd->bind_param("sii", $codigo, $expira, $id_u);
-        if ($stmt_upd->execute()) {
-          $cuerpo = plantillaCorreoOTP($u['nombre'], $codigo, 'borrado');
-          if (enviarCorreo($u['email'], $u['nombre'], 'Código de Confirmación - Eliminar Cuenta', $cuerpo)) {
-            $exito = 'Código de seguridad enviado a su correo.';
-            $_SESSION['esperando_otp_del'] = true;
+        if (!$bypass && !password_verify($actual, $u['password_hash'])) {
+          $error = 'La contraseña actual no es correcta.';
+        } elseif (strlen($nueva) < 8) {
+          $error = 'La nueva contraseña debe tener al menos 8 caracteres.';
+        } elseif ($nueva !== $confirm) {
+          $error = 'Las contraseñas nuevas no coinciden.';
+        } elseif (password_verify($nueva, $u['password_hash']) && !$confirmar_misma) {
+          $error = 'MISMA_PW';
+        } else {
+          $hash = password_hash($nueva, PASSWORD_DEFAULT);
+          $stmt_pw = $conexion->prepare("UPDATE usuarios_publicos SET password_hash = ? WHERE id = ?");
+          $stmt_pw->bind_param("si", $hash, $id_u);
+          $stmt_pw->execute();
+
+          session_unset();
+          session_destroy();
+          header('Location: login_usuario?exito=pw_cambiada');
+          exit;
+        }
+        break;
+
+      case 'foto':
+        if (isset($_FILES['foto_perfil'])) {
+          $file = $_FILES['foto_perfil'];
+          $resultado_subida = subirImagenSegura($file, 'assets/img/avatars', [
+            'tamano_max' => 2 * 1024 * 1024,
+            'extensiones' => ['jpg', 'jpeg', 'png', 'webp']
+          ]);
+
+          if ($resultado_subida['success']) {
+            $nombre_archivo = $resultado_subida['nombre'];
+            if ($u['foto_perfil'] && file_exists('assets/img/avatars/' . $u['foto_perfil'])) {
+              unlink('assets/img/avatars/' . $u['foto_perfil']);
+            }
+            $stmt_fot = $conexion->prepare("UPDATE usuarios_publicos SET foto_perfil = ? WHERE id = ?");
+            $stmt_fot->bind_param("si", $nombre_archivo, $id_u);
+            $stmt_fot->execute();
+            $_SESSION['usuario_publico_foto'] = $nombre_archivo;
+            $u['foto_perfil'] = $nombre_archivo;
+            $exito = 'Foto de perfil actualizada correctamente.';
+            $_SESSION['exito'] = $exito;
+            header("Location: mi_cuenta#perfil");
+            exit;
           } else {
-            $error = 'No se pudo enviar el correo.';
+            $error = "Error al subir: " . $resultado_subida['error'];
+            $_SESSION['error'] = $error;
+            header("Location: mi_cuenta#perfil");
+            exit;
           }
         }
-      }
-    }
+        break;
 
-    if ($_POST['accion'] === 'borrar_foto') {
-      if (!empty($u['foto_perfil']) && file_exists('assets/img/avatars/' . $u['foto_perfil'])) {
-        unlink('assets/img/avatars/' . $u['foto_perfil']);
-      }
-      $stmt_bf = $conexion->prepare("UPDATE usuarios_publicos SET foto_perfil = NULL WHERE id = ?");
-      $stmt_bf->bind_param("i", $id_u);
-      $stmt_bf->execute();
-      $_SESSION['usuario_publico_foto'] = null;
-      $u['foto_perfil'] = null;
-      $exito = 'Foto de perfil eliminada.';
-    }
-
-    if ($_POST['accion'] === 'datos') {
-      $nombre_nuevo = trim($_POST['nombre'] ?? '');
-      if ($nombre_nuevo && $nombre_nuevo !== $u['nombre']) {
-        $stmt_dn = $conexion->prepare("UPDATE usuarios_publicos SET nombre = ? WHERE id = ?");
-        $stmt_dn->bind_param("si", $nombre_nuevo, $id_u);
-        $stmt_dn->execute();
-        $_SESSION['usuario_publico_nombre'] = $nombre_nuevo;
-        $exito = 'Nombre actualizado.';
-        $u['nombre'] = $nombre_nuevo;
-      }
-    }
-
-    if ($_POST['accion'] === 'password') {
-      $bypass = isset($_SESSION['login_bypass_pw']) && $_SESSION['login_bypass_pw'] === true;
-      $actual = $_POST['actual'] ?? '';
-      $nueva = $_POST['nueva'] ?? '';
-      $confirm = $_POST['confirm'] ?? '';
-      $confirmar_misma = isset($_POST['confirmar_misma']) && $_POST['confirmar_misma'] === '1';
-
-      if (!$bypass && !password_verify($actual, $u['password_hash'])) {
-        $error = 'La contraseña actual no es correcta.';
-      } elseif (strlen($nueva) < 8) {
-        $error = 'La nueva contraseña debe tener al menos 8 caracteres.';
-      } elseif ($nueva !== $confirm) {
-        $error = 'Las contraseñas nuevas no coinciden.';
-      } elseif (password_verify($nueva, $u['password_hash']) && !$confirmar_misma) {
-        $error = 'MISMA_PW'; // Usaremos este flag para detectar el caso en la UI
-      } else {
-        $hash = password_hash($nueva, PASSWORD_DEFAULT);
-        $stmt_pw = $conexion->prepare("UPDATE usuarios_publicos SET password_hash = ? WHERE id = ?");
-        $stmt_pw->bind_param("si", $hash, $id_u);
-        $stmt_pw->execute();
-
-
-        session_unset();
-        session_destroy();
-        header('Location: login_usuario?exito=pw_cambiada');
-        exit;
-      }
-    }
-
-    if ($_POST['accion'] === 'foto' && isset($_FILES['foto_perfil'])) {
-      $file = $_FILES['foto_perfil'];
-      $resultado_subida = subirImagenSegura($file, 'assets/img/avatars', [
-        'tamano_max' => 2 * 1024 * 1024,
-        'extensiones' => ['jpg', 'jpeg', 'png', 'webp']
-      ]);
-
-      if ($resultado_subida['success']) {
-        $nombre_archivo = $resultado_subida['nombre'];
-        if ($u['foto_perfil'] && file_exists('assets/img/avatars/' . $u['foto_perfil'])) {
-          unlink('assets/img/avatars/' . $u['foto_perfil']);
+      case 'privacidad':
+        $visi = $_POST['visibilidad_resenas'] ?? 'publico';
+        if ($visi === 'publico' || $visi === 'anonimo') {
+          $stmt_pri = $conexion->prepare("UPDATE usuarios_publicos SET visibilidad_resenas = ? WHERE id = ?");
+          $stmt_pri->bind_param("si", $visi, $id_u);
+          $stmt_pri->execute();
+          $u['visibilidad_resenas'] = $visi;
+          $exito = 'Opciones de privacidad guardadas.';
         }
-        $stmt_fot = $conexion->prepare("UPDATE usuarios_publicos SET foto_perfil = ? WHERE id = ?");
-        $stmt_fot->bind_param("si", $nombre_archivo, $id_u);
-        $stmt_fot->execute();
-        $_SESSION['usuario_publico_foto'] = $nombre_archivo;
-        $u['foto_perfil'] = $nombre_archivo;
-        $exito = 'Foto de perfil actualizada correctamente.';
-        $_SESSION['exito'] = $exito;
-        header("Location: mi_cuenta#perfil");
-        exit;
-      } else {
-        $error = "Error al subir: " . $resultado_subida['error'];
-        $_SESSION['error'] = $error;
-        header("Location: mi_cuenta#perfil");
-        exit;
-      }
+        break;
     }
+  }
+}
 
-    if ($_POST['accion'] === 'privacidad') {
-      $visi = $_POST['visibilidad_resenas'] ?? 'publico';
-      if ($visi === 'publico' || $visi === 'anonimo') {
-        $stmt_pri = $conexion->prepare("UPDATE usuarios_publicos SET visibilidad_resenas = ? WHERE id = ?");
-        $stmt_pri->bind_param("si", $visi, $id_u);
-        $stmt_pri->execute();
-        $u['visibilidad_resenas'] = $visi;
-        $exito = 'Opciones de privacidad guardadas.';
-      }
-    }
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_eliminar_resena'])) {
+  header('Content-Type: application/json');
+  if (!validarCSRF()) {
+    echo json_encode(['success' => false, 'error' => 'CSRF Inválido']);
+    exit;
+  }
+  $id_r = intval($_POST['ajax_eliminar_resena']);
+
+  $stmt_check = $conexion->prepare("SELECT id_resena FROM resenas WHERE id_resena = ? AND id_usuario_publico = ?");
+  $stmt_check->bind_param("ii", $id_r, $id_u);
+  $stmt_check->execute();
+  $res_check = $stmt_check->get_result();
+  if ($res_check->num_rows === 0) {
+    $stmt_check->close();
+    echo json_encode(['success' => false, 'error' => 'No tienes permiso para eliminar esta reseña']);
+    exit;
+  }
+  $stmt_check->close();
+
+  $conexion->begin_transaction();
+  try {
+    $stmt_del_votes = $conexion->prepare("DELETE FROM resena_votos WHERE id_resena = ?");
+    $stmt_del_votes->bind_param("i", $id_r);
+    $stmt_del_votes->execute();
+    $stmt_del_votes->close();
+
+    $stmt_del = $conexion->prepare("DELETE FROM resenas WHERE id_resena = ? AND id_usuario_publico = ?");
+    $stmt_del->bind_param("ii", $id_r, $id_u);
+    $stmt_del->execute();
+    $stmt_del->close();
+
+    $conexion->commit();
+    echo json_encode(['success' => true]);
+    exit;
+  } catch (Exception $e) {
+    $conexion->rollback();
+    echo json_encode(['success' => false, 'error' => 'Error al eliminar la reseña']);
+    exit;
   }
 }
 
@@ -267,24 +322,6 @@ while ($f = $res_favs->fetch_assoc()) {
   $mis_favoritos[] = $f;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_eliminar_resena'])) {
-  header('Content-Type: application/json');
-  if (!validarCSRF()) {
-    echo json_encode(['success' => false, 'error' => 'CSRF Inválido']);
-    exit;
-  }
-  $id_r = intval($_POST['ajax_eliminar_resena']);
-  $stmt_del_votes = $conexion->prepare("DELETE FROM resena_votos WHERE id_resena = ?");
-  $stmt_del_votes->bind_param("i", $id_r);
-  $stmt_del_votes->execute();
-  $stmt_del = $conexion->prepare("DELETE FROM resenas WHERE id_resena = ? AND id_usuario_publico = ?");
-  $stmt_del->bind_param("ii", $id_r, $id_u);
-  $res = $stmt_del->execute();
-  echo json_encode(['success' => (bool) $res]);
-  exit;
-}
-
-$panel_activo = $_GET['tab'] ?? 'perfil';
 ?>
 <?php
 $seo_title = "Mi Cuenta - Guía Empresarial";
@@ -351,11 +388,11 @@ include 'includes/Header.php';
         <?php if ($error === 'MISMA_PW'): ?>
           if (typeof showToast === 'function') showToast('La nueva contraseña es igual a la actual.', 'warning');
         <?php else: ?>
-          if (typeof showToast === 'function') showToast('<?= addslashes($error) ?>', 'error');
+          if (typeof showToast === 'function') showToast(<?= json_encode($error) ?>, 'error');
         <?php endif; ?>
       <?php endif; ?>
       <?php if ($exito): ?>
-        if (typeof showToast === 'function') showToast('<?= addslashes($exito) ?>', 'success');
+        if (typeof showToast === 'function') showToast(<?= json_encode($exito) ?>, 'success');
       <?php endif; ?>
     });
   </script>
@@ -515,8 +552,7 @@ include 'includes/Header.php';
             <div class="mc-field">
               <label>Nueva contraseña</label>
               <div class="pw-input-wrap">
-                <input type="password" name="nueva" id="pw-nueva" placeholder="••••••••" required autofocus
-                  value="<?= htmlspecialchars($_POST['nueva'] ?? '') ?>">
+                <input type="password" name="nueva" id="pw-nueva" placeholder="••••••••" required autofocus>
                 <button type="button" class="pw-toggle" onclick="togglePw('pw-nueva','pw-nueva-icon')">
                   <i class="bi bi-eye" id="pw-nueva-icon"></i>
                 </button>
@@ -526,8 +562,7 @@ include 'includes/Header.php';
             <div class="mc-field">
               <label>Confirmar nueva contraseña</label>
               <div class="pw-input-wrap">
-                <input type="password" name="confirm" id="pw-confirm" placeholder="••••••••" required
-                  value="<?= htmlspecialchars($_POST['confirm'] ?? '') ?>">
+                <input type="password" name="confirm" id="pw-confirm" placeholder="••••••••" required>
                 <button type="button" class="pw-toggle" onclick="togglePw('pw-confirm','pw-confirm-icon')">
                   <i class="bi bi-eye" id="pw-confirm-icon"></i>
                 </button>
@@ -720,17 +755,18 @@ include 'includes/Header.php';
   </div>
 </div>
 
-<!-- Custom Modal para Confirmación de Eliminación -->
 <div id="delete-modal" class="mc-modal-overlay">
   <div class="mc-modal">
     <div class="mc-modal-icon">
       <i class="bi bi-trash3-fill"></i>
     </div>
     <h3 class="mc-modal-title">¿Eliminar reseña?</h3>
-    <p class="mc-modal-text">¿Seguro que deseas eliminar esta reseña permanentemente? Esta acción no se puede deshacer.</p>
+    <p class="mc-modal-text">¿Seguro que deseas eliminar esta reseña permanentemente? Esta acción no se puede deshacer.
+    </p>
     <div class="mc-modal-actions">
       <button type="button" class="mc-btn-ghost" onclick="closeDeleteModal()">Cancelar</button>
-      <button type="button" class="mc-btn-primary" style="background: var(--mc-red);" id="btn-confirm-delete">Eliminar ahora</button>
+      <button type="button" class="mc-btn-primary" style="background: var(--mc-red);" id="btn-confirm-delete">Eliminar
+        ahora</button>
     </div>
   </div>
 </div>

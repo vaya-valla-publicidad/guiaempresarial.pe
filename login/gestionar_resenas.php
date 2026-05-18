@@ -12,14 +12,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminar'])) {
     }
     $id_resena = intval($_POST['eliminar']);
     $id_emp_back = intval($_POST['empresa'] ?? 0);
-    $stmt_votes = $conexion->prepare("DELETE FROM resena_votos WHERE id_resena = ?");
-    $stmt_votes->bind_param("i", $id_resena);
-    $stmt_votes->execute();
-    $stmt_votes->close();
-    $stmt = $conexion->prepare("DELETE FROM resenas WHERE id_resena = ?");
-    $stmt->bind_param("i", $id_resena);
-    $stmt->execute();
-    $stmt->close();
+
+    $stmt_check = $conexion->prepare("SELECT id_resena FROM resenas WHERE id_resena = ? AND id_empresa = ?");
+    $stmt_check->bind_param("ii", $id_resena, $id_emp_back);
+    $stmt_check->execute();
+    $res_check = $stmt_check->get_result();
+    if ($res_check->num_rows === 0) {
+        $stmt_check->close();
+        header('Content-Type: application/json');
+        echo json_encode(['ok' => false, 'error' => 'La reseña no pertenece a la empresa seleccionada o no existe.']);
+        exit;
+    }
+    $stmt_check->close();
+
+    $conexion->begin_transaction();
+    try {
+        $stmt_votes = $conexion->prepare("DELETE FROM resena_votos WHERE id_resena = ?");
+        $stmt_votes->bind_param("i", $id_resena);
+        $stmt_votes->execute();
+        $stmt_votes->close();
+
+        $stmt = $conexion->prepare("DELETE FROM resenas WHERE id_resena = ? AND id_empresa = ?");
+        $stmt->bind_param("ii", $id_resena, $id_emp_back);
+        $stmt->execute();
+        $stmt->close();
+
+        $conexion->commit();
+    } catch (Exception $e) {
+        $conexion->rollback();
+        header('Content-Type: application/json');
+        echo json_encode(['ok' => false, 'error' => 'Error al eliminar la reseña.']);
+        exit;
+    }
 
     if (!empty($_POST['ajax'])) {
         header('Content-Type: application/json');

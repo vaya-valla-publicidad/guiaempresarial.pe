@@ -1,5 +1,4 @@
 <?php
-session_start();
 include 'db.php';
 include_once 'libs/mailer.php';
 include_once 'includes/security.php';
@@ -283,11 +282,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
       </header>
 
       <?php if ($error): ?>
-        <script>document.addEventListener('DOMContentLoaded', () => { if (window.showToast) showToast("<?= addslashes($error) ?>", "error"); });</script>
+        <script>document.addEventListener('DOMContentLoaded', () => { if (window.showToast) showToast(<?= json_encode($error) ?>, "error"); });</script>
       <?php endif; ?>
 
       <?php if ($exito): ?>
-        <script>document.addEventListener('DOMContentLoaded', () => { if (window.showToast) showToast("<?= addslashes($exito) ?>", "success"); });</script>
+        <script>document.addEventListener('DOMContentLoaded', () => { if (window.showToast) showToast(<?= json_encode($exito) ?>, "success"); });</script>
       <?php endif; ?>
 
       <?php if ($paso === 'email'): ?>

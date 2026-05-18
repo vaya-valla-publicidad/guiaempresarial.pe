@@ -1,11 +1,13 @@
 <?php
+require_once __DIR__ . '/../login/proteger.php';
+require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../includes/security.php';
+
 if (empty($_SESSION['rol']) || $_SESSION['rol'] !== 'admin') {
     echo json_encode(['ok' => false, 'error' => 'Sin permisos']);
     exit;
 }
 
-include __DIR__ . '/../db.php';
-require_once __DIR__ . '/../includes/security.php';
 
 if (!validarCSRF($_POST['csrf_token'] ?? '')) {
     echo json_encode(['ok' => false, 'error' => 'Error de seguridad CSRF']);
