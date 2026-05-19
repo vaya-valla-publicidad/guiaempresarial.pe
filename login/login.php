@@ -83,7 +83,8 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) 
                     $_SESSION['usuario'] = $fila['nombre'];
                     $_SESSION['rol'] = $fila['rol'];
                     $_SESSION['id_usuario'] = (int) $fila['id_usuario'];
-                    $_SESSION['admin_access_granted'] = true; // Por compatibilidad con proteger.php
+                    $_SESSION['admin_pw_hash'] = $fila['contraseña_hash'];
+                    $_SESSION['admin_access_granted'] = true;
                     $_SESSION['ua_hash'] = hash('sha256', $_SERVER['HTTP_USER_AGENT'] ?? '');
 
                     $_SESSION['intentos'] = 0;
@@ -119,7 +120,8 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inicio de sesión</title>
     <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
-    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css?v=<?= filemtime(__DIR__ . '/../assets/css/login.css') ?>">
+    <link rel="stylesheet"
+        href="<?= APP_URL ?>/assets/css/login.css?v=<?= filemtime(__DIR__ . '/../assets/css/login.css') ?>">
 </head>
 
 <body>

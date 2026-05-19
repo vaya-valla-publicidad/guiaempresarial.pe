@@ -154,32 +154,36 @@ include 'includes/Header.php';
                     $stmt_c->bind_param($types, ...$params);
                     $stmt_c->execute();
                     $res_c = $stmt_c->get_result();
-                    $total_filas = $res_c->fetch_assoc()['total'] ?? 0;
+                    $total_filas = $res_c ? ($res_c->fetch_assoc()['total'] ?? 0) : 0;
+                    $stmt_c->close();
                 } else {
-                    $total_filas = $conexion->query($sql_c)->fetch_assoc()['total'] ?? 0;
+                    $total_filas = 0;
                 }
             } else {
-                $total_filas = $conexion->query($sql_c)->fetch_assoc()['total'] ?? 0;
+                $res_c = $conexion->query($sql_c);
+                $total_filas = $res_c ? ($res_c->fetch_assoc()['total'] ?? 0) : 0;
             }
             $total_paginas = ceil($total_filas / $empresas_por_pagina);
         }
 
         $sql = $sql_select . $clausula_where . " GROUP BY e.id_empresa";
         if (!$id_empresa) {
-            $sql .= " LIMIT $empresas_por_pagina OFFSET $offset";
+            $sql .= " LIMIT ? OFFSET ?";
+            $params[] = intval($empresas_por_pagina);
+            $params[] = intval($offset);
+            $types .= "ii";
         }
 
-        if (!empty($where)) {
-            $stmt = $conexion->prepare($sql);
-            if ($types && $stmt) {
+        $stmt = $conexion->prepare($sql);
+        if ($stmt) {
+            if (!empty($types)) {
                 $stmt->bind_param($types, ...$params);
-                $stmt->execute();
-                $resultado = $stmt->get_result();
-            } else {
-                $resultado = $conexion->query($sql);
             }
+            $stmt->execute();
+            $resultado = $stmt->get_result();
+            $stmt->close();
         } else {
-            $resultado = $conexion->query($sql);
+            $resultado = false;
         }
 
         if ($id_empresa && (!$resultado || $resultado->num_rows === 0)) {
@@ -270,7 +274,9 @@ include 'includes/Header.php';
                                             <span class="badge-destacada">⭐ Destacada</span>
                                         <?php endif; ?>
                                     </h2>
-                                    <span class="empresa-card-badge"><?= htmlspecialchars($fila['categoria']) ?></span>
+                                    <span class="empresa-card-badge">
+                                        <?= htmlspecialchars($fila['categoria']) ?>
+                                    </span>
                                 </div>
                                 <div class="perfil-acciones">
                                     <?php if (!empty($fila['link_empresa'])): ?>
@@ -320,7 +326,9 @@ include 'includes/Header.php';
                                     <span class="perfil-dato-icon">📍</span>
                                     <div>
                                         <span class="perfil-dato-label">Dirección</span>
-                                        <span class="perfil-dato-valor"><?= htmlspecialchars($fila['direccion']) ?></span>
+                                        <span class="perfil-dato-valor">
+                                            <?= htmlspecialchars($fila['direccion']) ?>
+                                        </span>
                                     </div>
                                 </div>
                             <?php endif; ?>
@@ -329,7 +337,9 @@ include 'includes/Header.php';
                                     <span class="perfil-dato-icon">🕒</span>
                                     <div>
                                         <span class="perfil-dato-label">Horario</span>
-                                        <span class="perfil-dato-valor"><?= htmlspecialchars($fila['horario']) ?></span>
+                                        <span class="perfil-dato-valor">
+                                            <?= htmlspecialchars($fila['horario']) ?>
+                                        </span>
                                     </div>
                                 </div>
                             <?php endif; ?>
@@ -338,7 +348,9 @@ include 'includes/Header.php';
                                     <span class="perfil-dato-icon">📞</span>
                                     <div>
                                         <span class="perfil-dato-label">Teléfono</span>
-                                        <span class="perfil-dato-valor"><?= $numero ?></span>
+                                        <span class="perfil-dato-valor">
+                                            <?= $numero ?>
+                                        </span>
                                     </div>
                                 </div>
                             <?php endif; ?>
@@ -347,7 +359,9 @@ include 'includes/Header.php';
                                     <span class="perfil-dato-icon">✉</span>
                                     <div>
                                         <span class="perfil-dato-label">Correo</span>
-                                        <span class="perfil-dato-valor"><?= htmlspecialchars($fila['email']) ?></span>
+                                        <span class="perfil-dato-valor">
+                                            <?= htmlspecialchars($fila['email']) ?>
+                                        </span>
                                     </div>
                                 </div>
                             <?php endif; ?>
@@ -361,8 +375,9 @@ include 'includes/Header.php';
                                         $url_limpia = rtrim($url_limpia, '/');
                                         ?>
                                         <a class="perfil-dato-valor perfil-link"
-                                            href="<?= htmlspecialchars($fila['link_empresa']) ?>"
-                                            target="_blank"><?= htmlspecialchars($url_limpia) ?></a>
+                                            href="<?= htmlspecialchars($fila['link_empresa']) ?>" target="_blank">
+                                            <?= htmlspecialchars($url_limpia) ?>
+                                        </a>
                                     </div>
                                 </div>
                             <?php endif; ?>
@@ -398,7 +413,9 @@ include 'includes/Header.php';
                 <?php if (!empty($fila['descripcion'])): ?>
                     <div class="perfil-descripcion">
                         <p class="perfil-section-label">Descripción</p>
-                        <p class="perfil-descripcion-texto"><?= nl2br(htmlspecialchars($fila['descripcion'])) ?></p>
+                        <p class="perfil-descripcion-texto">
+                            <?= nl2br(htmlspecialchars($fila['descripcion'])) ?>
+                        </p>
                     </div>
                 <?php endif; ?>
 
@@ -502,15 +519,20 @@ include 'includes/Header.php';
 
                 <?php if ($total_resenas > 0): ?>
                     <div class="resenas-promedio">
-                        <span class="resenas-prom-numero"><?= $promedio ?></span>
+                        <span class="resenas-prom-numero">
+                            <?= $promedio ?>
+                        </span>
                         <div>
                             <div class="estrellas-display">
                                 <?php for ($i = 1; $i <= 5; $i++): ?>
                                     <span class="<?= $i <= round($promedio) ? 'estrella-llena' : 'estrella-vacia' ?>">★</span>
                                 <?php endfor; ?>
                             </div>
-                            <span class="resenas-total"><?= $total_resenas ?>
-                                reseña<?= $total_resenas > 1 ? 's' : '' ?></span>
+                            <span class="resenas-total">
+                                <?= $total_resenas ?>
+                                reseña
+                                <?= $total_resenas > 1 ? 's' : '' ?>
+                            </span>
                         </div>
                     </div>
                 <?php endif; ?>
@@ -529,8 +551,10 @@ include 'includes/Header.php';
                             <input type="hidden" name="id_resena" id="idResena" value="">
                             <p class="resena-form-titulo" id="resenaFormTitulo"
                                 data-default-text="Hola, <?= htmlspecialchars($_SESSION['usuario_publico_nombre']) ?> 👋 Deja tu reseña">
-                                Hola, <?= htmlspecialchars($_SESSION['usuario_publico_nombre']) ?> 👋
-                                Deja tu reseña</p>
+                                Hola,
+                                <?= htmlspecialchars($_SESSION['usuario_publico_nombre']) ?> 👋
+                                Deja tu reseña
+                            </p>
                             <div class="form-group">
                                 <label>Calificación</label>
                                 <div class="estrellas-input" id="estrellasInput">
@@ -544,7 +568,9 @@ include 'includes/Header.php';
                                 <label>Comentario</label>
                                 <textarea name="comentario" id="resenaComentario" rows="3"
                                     placeholder="Cuéntanos tu experiencia..." required maxlength="1000"></textarea>
-                                <div id="charCount" style="text-align: right; font-size: 12px; color: var(--muted); margin-top: 5px;">1000 caracteres restantes</div>
+                                <div id="charCount"
+                                    style="text-align: right; font-size: 12px; color: var(--muted); margin-top: 5px;">1000
+                                    caracteres restantes</div>
                             </div>
                             <div class="resena-form-actions">
                                 <button type="submit" class="btn-enviar-resena" id="btnEnviarResena">Enviar reseña</button>
@@ -579,9 +605,13 @@ include 'includes/Header.php';
                             ?>
                             <div class="resena-item" data-resena-id="<?= intval($r['id_resena']) ?>">
                                 <div class="resena-header">
-                                    <div class="<?= $avatar_class ?>"><?= $avatar_content ?></div>
+                                    <div class="<?= $avatar_class ?>">
+                                        <?= $avatar_content ?>
+                                    </div>
                                     <div>
-                                        <strong><?= $nombre_mostrar ?></strong>
+                                        <strong>
+                                            <?= $nombre_mostrar ?>
+                                        </strong>
                                         <?php if (isset($_SESSION['usuario_publico_id']) && intval($_SESSION['usuario_publico_id']) === intval($r['id_usuario_publico'])): ?>
                                             <span class="resena-badge resena-badge-propia">Tu reseña</span>
                                         <?php endif; ?>
@@ -592,28 +622,38 @@ include 'includes/Header.php';
                                             <?php endfor; ?>
                                         </div>
                                     </div>
-                                    <span class="resena-fecha"><?= date('d/m/Y', strtotime($r['fecha'])) ?></span>
+                                    <span class="resena-fecha">
+                                        <?= date('d/m/Y', strtotime($r['fecha'])) ?>
+                                    </span>
                                     <?php if (isset($_SESSION['usuario_publico_id']) && intval($_SESSION['usuario_publico_id']) === intval($r['id_usuario_publico'])): ?>
                                         <button type="button" class="btn-editar-resena" data-id="<?= intval($r['id_resena']) ?>"
                                             data-estrellas="<?= intval($r['estrellas']) ?>">Editar</button>
                                     <?php endif; ?>
                                 </div>
-                                <p class="resena-comentario"><?= nl2br(htmlspecialchars($r['comentario'])) ?></p>
+                                <p class="resena-comentario">
+                                    <?= nl2br(htmlspecialchars($r['comentario'])) ?>
+                                </p>
                                 <div class="resena-votos">
                                     <?php if (isset($_SESSION['usuario_publico_id']) && intval($_SESSION['usuario_publico_id']) !== intval($r['id_usuario_publico'])): ?>
                                         <button type="button"
                                             class="btn-resena-voto btn-voto-like <?= $r['my_vote'] === 'like' ? 'activo' : '' ?>"
                                             data-resena-id="<?= intval($r['id_resena']) ?>" data-tipo="like">
-                                            👍 <span class="votos-like-count"><?= intval($r['likes']) ?></span>
+                                            👍 <span class="votos-like-count">
+                                                <?= intval($r['likes']) ?>
+                                            </span>
                                         </button>
                                         <button type="button"
                                             class="btn-resena-voto btn-voto-dislike <?= $r['my_vote'] === 'dislike' ? 'activo' : '' ?>"
                                             data-resena-id="<?= intval($r['id_resena']) ?>" data-tipo="dislike">
-                                            👎 <span class="votos-dislike-count"><?= intval($r['dislikes']) ?></span>
+                                            👎 <span class="votos-dislike-count">
+                                                <?= intval($r['dislikes']) ?>
+                                            </span>
                                         </button>
                                     <?php elseif (isset($_SESSION['usuario_publico_id'])): ?>
-                                        <span class="votos-summary">👍 <?= intval($r['likes']) ?> · 👎
-                                            <?= intval($r['dislikes']) ?></span>
+                                        <span class="votos-summary">👍
+                                            <?= intval($r['likes']) ?> · 👎
+                                            <?= intval($r['dislikes']) ?>
+                                        </span>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -686,12 +726,14 @@ include 'includes/Header.php';
 
         <?php if ($buscar): ?>
             <div class="filtro-activo">
-                🔍 Resultados para: "<?= htmlspecialchars($buscar) ?>"
+                🔍 Resultados para: "
+                <?= htmlspecialchars($buscar) ?>"
                 <a href="<?= APP_URL ?>/empresas" title="Limpiar">✕</a>
             </div>
         <?php elseif ($id_categoria): ?>
             <div class="filtro-activo">
-                🏷 Categoría: <?= htmlspecialchars($cat_nombre ?? 'Categoría') ?>
+                🏷 Categoría:
+                <?= htmlspecialchars($cat_nombre ?? 'Categoría') ?>
                 <a href="<?= APP_URL ?>/empresas" title="Ver todas">✕</a>
             </div>
         <?php endif; ?>
@@ -747,7 +789,9 @@ include 'includes/Header.php';
     <?php else: ?>
         <div class="no-results">
             <p>😕 No se encontraron
-                empresas<?= $buscar ? ' para "<strong>' . htmlspecialchars($buscar) . '</strong>"' : '' ?>.</p>
+                empresas
+                <?= $buscar ? ' para "<strong>' . htmlspecialchars($buscar) . '</strong>"' : '' ?>.
+            </p>
             <br><br>
             <a href="<?= APP_URL ?>/empresas">Ver todas las empresas</a>
         </div>

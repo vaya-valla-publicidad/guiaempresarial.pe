@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/security.php';
 if (!isset($seo_title))
   $seo_title = "Guía Empresarial";
@@ -16,7 +17,6 @@ if (!isset($seo_robots))
 
 $user_favs = [];
 if (isset($_SESSION['usuario_publico_id'])) {
-  require_once __DIR__ . '/../db.php';
   $id_u_fav = intval($_SESSION['usuario_publico_id']);
   $stmt_favs = $conexion->prepare("SELECT id_empresa FROM favoritos WHERE id_usuario_publico = ?");
   $stmt_favs->bind_param("i", $id_u_fav);

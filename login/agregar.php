@@ -5,8 +5,8 @@ include '../db.php';
 $error = "";
 $success = "";
 
-if (!in_array($_SESSION['rol'], ['admin', 'editor'])) {
-    header("Location: login.php");
+if ($_SESSION['rol'] !== 'admin') {
+    header("Location: admin.php");
     exit;
 }
 
