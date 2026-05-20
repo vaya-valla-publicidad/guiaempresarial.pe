@@ -82,6 +82,8 @@ if (isset($_POST['id'])) {
         exit;
     } catch (Exception $ex) {
         $conexion->rollback();
+        error_log("Error al eliminar (admin): " . $ex->getMessage());
+        http_response_code(500);
         echo json_encode(['ok' => false, 'error' => 'Error al eliminar: ' . $ex->getMessage()]);
         exit;
     }

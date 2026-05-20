@@ -28,52 +28,31 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'reenviar_codigo_ajax') {
   }
   $email = trim($_POST['email']);
 
-  if (!isset($_SESSION['otp_limits'])) {
-    $_SESSION['otp_limits'] = ['count' => 0, 'last_time' => 0, 'daily_count' => 0, 'daily_start' => time()];
-  }
-  $limits = &$_SESSION['otp_limits'];
-  $now = time();
-
-  if ($now - $limits['daily_start'] > 86400) {
-    $limits['daily_count'] = 0;
-    $limits['daily_start'] = $now;
-    $limits['count'] = 0;
+  if (!verificarBloqueoOTP($email)) {
+    echo json_encode(['success' => false, 'error' => 'Demasiados intentos. Espera 15 minutos.']);
+    exit;
   }
 
-  if ($limits['daily_count'] >= $max_24h) {
-    echo json_encode(['success' => false, 'error' => 'Límite diario alcanzado. Intenta en 24 horas.']);
-  } elseif ($limits['count'] >= 10) {
-    if ($now - $limits['last_time'] < 3600) {
-      echo json_encode(['success' => false, 'error' => 'Límite de 10 intentos alcanzado. Espera 1 hora.']);
+  $stmt = $conexion->prepare("SELECT nombre FROM usuarios_publicos WHERE email = ?");
+  $stmt->bind_param("s", $email);
+  $stmt->execute();
+  $res = $stmt->get_result();
+  if ($res->num_rows === 1) {
+    $u = $res->fetch_assoc();
+    $codigo = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    $expira = time() + 600;
+    $stmt_upd = $conexion->prepare("UPDATE usuarios_publicos SET codigo_verificacion=?, codigo_expira=? WHERE email=?");
+    $stmt_upd->bind_param("sis", $codigo, $expira, $email);
+    if ($stmt_upd->execute()) {
+      $cuerpo = plantillaCorreoOTP($u['nombre'], $codigo, 'acceso');
+      enviarCorreo($email, $u['nombre'], 'Código de Acceso - Guía Empresarial', $cuerpo);
+      registrarIntentoOTP($email);
+      echo json_encode(['success' => true]);
     } else {
-      $limits['count'] = 0;
+      echo json_encode(['success' => false, 'error' => 'Error al procesar el envío.']);
     }
-  } elseif ($limits['count'] >= $max_30m && ($now - $limits['last_time'] < 1800)) {
-    echo json_encode(['success' => false, 'error' => 'Demasiados intentos. Espera 30 minutos.']);
   } else {
-    $stmt = $conexion->prepare("SELECT nombre FROM usuarios_publicos WHERE email = ?");
-    $stmt->bind_param("s", $email);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    if ($res->num_rows === 1) {
-      $u = $res->fetch_assoc();
-      $codigo = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-      $expira = time() + 600;
-      $stmt_upd = $conexion->prepare("UPDATE usuarios_publicos SET codigo_verificacion=?, codigo_expira=? WHERE email=?");
-      $stmt_upd->bind_param("sis", $codigo, $expira, $email);
-      if ($stmt_upd->execute()) {
-        $cuerpo = plantillaCorreoOTP($u['nombre'], $codigo, 'acceso');
-        enviarCorreo($email, $u['nombre'], 'Código de Acceso - Guía Empresarial', $cuerpo);
-        $limits['count']++;
-        $limits['daily_count']++;
-        $limits['last_time'] = $now;
-        echo json_encode(['success' => true]);
-      } else {
-        echo json_encode(['success' => false, 'error' => 'Error al procesar el envío.']);
-      }
-    } else {
-      echo json_encode(['success' => false, 'error' => 'Usuario no encontrado.']);
-    }
+    echo json_encode(['success' => false, 'error' => 'Usuario no encontrado.']);
   }
   exit;
 }
@@ -93,23 +72,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
       if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = 'Correo inválido.';
       } else {
-        if (!isset($_SESSION['otp_limits'])) {
-          $_SESSION['otp_limits'] = ['count' => 0, 'last_time' => 0, 'daily_count' => 0, 'daily_start' => time()];
-        }
-        $limits = &$_SESSION['otp_limits'];
-        $now = time();
-        if ($now - $limits['daily_start'] > 86400) {
-          $limits['daily_count'] = 0;
-          $limits['daily_start'] = $now;
-          $limits['count'] = 0;
-        }
-
-        if ($limits['daily_count'] >= $max_24h) {
-          $error = 'Límite diario de 20 intentos alcanzado. Intenta en 24 horas.';
-        } elseif ($limits['count'] >= 10 && ($now - $limits['last_time'] < 43200)) {
-          $error = 'Has superado el límite de 10 intentos. Por seguridad, espera 12 horas.';
-        } elseif ($limits['count'] >= $max_30m && ($now - $limits['last_time'] < 1800)) {
-          $error = 'Demasiados intentos. Espera 30 minutos.';
+        if (!verificarBloqueoOTP($email)) {
+          $error = 'Has superado el límite de intentos. Espera 15 minutos.';
         } else {
           $stmt = $conexion->prepare("SELECT id, nombre, verificado FROM usuarios_publicos WHERE email = ?");
           $stmt->bind_param("s", $email);
@@ -126,9 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
             $cuerpo = plantillaCorreoOTP($u['nombre'], $codigo, 'acceso');
             enviarCorreo($email, $u['nombre'], 'Acceso a Guía Empresarial', $cuerpo);
 
-            $limits['count']++;
-            $limits['daily_count']++;
-            $limits['last_time'] = $now;
+            registrarIntentoOTP($email);
 
             header("Location: login_usuario?paso=codigo&email=" . urlencode($email) . ($redir ? '&redir=' . urlencode($redir) : ''));
             exit;
@@ -169,24 +131,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
     if ($_POST['accion'] === 'login_password') {
       $email = trim($_POST['email'] ?? '');
       $password = $_POST['password'] ?? '';
-      $stmt_check = $conexion->prepare("SELECT * FROM usuarios_publicos WHERE email = ?");
-      $stmt_check->bind_param("s", $email);
-      $stmt_check->execute();
-      $res = $stmt_check->get_result();
-      if ($res && $res->num_rows === 1) {
-        $u = $res->fetch_assoc();
-        if (password_verify($password, $u['password_hash'])) {
-          $_SESSION['usuario_publico_id'] = $u['id'];
-          $_SESSION['usuario_publico_nombre'] = $u['nombre'];
-          $_SESSION['usuario_publico_pw_hash'] = $u['password_hash'];
-          $destino = $redir ? urldecode($redir) : 'mi_cuenta';
+      
+      if (!verificarBloqueoOTP($email)) {
           if (isset($_POST['ajax'])) {
-            echo json_encode(['success' => true, 'redirect' => $destino]);
+            echo json_encode(['success' => false, 'error' => 'Demasiados intentos fallidos. Espera 15 minutos.']);
             exit;
           }
-          header("Location: $destino");
-          exit;
+          $error = 'Demasiados intentos fallidos. Espera 15 minutos.';
+          $paso = 'password';
+          $email_param = $email;
+      } else {
+        $stmt_check = $conexion->prepare("SELECT * FROM usuarios_publicos WHERE email = ?");
+        $stmt_check->bind_param("s", $email);
+        $stmt_check->execute();
+        $res = $stmt_check->get_result();
+        if ($res && $res->num_rows === 1) {
+          $u = $res->fetch_assoc();
+          if (password_verify($password, $u['password_hash'])) {
+            limpiarIntentosOTP($email);
+            $_SESSION['usuario_publico_id'] = $u['id'];
+            $_SESSION['usuario_publico_nombre'] = $u['nombre'];
+            $_SESSION['usuario_publico_pw_hash'] = $u['password_hash'];
+            $destino = $redir ? urldecode($redir) : 'mi_cuenta';
+            if (isset($_POST['ajax'])) {
+              echo json_encode(['success' => true, 'redirect' => $destino]);
+              exit;
+            }
+            header("Location: $destino");
+            exit;
+          } else {
+            registrarIntentoOTP($email);
+            if (isset($_POST['ajax'])) {
+              echo json_encode(['success' => false, 'error' => 'Contraseña incorrecta.']);
+              exit;
+            }
+            $error = 'Contraseña incorrecta.';
+            $paso = 'password';
+            $email_param = $email;
+          }
         } else {
+          registrarIntentoOTP($email);
           if (isset($_POST['ajax'])) {
             echo json_encode(['success' => false, 'error' => 'Contraseña incorrecta.']);
             exit;

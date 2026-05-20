@@ -123,6 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
             exit;
           } catch (Exception $ex) {
             $conexion->rollback();
+            error_log("Error al eliminar la cuenta de usuario: " . $ex->getMessage());
             $error = 'No se pudo eliminar la cuenta. Intente nuevamente más tarde.';
           }
         }
@@ -245,53 +246,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
   }
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_eliminar_resena'])) {
-  header('Content-Type: application/json');
-  if (!validarCSRF()) {
-    echo json_encode(['success' => false, 'error' => 'CSRF Inválido']);
-    exit;
-  }
-  $id_r = intval($_POST['ajax_eliminar_resena']);
 
-  $stmt_check = $conexion->prepare("SELECT id_resena FROM resenas WHERE id_resena = ? AND id_usuario_publico = ?");
-  $stmt_check->bind_param("ii", $id_r, $id_u);
-  $stmt_check->execute();
-  $res_check = $stmt_check->get_result();
-  if ($res_check->num_rows === 0) {
-    $stmt_check->close();
-    echo json_encode(['success' => false, 'error' => 'No tienes permiso para eliminar esta reseña']);
-    exit;
-  }
-  $stmt_check->close();
-
-  $conexion->begin_transaction();
-  try {
-    $stmt_del_votes = $conexion->prepare("DELETE FROM resena_votos WHERE id_resena = ?");
-    $stmt_del_votes->bind_param("i", $id_r);
-    $stmt_del_votes->execute();
-    $stmt_del_votes->close();
-
-    $stmt_del = $conexion->prepare("DELETE FROM resenas WHERE id_resena = ? AND id_usuario_publico = ?");
-    $stmt_del->bind_param("ii", $id_r, $id_u);
-    $stmt_del->execute();
-    $stmt_del->close();
-
-    $conexion->commit();
-    echo json_encode(['success' => true]);
-    exit;
-  } catch (Exception $e) {
-    $conexion->rollback();
-    echo json_encode(['success' => false, 'error' => 'Error al eliminar la reseña']);
-    exit;
-  }
-}
 
 $stmt_res = $conexion->prepare(
   "SELECT r.*, e.nombre AS empresa_nombre
      FROM resenas r
      JOIN empresas e ON r.id_empresa = e.id_empresa
      WHERE r.id_usuario_publico = ?
-     ORDER BY r.fecha DESC"
+     ORDER BY r.fecha DESC LIMIT 10"
 );
 $stmt_res->bind_param("i", $id_u);
 $stmt_res->execute();
@@ -312,7 +274,7 @@ $stmt_favs_q = $conexion->prepare(
    LEFT JOIN empresa_galeria g ON e.id_empresa = g.id_empresa
    WHERE f.id_usuario_publico = ?
    GROUP BY e.id_empresa
-   ORDER BY f.fecha_agregado DESC"
+   ORDER BY f.fecha_agregado DESC LIMIT 10"
 );
 $stmt_favs_q->bind_param("i", $id_u);
 $stmt_favs_q->execute();
@@ -660,6 +622,11 @@ include 'includes/Header.php';
                 </div>
               </div>
             <?php endforeach; ?>
+            <?php if (count($mis_resenas) === 10): ?>
+            <div style="text-align:center; padding: 15px 0;">
+                <p style="font-size: 13px; color: rgba(255,255,255,0.5);">Mostrando las últimas 10 reseñas. (Paginación en desarrollo)</p>
+            </div>
+            <?php endif; ?>
           </div>
         <?php endif; ?>
       </div>
@@ -680,6 +647,11 @@ include 'includes/Header.php';
               renderFavoritoCard($fila, $fotos_arr);
             endforeach;
             ?>
+            <?php if (count($mis_favoritos) === 10): ?>
+            <div style="text-align:center; padding: 15px 0; grid-column: span 100%;">
+                <p style="font-size: 13px; color: rgba(255,255,255,0.5);">Mostrando los últimos 10 favoritos. (Paginación en desarrollo)</p>
+            </div>
+            <?php endif; ?>
           </div>
         <?php endif; ?>
       </div>
@@ -904,7 +876,7 @@ include 'includes/Header.php';
     btn.style.opacity = '0.7';
     btn.style.cursor = 'not-allowed';
 
-    fetch('mi_cuenta', {
+    fetch('ajax/eliminar_resena', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: 'ajax_eliminar_resena=' + id_resena + '&csrf_token=' + window.csrfToken

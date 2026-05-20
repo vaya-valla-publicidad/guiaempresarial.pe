@@ -4,6 +4,18 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+if (isset($_SESSION['usuario']) || isset($_SESSION['usuario_publico_id'])) {
+    $max_time = (isset($_SESSION['rol'])) ? 900 : 1800; 
+    if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $max_time)) {
+        $es_admin = isset($_SESSION['rol']);
+        session_unset();
+        session_destroy();
+        header('Location: ' . ($es_admin ? 'login/login' : 'login_usuario'));
+        exit;
+    }
+    $_SESSION['last_activity'] = time();
+}
+
 if (!function_exists('generarTokenCSRF')) {
     function generarTokenCSRF()
     {
@@ -277,14 +289,23 @@ if (!function_exists('escaparLike')) {
 if (!function_exists('validarRedireccionLocal')) {
     function validarRedireccionLocal($url)
     {
-        if (empty($url))
-            return 'mi_cuenta.php';
+        if (empty($url)) return 'mi_cuenta.php';
         $url = trim($url);
 
-        if (preg_match('~^(https?:)?//~i', $url)) {
+        if (str_contains($url, '//') || str_contains($url, '\\') || str_contains($url, ':')) {
             return 'mi_cuenta.php';
         }
-        return $url;
+        
+        if (str_contains($url, '..') || str_contains($url, "\0")) {
+            return 'mi_cuenta.php';
+        }
+
+        $permitidas = ['/', 'mi_cuenta', 'mi_cuenta.php', 'negocio/', 'rubro/', 'empresas'];
+        foreach ($permitidas as $p) {
+            if (str_starts_with($url, $p)) return $url;
+        }
+
+        return 'mi_cuenta.php';
     }
 }
 

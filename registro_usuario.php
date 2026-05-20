@@ -57,13 +57,14 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'reenviar_codigo_ajax') {
 
   $stmt = $conexion->prepare("UPDATE usuarios_publicos SET codigo_verificacion=?, codigo_expira=? WHERE email=? AND verificado=0");
   $stmt->bind_param("sis", $codigo, $expira, $email);
-  if ($stmt->execute()) {
+  $stmt->execute();
+  if ($stmt->affected_rows > 0) {
     $cuerpo = plantillaCorreoOTP($nombre_real, $codigo, 'registro');
     enviarCorreo($email, $nombre_real, 'Código de Acceso - Guía Empresarial', $cuerpo);
     registrarIntentoOTP($email);
     echo json_encode(['success' => true]);
   } else {
-    echo json_encode(['success' => false, 'error' => 'Error al procesar el envío.']);
+    echo json_encode(['success' => false, 'error' => 'Error al procesar el envío o cuenta ya verificada.']);
   }
   exit;
 }
