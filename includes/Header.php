@@ -33,6 +33,12 @@ if (isset($_SESSION['usuario_publico_id'])) {
 <html lang="es">
 
 <head>
+  <script>
+    (function () {
+      var t = localStorage.getItem('tema');
+      if (t === 'oscuro') document.documentElement.setAttribute('data-tema', 'oscuro');
+    })();
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -52,22 +58,16 @@ if (isset($_SESSION['usuario_publico_id'])) {
   <meta property="twitter:description" content="<?= htmlspecialchars($seo_description) ?>">
   <meta property="twitter:image" content="<?= htmlspecialchars($seo_image) ?>">
 
-  <link rel="stylesheet"
-    href="<?= APP_URL ?>/assets/css/style.css?v=<?= filemtime(__DIR__ . '/../assets/css/style.css') ?>">
-  <link rel="stylesheet"
-    href="<?= APP_URL ?>/assets/css/mi_cuenta.css?v=<?= filemtime(__DIR__ . '/../assets/css/mi_cuenta.css') ?>">
+  <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css?v=<?= ASSET_VERSION ?>">
+  <?php if (!empty($extra_css) && in_array('mi_cuenta', $extra_css)): ?>
+    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/mi_cuenta.css?v=<?= ASSET_VERSION ?>">
+  <?php endif; ?>
   <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="manifest" href="<?= APP_URL ?>/manifest.json">
   <meta name="theme-color" content="#0d6efd">
   <script>
-    (function () {
-      const theme = localStorage.getItem('theme');
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark-mode');
-      }
-    })();
     window.csrfToken = '<?php echo function_exists('generarTokenCSRF') ? generarTokenCSRF() : ""; ?>';
   </script>
   <script src="<?= APP_URL ?>/assets/js/toast.js"></script>
@@ -75,11 +75,7 @@ if (isset($_SESSION['usuario_publico_id'])) {
 
 <body
   class="<?php echo (isset($_COOKIE['theme']) && htmlspecialchars($_COOKIE['theme'], ENT_QUOTES, 'UTF-8') === 'dark') ? 'dark-mode' : ''; ?>">
-  <script>
-    if (localStorage.getItem('theme') === 'dark') {
-      document.body.classList.add('dark-mode');
-    }
-  </script>
+
 
   <div id="nprogress-bar"></div>
 
@@ -98,10 +94,6 @@ if (isset($_SESSION['usuario_publico_id'])) {
       </button>
 
       <div class="nav-actions" id="nav-actions">
-        <?php
-        if (session_status() === PHP_SESSION_NONE)
-          session_start();
-        ?>
         <nav class="nav-links">
           <a href="<?= APP_URL ?>/" class="nav-link">Inicio</a>
           <a href="<?= APP_URL ?>/?jump=empresas" class="nav-link"

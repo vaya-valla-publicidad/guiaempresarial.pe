@@ -49,3 +49,4 @@ $default_url = $protocol . $host . '/guiaempresarial.pe';
 
 define('APP_NAME', config_env('APP_NAME', 'Guía Empresarial'));
 define('APP_URL', config_env('APP_URL', $default_url));
+define('ASSET_VERSION', '1.0.0');

@@ -10,7 +10,8 @@ const assetsToCache = [
   "assets/img/icon-192.png",
   "assets/img/icon-512.png",
   "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css",
-  "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+  "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+  "assets/fonts/Inter.woff2"
 ];
 
 self.addEventListener("install", event => {

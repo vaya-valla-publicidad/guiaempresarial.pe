@@ -5,12 +5,12 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 if (isset($_SESSION['usuario']) || isset($_SESSION['usuario_publico_id'])) {
-    $max_time = (isset($_SESSION['rol'])) ? 900 : 1800; 
+    $max_time = (isset($_SESSION['rol'])) ? 900 : 1800;
     if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $max_time)) {
         $es_admin = isset($_SESSION['rol']);
         session_unset();
         session_destroy();
-        header('Location: ' . ($es_admin ? 'login/login' : 'login_usuario'));
+        header('Location: ' . APP_URL . ($es_admin ? '/login/login' : '/login_usuario'));
         exit;
     }
     $_SESSION['last_activity'] = time();
@@ -121,11 +121,18 @@ if (!function_exists('subirImagenSegura')) {
         }
         if (isset($config['redimensionar']) && $config['redimensionar']) {
             redimensionarImagen($rutaDestino, $config['ancho_max'], $config['alto_max']);
+
+            $rutaThumb = $directorio . DIRECTORY_SEPARATOR . 'thumb_' . $nombreArchivo;
+            copy($rutaDestino, $rutaThumb);
+            redimensionarImagen($rutaThumb, 400, 400);
         }
         if (isset($config['webp']) && $config['webp']) {
             $nuevaRuta = convertirAWebp($rutaDestino);
             if ($nuevaRuta) {
                 $nombreArchivo = basename($nuevaRuta);
+            }
+            if (isset($rutaThumb) && file_exists($rutaThumb)) {
+                convertirAWebp($rutaThumb);
             }
         }
         return ['success' => true, 'nombre' => $nombreArchivo, 'error' => null];
@@ -289,20 +296,22 @@ if (!function_exists('escaparLike')) {
 if (!function_exists('validarRedireccionLocal')) {
     function validarRedireccionLocal($url)
     {
-        if (empty($url)) return 'mi_cuenta.php';
+        if (empty($url))
+            return 'mi_cuenta.php';
         $url = trim($url);
 
         if (str_contains($url, '//') || str_contains($url, '\\') || str_contains($url, ':')) {
             return 'mi_cuenta.php';
         }
-        
+
         if (str_contains($url, '..') || str_contains($url, "\0")) {
             return 'mi_cuenta.php';
         }
 
         $permitidas = ['/', 'mi_cuenta', 'mi_cuenta.php', 'negocio/', 'rubro/', 'empresas'];
         foreach ($permitidas as $p) {
-            if (str_starts_with($url, $p)) return $url;
+            if (str_starts_with($url, $p))
+                return $url;
         }
 
         return 'mi_cuenta.php';

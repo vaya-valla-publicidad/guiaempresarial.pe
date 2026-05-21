@@ -31,7 +31,6 @@ if (file_exists(__DIR__ . '/mantenimiento.flag')) {
     $ruta_actual = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
     $base_path = parse_url(APP_URL, PHP_URL_PATH) ?: '';
 
-    // Si la aplicación está en un subdirectorio, lo removemos para la comparación
     if (!empty($base_path) && str_starts_with($ruta_actual, $base_path)) {
         $ruta_actual = substr($ruta_actual, strlen($base_path));
     }

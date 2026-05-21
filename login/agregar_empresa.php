@@ -20,8 +20,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $descripcion = inputLimpio($_POST['descripcion'] ?? '') ?: null;
         $horario = inputLimpio($_POST['horario'] ?? '') ?: null;
         $ubicacion_link = inputLimpio($_POST['ubicacion_link'] ?? '') ?: null;
+        if ($ubicacion_link && !preg_match('/^https?:\/\//i', $ubicacion_link)) {
+            $error = "El enlace de ubicación debe comenzar con http:// o https://";
+        }
         $link_empresa = inputLimpio($_POST['link_empresa'] ?? '') ?: null;
+        if ($link_empresa && empty($error) && !preg_match('/^https?:\/\//i', $link_empresa)) {
+            $error = "El enlace de empresa debe comenzar con http:// o https://";
+        }
         $facebook = inputLimpio($_POST['facebook'] ?? '') ?: null;
+        if ($facebook && empty($error) && !preg_match('/^https?:\/\//i', $facebook)) {
+            $error = "El enlace de Facebook debe comenzar con http:// o https://";
+        }
         $slug = generarSlug($nombre);
 
         $logo = null;
@@ -42,51 +51,53 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             }
         }
 
-        $stmt = $conexion->prepare(
-            "INSERT INTO empresas (nombre,telefono,direccion,id_categoria,descripcion,horario,ubicacion_link,link_empresa,facebook,logo,slug)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?)"
-        );
-        $stmt->bind_param("sssisssssss", $nombre, $telefono, $direccion, $id_categoria, $descripcion, $horario, $ubicacion_link, $link_empresa, $facebook, $logo, $slug);
+        if (empty($error)) {
+            $stmt = $conexion->prepare(
+                "INSERT INTO empresas (nombre,telefono,direccion,id_categoria,descripcion,horario,ubicacion_link,link_empresa,facebook,logo,slug)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?)"
+            );
+            $stmt->bind_param("sssisssssss", $nombre, $telefono, $direccion, $id_categoria, $descripcion, $horario, $ubicacion_link, $link_empresa, $facebook, $logo, $slug);
 
-        if (!$stmt->execute()) {
-            $error = "Ha ocurrido un error al guardar la empresa. Por favor intenta nuevamente.";
-            error_log("SQL Error en agregar_empresa.php: " . $stmt->error);
-        } else {
-            $id_empresa = $stmt->insert_id;
+            if (!$stmt->execute()) {
+                $error = "Ha ocurrido un error al guardar la empresa. Por favor intenta nuevamente.";
+                error_log("SQL Error en agregar_empresa.php: " . $stmt->error);
+            } else {
+                $id_empresa = $stmt->insert_id;
 
-            if (!empty($_FILES['fotos']['name'][0])) {
-                $total = min(count($_FILES['fotos']['name']), 5);
-                for ($i = 0; $i < $total; $i++) {
-                    if (empty($_FILES['fotos']['name'][$i]))
-                        continue;
+                if (!empty($_FILES['fotos']['name'][0])) {
+                    $total = min(count($_FILES['fotos']['name']), 5);
+                    for ($i = 0; $i < $total; $i++) {
+                        if (empty($_FILES['fotos']['name'][$i]))
+                            continue;
 
-                    $foto_file = [
-                        'name' => $_FILES['fotos']['name'][$i],
-                        'type' => $_FILES['fotos']['type'][$i],
-                        'tmp_name' => $_FILES['fotos']['tmp_name'][$i],
-                        'error' => $_FILES['fotos']['error'][$i],
-                        'size' => $_FILES['fotos']['size'][$i]
-                    ];
+                        $foto_file = [
+                            'name' => $_FILES['fotos']['name'][$i],
+                            'type' => $_FILES['fotos']['type'][$i],
+                            'tmp_name' => $_FILES['fotos']['tmp_name'][$i],
+                            'error' => $_FILES['fotos']['error'][$i],
+                            'size' => $_FILES['fotos']['size'][$i]
+                        ];
 
-                    $res_f = subirImagenSegura($foto_file, __DIR__ . "/../assets/img/empresascarrusel/", [
-                        'redimensionar' => true,
-                        'ancho_max' => 1200,
-                        'alto_max' => 900,
-                        'webp' => true
-                    ]);
+                        $res_f = subirImagenSegura($foto_file, __DIR__ . "/../assets/img/empresascarrusel/", [
+                            'redimensionar' => true,
+                            'ancho_max' => 1200,
+                            'alto_max' => 900,
+                            'webp' => true
+                        ]);
 
-                    if ($res_f['success']) {
-                        $nombreFoto = $res_f['nombre'];
-                        $stmtFoto = $conexion->prepare("INSERT INTO empresa_galeria (id_empresa,foto) VALUES (?,?)");
-                        $stmtFoto->bind_param("is", $id_empresa, $nombreFoto);
-                        $stmtFoto->execute();
-                        $stmtFoto->close();
+                        if ($res_f['success']) {
+                            $nombreFoto = $res_f['nombre'];
+                            $stmtFoto = $conexion->prepare("INSERT INTO empresa_galeria (id_empresa,foto) VALUES (?,?)");
+                            $stmtFoto->bind_param("is", $id_empresa, $nombreFoto);
+                            $stmtFoto->execute();
+                            $stmtFoto->close();
+                        }
                     }
                 }
+                $success = "Empresa agregada correctamente";
             }
-            $success = "Empresa agregada correctamente";
+            $stmt->close();
         }
-        $stmt->close();
     }
 }
 

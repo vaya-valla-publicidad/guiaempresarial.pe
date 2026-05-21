@@ -27,6 +27,7 @@ function enviarCorreo(string $destinatario, string $nombre, string $asunto, stri
     $mail->send();
     return true;
   } catch (Exception $e) {
+    error_log('PHPMailer error: ' . $mail->ErrorInfo . ' | ' . $e->getMessage());
     return false;
   }
 }
@@ -34,9 +35,12 @@ function enviarCorreo(string $destinatario, string $nombre, string $asunto, stri
 function plantillaCorreoOTP(string $nombre, string $codigo, string $motivo): string
 {
   $titulo = 'Verificación de Seguridad';
-  if ($motivo === 'registro') $titulo = 'Confirma tu cuenta';
-  if ($motivo === 'acceso') $titulo = 'Tu código de acceso';
-  if ($motivo === 'password') $titulo = 'Cambio de Contraseña';
+  if ($motivo === 'registro')
+    $titulo = 'Confirma tu cuenta';
+  if ($motivo === 'acceso')
+    $titulo = 'Tu código de acceso';
+  if ($motivo === 'password')
+    $titulo = 'Cambio de Contraseña';
 
   $mensaje = $motivo === 'registro'
     ? "Bienvenido a Guía Empresarial. Para finalizar tu registro, ingresa el siguiente código en la pantalla de verificación:"

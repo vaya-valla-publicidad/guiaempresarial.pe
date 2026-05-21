@@ -4,9 +4,6 @@ include_once __DIR__ . '/../includes/config.php';
 include_once __DIR__ . '/../db.php';
 include_once __DIR__ . '/../includes/security.php';
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
 
 if (!isset($_SESSION['usuario']) || !isset($_SESSION['rol']) || empty($_SESSION['admin_access_granted'])) {
     logSeguridad('acceso_no_autorizado', 'Intento de acceso al panel sin autorización de token o sesión');

@@ -4,6 +4,7 @@ include 'includes/security.php';
 include 'includes/components/empresa_card.php';
 include 'includes/components/breadcrumbs.php';
 $seo_title = "Empresas - Guía Empresarial";
+$conexion->query("SET SESSION group_concat_max_len = 100000");
 $seo_description = "Explora negocios locales y descubre nuevas oportunidades en tu región.";
 
 $seo_id_empresa = $_GET['empresa'] ?? null;
@@ -679,34 +680,45 @@ include 'includes/Header.php';
         $id_cat_actual = intval($fila['id_categoria'] ?? 0);
         $id_emp_actual = intval($id_empresa);
         if ($id_cat_actual > 0) {
-            $stmt_sim = $conexion->prepare("SELECT e.*, c.nombre AS categoria FROM empresas e JOIN categorias c ON e.id_categoria = c.id_categoria WHERE e.id_categoria = ? AND e.id_empresa != ? ORDER BY RAND() LIMIT 3");
-            $stmt_sim->bind_param("ii", $id_cat_actual, $id_emp_actual);
-            $stmt_sim->execute();
-            $res_sim = $stmt_sim->get_result();
+            $stmt_count_sim = $conexion->prepare("SELECT COUNT(*) as total FROM empresas WHERE id_categoria = ? AND id_empresa != ?");
+            $stmt_count_sim->bind_param("ii", $id_cat_actual, $id_emp_actual);
+            $stmt_count_sim->execute();
+            $total_sim_res = $stmt_count_sim->get_result();
+            $total_sim = $total_sim_res ? ($total_sim_res->fetch_assoc()['total'] ?? 0) : 0;
+            $stmt_count_sim->close();
 
-            if ($res_sim && $res_sim->num_rows > 0):
-                ?>
-                <div style="margin-top: 40px; padding-top: 30px; border-top: 1px solid var(--borde);">
-                    <div class="section-header" style="text-align: left; margin-bottom: 24px;">
-                        <h2 style="font-size: 24px; color: var(--ink);">También podría interesarte...</h2>
-                        <p style="color: var(--muted); font-size: 15px; margin-top: 4px;">Otras opciones en
-                            <?= htmlspecialchars($fila['categoria'] ?? '') ?>
-                        </p>
-                    </div>
-                    <div class="empresas-list">
-                        <?php
+            if ($total_sim > 0):
+                $offset_sim = rand(0, max(0, $total_sim - 3));
 
-                        $stmt_sim = $conexion->prepare("SELECT e.*, c.nombre AS categoria, GROUP_CONCAT(g.foto ORDER BY g.orden ASC SEPARATOR ',') as fotos_galeria FROM empresas e JOIN categorias c ON e.id_categoria = c.id_categoria LEFT JOIN empresa_galeria g ON e.id_empresa = g.id_empresa WHERE e.id_categoria = ? AND e.id_empresa != ? GROUP BY e.id_empresa ORDER BY RAND() LIMIT 3");
-                        $stmt_sim->bind_param("ii", $id_cat_actual, $id_emp_actual);
-                        $stmt_sim->execute();
-                        $res_sim = $stmt_sim->get_result();
-                        while ($f_sim = $res_sim->fetch_assoc()):
-                            $fotos_sim = !empty($f_sim['fotos_galeria']) ? explode(',', $f_sim['fotos_galeria']) : [];
-                            renderEmpresaCard($f_sim, $fotos_sim);
-                        endwhile; ?>
+                $stmt_sim = $conexion->prepare("SELECT e.*, c.nombre AS categoria FROM empresas e JOIN categorias c ON e.id_categoria = c.id_categoria WHERE e.id_categoria = ? AND e.id_empresa != ? ORDER BY e.id_empresa LIMIT 3 OFFSET ?");
+                $stmt_sim->bind_param("iii", $id_cat_actual, $id_emp_actual, $offset_sim);
+                $stmt_sim->execute();
+                $res_sim = $stmt_sim->get_result();
+
+                if ($res_sim && $res_sim->num_rows > 0):
+                    ?>
+                    <div style="margin-top: 40px; padding-top: 30px; border-top: 1px solid var(--borde);">
+                        <div class="section-header" style="text-align: left; margin-bottom: 24px;">
+                            <h2 style="font-size: 24px; color: var(--ink);">También podría interesarte...</h2>
+                            <p style="color: var(--muted); font-size: 15px; margin-top: 4px;">Otras opciones en
+                                <?= htmlspecialchars($fila['categoria'] ?? '') ?>
+                            </p>
+                        </div>
+                        <div class="empresas-list">
+                            <?php
+
+                            $stmt_sim = $conexion->prepare("SELECT e.*, c.nombre AS categoria, GROUP_CONCAT(g.foto ORDER BY g.orden ASC SEPARATOR ',') as fotos_galeria FROM empresas e JOIN categorias c ON e.id_categoria = c.id_categoria LEFT JOIN empresa_galeria g ON e.id_empresa = g.id_empresa WHERE e.id_categoria = ? AND e.id_empresa != ? GROUP BY e.id_empresa ORDER BY e.id_empresa LIMIT 3 OFFSET ?");
+                            $stmt_sim->bind_param("iii", $id_cat_actual, $id_emp_actual, $offset_sim);
+                            $stmt_sim->execute();
+                            $res_sim = $stmt_sim->get_result();
+                            while ($f_sim = $res_sim->fetch_assoc()):
+                                $fotos_sim = !empty($f_sim['fotos_galeria']) ? explode(',', $f_sim['fotos_galeria']) : [];
+                                renderEmpresaCard($f_sim, $fotos_sim);
+                            endwhile; ?>
+                        </div>
                     </div>
-                </div>
-            <?php endif;
+                <?php endif;
+            endif;
         }
         ?>
         </div>

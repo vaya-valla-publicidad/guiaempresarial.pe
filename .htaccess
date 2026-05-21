@@ -27,6 +27,15 @@ ServerSignature Off
     RewriteBase /guiaempresarial.pe/
     DirectoryIndex index.php
 
+    RewriteCond %{DOCUMENT_ROOT}/guiaempresarial.pe/mantenimiento.flag -f
+    RewriteCond %{REQUEST_URI} !^/guiaempresarial.pe/mantenimiento\.php$
+    RewriteCond %{REQUEST_URI} !^/guiaempresarial.pe/assets/
+    RewriteCond %{REQUEST_URI} !^/guiaempresarial.pe/login
+    RewriteCond %{REQUEST_URI} !^/guiaempresarial.pe/login_usuario
+    RewriteCond %{REQUEST_URI} !^/guiaempresarial.pe/registro_usuario
+    RewriteCond %{REQUEST_URI} !^/guiaempresarial.pe/logout
+    RewriteRule ^(.*)$ mantenimiento.php [L]
+
     RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s(.*)/index(\.php)? [NC]
     RewriteRule ^ %1/ [R=301,L]
 
@@ -34,10 +43,11 @@ ServerSignature Off
     RewriteRule ^rubro/([^/]+)/?$ empresas.php?cat_slug=$1 [L,QSA]
 
     RewriteCond %{THE_REQUEST} \s([^.]+)\.php [NC]
+    RewriteCond %1 !^(negocio|rubro|login) [NC]
     RewriteRule ^ %1 [R=301,L,QSA]
 
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{REQUEST_FILENAME}\.php -f
+    RewriteCond %{DOCUMENT_ROOT}/guiaempresarial.pe/$1.php -f
     RewriteRule ^(.*?)/?$ $1.php [L,QSA]
 
     RewriteRule ^login/?$ index.php [R=302,L]

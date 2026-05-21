@@ -1,8 +1,8 @@
 <?php
-include 'db.php';
-include 'includes/security.php';
-include_once 'libs/mailer.php';
-include_once 'includes/components/empresa_card.php';
+require_once 'db.php';
+require_once 'includes/security.php';
+require_once 'libs/mailer.php';
+require_once 'includes/components/empresa_card.php';
 
 if (!isset($_SESSION['usuario_publico_id'])) {
   header('Location: login_usuario');
@@ -288,7 +288,8 @@ while ($f = $res_favs->fetch_assoc()) {
 <?php
 $seo_title = "Mi Cuenta - Guía Empresarial";
 $seo_robots = "noindex, nofollow";
-include 'includes/Header.php';
+$extra_css = ['mi_cuenta'];
+require_once 'includes/Header.php';
 ?>
 
 <style>
@@ -623,9 +624,10 @@ include 'includes/Header.php';
               </div>
             <?php endforeach; ?>
             <?php if (count($mis_resenas) === 10): ?>
-            <div style="text-align:center; padding: 15px 0;">
-                <p style="font-size: 13px; color: rgba(255,255,255,0.5);">Mostrando las últimas 10 reseñas. (Paginación en desarrollo)</p>
-            </div>
+              <div style="text-align:center; padding: 15px 0;">
+                <p style="font-size: 13px; color: rgba(255,255,255,0.5);">Mostrando las últimas 10 reseñas. (Paginación en
+                  desarrollo)</p>
+              </div>
             <?php endif; ?>
           </div>
         <?php endif; ?>
@@ -648,9 +650,10 @@ include 'includes/Header.php';
             endforeach;
             ?>
             <?php if (count($mis_favoritos) === 10): ?>
-            <div style="text-align:center; padding: 15px 0; grid-column: span 100%;">
-                <p style="font-size: 13px; color: rgba(255,255,255,0.5);">Mostrando los últimos 10 favoritos. (Paginación en desarrollo)</p>
-            </div>
+              <div style="text-align:center; padding: 15px 0; grid-column: span 100%;">
+                <p style="font-size: 13px; color: rgba(255,255,255,0.5);">Mostrando los últimos 10 favoritos. (Paginación en
+                  desarrollo)</p>
+              </div>
             <?php endif; ?>
           </div>
         <?php endif; ?>

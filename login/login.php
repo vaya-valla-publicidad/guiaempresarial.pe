@@ -4,18 +4,18 @@ require_once __DIR__ . '/../includes/security.php';
 $config_file = __DIR__ . '/../includes/admin_config.php';
 define('ACCESO_PERMITIDO', true);
 
-$acceso_autorizado = false;
-
-$token_actual = $_GET['token'] ?? ($_POST['token_admin'] ?? '');
+$token_actual = $_POST['token_admin'] ?? $_GET['token'] ?? $_GET['token_admin'] ?? '';
 
 if (!empty($token_actual)) {
     if (file_exists($config_file)) {
         $config = include $config_file;
         if (password_verify($token_actual, $config['token_hash'])) {
-            $acceso_autorizado = true;
+            $_SESSION['admin_token_valid'] = true;
         }
     }
 }
+
+$acceso_autorizado = !empty($_SESSION['admin_token_valid']);
 
 if (!$acceso_autorizado) {
     http_response_code(404);
@@ -23,9 +23,6 @@ if (!$acceso_autorizado) {
     exit();
 }
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
 
 $error = "";
 $max_intentos = 3;
@@ -79,23 +76,29 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) 
                 $fila = $resultado->fetch_assoc();
 
                 if (password_verify($pass, $fila['contraseña_hash'])) {
-                    session_regenerate_id(true);
-                    $_SESSION['usuario'] = $fila['nombre'];
-                    $_SESSION['rol'] = $fila['rol'];
-                    $_SESSION['id_usuario'] = (int) $fila['id_usuario'];
-                    $_SESSION['admin_pw_hash'] = $fila['contraseña_hash'];
-                    $_SESSION['admin_access_granted'] = true;
-                    $_SESSION['ua_hash'] = hash('sha256', $_SERVER['HTTP_USER_AGENT'] ?? '');
-
-                    $_SESSION['intentos'] = 0;
-                    $_SESSION['ultimo_intento'] = 0;
-
-                    if ($fila['rol'] === 'admin') {
-                        header("Location: " . APP_URL . "/login/admin");
+                    if ($fila['rol'] === 'viewer') {
+                        $error = "Tu cuenta no tiene acceso al panel de administración.";
+                        $_SESSION['intentos']++;
+                        $_SESSION['ultimo_intento'] = time();
                     } else {
-                        header("Location: " . APP_URL . "/login/editor");
+                        session_regenerate_id(true);
+                        $_SESSION['usuario'] = $fila['nombre'];
+                        $_SESSION['rol'] = $fila['rol'];
+                        $_SESSION['id_usuario'] = (int) $fila['id_usuario'];
+                        $_SESSION['admin_pw_hash'] = $fila['contraseña_hash'];
+                        $_SESSION['admin_access_granted'] = true;
+                        $_SESSION['ua_hash'] = hash('sha256', $_SERVER['HTTP_USER_AGENT'] ?? '');
+
+                        $_SESSION['intentos'] = 0;
+                        $_SESSION['ultimo_intento'] = 0;
+
+                        if ($fila['rol'] === 'admin') {
+                            header("Location: " . APP_URL . "/login/admin");
+                        } else {
+                            header("Location: " . APP_URL . "/login/editor");
+                        }
+                        exit();
                     }
-                    exit();
                 } else {
                     $_SESSION['intentos']++;
                     $_SESSION['ultimo_intento'] = time();
@@ -120,8 +123,7 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inicio de sesión</title>
     <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
-    <link rel="stylesheet"
-        href="<?= APP_URL ?>/assets/css/login.css?v=<?= filemtime(__DIR__ . '/../assets/css/login.css') ?>">
+    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css?v=<?= ASSET_VERSION ?>">
 </head>
 
 <body>
@@ -134,8 +136,7 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) 
             <?php endif; ?>
 
             <?php if (!($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo)): ?>
-                <form action="login" method="post" class="login-form">
-                    <input type="hidden" name="token_admin" value="<?= htmlspecialchars($token_actual) ?>">
+                <form action="" method="post" class="login-form">
 
                     <div style="display:none; visibility:hidden; opacity:0; position:absolute; left:-9999px;">
                         <label for="segundo_nombre">Segundo Nombre</label>

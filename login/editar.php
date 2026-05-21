@@ -15,20 +15,7 @@ $id = intval($_GET['id']);
 $error = "";
 $success = isset($_GET['ok']) ? "Empresa actualizada correctamente ✅" : "";
 
-function validarImagen($tmpPath, $nombreOriginal): bool
-{
-    $extensionesPermitidas = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
-    $ext = strtolower(pathinfo($nombreOriginal, PATHINFO_EXTENSION));
-    if (!in_array($ext, $extensionesPermitidas))
-        return false;
 
-    $finfo = finfo_open(FILEINFO_MIME_TYPE);
-    $mime = finfo_file($finfo, $tmpPath);
-    finfo_close($finfo);
-
-    $mimesPermitidos = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-    return in_array($mime, $mimesPermitidos);
-}
 
 $stmt = $conexion->prepare("SELECT * FROM empresas WHERE id_empresa=?");
 $stmt->bind_param("i", $id);
@@ -53,8 +40,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $descripcion = inputLimpio($_POST['descripcion'] ?? '') ?: null;
         $horario = inputLimpio($_POST['horario'] ?? '') ?: null;
         $ubicacion_link = inputLimpio($_POST['ubicacion_link'] ?? '') ?: null;
+        if ($ubicacion_link && !preg_match('/^https?:\/\//i', $ubicacion_link)) {
+            $error = "El enlace de ubicación debe comenzar con http:// o https://";
+        }
         $link_empresa = inputLimpio($_POST['link_empresa'] ?? '') ?: null;
+        if ($link_empresa && empty($error) && !preg_match('/^https?:\/\//i', $link_empresa)) {
+            $error = "El enlace de empresa debe comenzar con http:// o https://";
+        }
         $facebook = inputLimpio($_POST['facebook'] ?? '') ?: null;
+        if ($facebook && empty($error) && !preg_match('/^https?:\/\//i', $facebook)) {
+            $error = "El enlace de Facebook debe comenzar con http:// o https://";
+        }
         $logo = $empresa['logo'];
         $destacada_new = intval($_POST['destacada'] ?? 0);
         $slug = generarSlug($nombre);

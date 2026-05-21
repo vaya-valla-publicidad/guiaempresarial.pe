@@ -32,14 +32,19 @@ if (mb_strlen($comentario) > 1000) {
 $stmt_u = $conexion->prepare("SELECT nombre FROM usuarios_publicos WHERE id = ?");
 $stmt_u->bind_param("i", $id_u);
 $stmt_u->execute();
-$u = $stmt_u->get_result()->fetch_assoc();
+$result_u = $stmt_u->get_result();
+$u = $result_u->fetch_assoc();
+$stmt_u->close();
 $nombre_autor = $u['nombre'] ?? ($_SESSION['usuario_publico_nombre'] ?? 'Usuario');
 
 if ($id_resena > 0) {
     $stmt_own = $conexion->prepare("SELECT id_resena FROM resenas WHERE id_resena = ? AND id_usuario_publico = ? AND id_empresa = ?");
     $stmt_own->bind_param("iii", $id_resena, $id_u, $id_e);
     $stmt_own->execute();
-    if ($stmt_own->get_result()->num_rows === 0) {
+    $result_own = $stmt_own->get_result();
+    $num_rows_own = $result_own->num_rows;
+    $stmt_own->close();
+    if ($num_rows_own === 0) {
         echo json_encode(['success' => false, 'error' => 'No puedes editar esta reseña.']);
         exit;
     }
@@ -65,7 +70,10 @@ if ($id_resena > 0) {
 $stmt_check = $conexion->prepare("SELECT id_resena FROM resenas WHERE id_usuario_publico = ? AND id_empresa = ?");
 $stmt_check->bind_param("ii", $id_u, $id_e);
 $stmt_check->execute();
-if ($stmt_check->get_result()->num_rows > 0) {
+$result_check = $stmt_check->get_result();
+$num_rows_check = $result_check->num_rows;
+$stmt_check->close();
+if ($num_rows_check > 0) {
     echo json_encode(['success' => false, 'error' => 'Ya has dejado una reseña para este negocio.']);
     exit;
 }

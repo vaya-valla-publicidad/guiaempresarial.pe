@@ -22,20 +22,28 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     if (!empty($nombre) && !empty($pass) && !empty($rol_usuario)) {
 
-        $hash = password_hash($pass, PASSWORD_DEFAULT);
-
-        $stmt = $conexion->prepare(
-            "INSERT INTO usuarios (nombre, contraseña_hash, rol) VALUES (?, ?, ?)"
-        );
-        $stmt->bind_param("sss", $nombre, $hash, $rol_usuario);
-
-        if (!$stmt->execute()) {
-            $error = "Error al agregar usuario. Puede que el nombre ya exista.";
-        } else {
-            $success = "Usuario agregado correctamente ✅";
+        $roles_validos = ['admin', 'editor', 'viewer'];
+        if (!in_array($rol_usuario, $roles_validos, true)) {
+            $error = "Rol no válido.";
         }
 
-        $stmt->close();
+        if (empty($error)) {
+
+            $hash = password_hash($pass, PASSWORD_DEFAULT);
+
+            $stmt = $conexion->prepare(
+                "INSERT INTO usuarios (nombre, contraseña_hash, rol) VALUES (?, ?, ?)"
+            );
+            $stmt->bind_param("sss", $nombre, $hash, $rol_usuario);
+
+            if (!$stmt->execute()) {
+                $error = "Error al agregar usuario. Puede que el nombre ya exista.";
+            } else {
+                $success = "Usuario agregado correctamente ✅";
+            }
+
+            $stmt->close();
+        }
     } else {
         $error = "Todos los campos son obligatorios.";
     }
