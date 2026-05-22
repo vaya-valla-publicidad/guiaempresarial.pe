@@ -18,7 +18,8 @@ if ($accion === 'subir') {
         exit;
     }
     $carpeta = __DIR__ . '/../assets/img/banner/';
-    if (!is_dir($carpeta)) mkdir($carpeta, 0755, true);
+    if (!is_dir($carpeta))
+        mkdir($carpeta, 0755, true);
     $resultado = subirImagenSegura($_FILES['imagen'], $carpeta, [
         'tamano_max' => 5 * 1024 * 1024,
         'redimensionar' => true,
@@ -31,6 +32,10 @@ if ($accion === 'subir') {
         exit;
     }
     $nombre = $resultado['nombre'];
+    $rutaWebp = convertirAWebp($carpeta . $nombre);
+    if ($rutaWebp) {
+        $nombre = basename($rutaWebp);
+    }
     $res_orden = $conexion->query("SELECT COALESCE(MAX(orden),0)+1 AS sig FROM banner_carrusel");
     $sig_orden = (int) $res_orden->fetch_assoc()['sig'];
     $tiempo = max(1000, min(30000, intval($_POST['tiempo_ms'] ?? 5000)));

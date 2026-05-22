@@ -269,16 +269,43 @@ if (!function_exists('logSeguridad')) {
 if (!function_exists('verificarRateLimit')) {
     function verificarRateLimit($accion, $limite = 5, $tiempo = 300)
     {
+        global $conexion;
+        if (!$conexion)
+            return true;
+
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-        $clave = "rate_limit_" . md5($accion . $ip);
-        $intentos = $_SESSION[$clave] ?? ['count' => 0, 'inicio' => time()];
-        if (time() - $intentos['inicio'] > $tiempo) {
-            $intentos = ['count' => 0, 'inicio' => time()];
+
+        $stmt = $conexion->prepare("SELECT id, intentos, UNIX_TIMESTAMP(inicio_ventana) as inicio FROM rate_limits WHERE ip = ? AND accion = ?");
+        $stmt->bind_param("ss", $ip, $accion);
+        $stmt->execute();
+        $res = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        $now = time();
+        if ($res) {
+            if ($now - $res['inicio'] > $tiempo) {
+                $stmt_upd = $conexion->prepare("UPDATE rate_limits SET intentos = 1, inicio_ventana = NOW() WHERE id = ?");
+                $stmt_upd->bind_param("i", $res['id']);
+                $stmt_upd->execute();
+                $stmt_upd->close();
+                $intentos = 1;
+            } else {
+                $intentos = $res['intentos'] + 1;
+                $stmt_upd = $conexion->prepare("UPDATE rate_limits SET intentos = ? WHERE id = ?");
+                $stmt_upd->bind_param("ii", $intentos, $res['id']);
+                $stmt_upd->execute();
+                $stmt_upd->close();
+            }
+        } else {
+            $intentos = 1;
+            $stmt_ins = $conexion->prepare("INSERT INTO rate_limits (ip, accion, intentos, inicio_ventana) VALUES (?, ?, 1, NOW())");
+            $stmt_ins->bind_param("ss", $ip, $accion);
+            $stmt_ins->execute();
+            $stmt_ins->close();
         }
-        $intentos['count']++;
-        $_SESSION[$clave] = $intentos;
-        if ($intentos['count'] > $limite) {
-            logSeguridad('rate_limit_excedido', "Acción: $accion | Intentos: {$intentos['count']}", 'warning');
+
+        if ($intentos > $limite) {
+            logSeguridad('rate_limit_excedido', "Acción: $accion | Intentos: $intentos", 'warning');
             return false;
         }
         return true;

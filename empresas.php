@@ -208,9 +208,14 @@ include 'includes/Header.php';
                 while ($f = $fotos_q->fetch_assoc())
                     $fotos_arr[] = $f['foto'];
 
-            $stmt_vistas = $conexion->prepare("UPDATE empresas SET vistas = vistas + 1 WHERE id_empresa = ?");
-            $stmt_vistas->bind_param("i", $id_empresa_int);
-            $stmt_vistas->execute();
+            $vista_key = 'vista_empresa_' . $id_empresa_int;
+            if (!isset($_SESSION[$vista_key]) && !isset($_COOKIE[$vista_key])) {
+                $stmt_vistas = $conexion->prepare("UPDATE empresas SET vistas = vistas + 1 WHERE id_empresa = ?");
+                $stmt_vistas->bind_param("i", $id_empresa_int);
+                $stmt_vistas->execute();
+                $_SESSION[$vista_key] = true;
+                setcookie($vista_key, '1', time() + 86400, '/', '', isset($_SERVER['HTTPS']), true);
+            }
             ?>
 
             <?php
