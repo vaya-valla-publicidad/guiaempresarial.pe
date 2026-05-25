@@ -377,7 +377,10 @@ require_once 'includes/Header.php';
       </div>
       <div class="mc-header-sub" id="mc-header-sub">Configure su presencia y datos de cuenta</div>
     </div>
-    <a href="logout_usuario" class="mc-logout">Cerrar sesión</a>
+    <form method="POST" action="logout_usuario" style="display:inline;">
+      <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
+      <button type="submit" class="mc-logout">Cerrar sesión</button>
+    </form>
   </header>
 
   <div class="mc-mobile-nav">

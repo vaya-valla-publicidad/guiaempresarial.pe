@@ -148,17 +148,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
         if ($res && $res->num_rows === 1) {
           $u = $res->fetch_assoc();
           if (password_verify($password, $u['password_hash'])) {
-            limpiarIntentosOTP($email);
-            $_SESSION['usuario_publico_id'] = $u['id'];
-            $_SESSION['usuario_publico_nombre'] = $u['nombre'];
-            $_SESSION['usuario_publico_pw_hash'] = $u['password_hash'];
-            $destino = $redir ? urldecode($redir) : 'mi_cuenta';
-            if (isset($_POST['ajax'])) {
-              echo json_encode(['success' => true, 'redirect' => $destino]);
+            if (isset($u['verificado']) && (int)$u['verificado'] === 0) {
+              if (isset($_POST['ajax'])) {
+                echo json_encode(['success' => false, 'error' => 'Tu correo no ha sido verificado.']);
+                exit;
+              }
+              $error = 'Tu correo no ha sido verificado.';
+              $paso = 'password';
+              $email_param = $email;
+            } else {
+              limpiarIntentosOTP($email);
+              $_SESSION['usuario_publico_id'] = $u['id'];
+              $_SESSION['usuario_publico_nombre'] = $u['nombre'];
+              $_SESSION['usuario_publico_pw_hash'] = $u['password_hash'];
+              $destino = $redir ? urldecode($redir) : 'mi_cuenta';
+              if (isset($_POST['ajax'])) {
+                echo json_encode(['success' => true, 'redirect' => $destino]);
+                exit;
+              }
+              header("Location: $destino");
               exit;
             }
-            header("Location: $destino");
-            exit;
           } else {
             registrarIntentoOTP($email);
             if (isset($_POST['ajax'])) {

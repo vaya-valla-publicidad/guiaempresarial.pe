@@ -1,6 +1,12 @@
 <?php
 require_once __DIR__ . '/includes/security_headers.php';
 require_once __DIR__ . '/includes/security.php';
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !validarCSRF()) {
+    header('Location: index');
+    exit;
+}
+
 $_SESSION = array();
 if (ini_get("session.use_cookies")) {
     $params = session_get_cookie_params();

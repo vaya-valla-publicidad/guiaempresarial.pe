@@ -27,6 +27,10 @@ if (isset($_POST['id'])) {
         if (!empty($e['logo']) && file_exists('../assets/img/' . $e['logo'])) {
             $archivos_a_eliminar[] = '../assets/img/' . $e['logo'];
         }
+        if (!empty($e['logo'])) {
+            $thumb = '../assets/img/thumb_' . $e['logo'];
+            if (file_exists($thumb)) $archivos_a_eliminar[] = $thumb;
+        }
     }
     $stmt_l->close();
 
@@ -37,6 +41,10 @@ if (isset($_POST['id'])) {
     while ($f = $res_g->fetch_assoc()) {
         if (!empty($f['foto']) && file_exists('../assets/img/empresascarrusel/' . $f['foto'])) {
             $archivos_a_eliminar[] = '../assets/img/empresascarrusel/' . $f['foto'];
+        }
+        if (!empty($f['foto'])) {
+            $thumb_g = '../assets/img/empresascarrusel/thumb_' . $f['foto'];
+            if (file_exists($thumb_g)) $archivos_a_eliminar[] = $thumb_g;
         }
     }
     $stmt_g->close();

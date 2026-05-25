@@ -78,6 +78,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 if (!empty($empresa['logo']) && file_exists(__DIR__ . "/../assets/img/" . $empresa['logo'])) {
                     unlink(__DIR__ . "/../assets/img/" . $empresa['logo']);
                 }
+                $thumb_old = __DIR__ . '/../assets/img/thumb_' . $empresa['logo'];
+                if (!empty($empresa['logo']) && file_exists($thumb_old)) {
+                    unlink($thumb_old);
+                }
                 $logo = $resultado['nombre'];
             } else {
                 $error = "Error con el logo: " . $resultado['error'];
