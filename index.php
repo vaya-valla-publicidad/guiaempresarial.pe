@@ -86,6 +86,31 @@ $total_slides = count($slides);
                 </div>
             </form>
             <div id="resultados" class="resultados-live"></div>
+
+            <!-- Inicio: Burbujas Rápidas (gestionadas desde panel) -->
+            <?php
+            $res_pills = $conexion->query("SELECT b.id_burbuja, b.texto, c.slug, c.icono FROM burbujas_busqueda b LEFT JOIN categorias c ON b.id_categoria = c.id_categoria WHERE b.activo = 1 ORDER BY b.orden ASC LIMIT 8");
+            if ($res_pills && $res_pills->num_rows > 0):
+                ?>
+                <div class="quick-pills-ux"
+                    style="margin-top: 16px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; align-items: center;">
+                    <span
+                        style="color: rgba(255, 255, 255, 0.85); font-size: 12px; font-weight: 500; letter-spacing: 0.3px; text-transform: uppercase;">Más
+                        buscado:</span>
+                    <?php while ($pill = $res_pills->fetch_assoc()):
+                        $icono_p = !empty($pill['icono']) ? htmlspecialchars($pill['icono']) : 'bi-search';
+                        $href = !empty($pill['slug']) ? APP_URL . '/rubro/' . htmlspecialchars($pill['slug']) : APP_URL . '/empresas?buscar=' . urlencode($pill['texto']);
+                        ?>
+                        <a href="<?= $href ?>" data-burbuja="<?= intval($pill['id_burbuja']) ?>"
+                            style="display: inline-flex; align-items: center; gap: 4px; background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); border: 1px solid rgba(255, 255, 255, 0.2); color: white; padding: 5px 12px; border-radius: 50px; font-size: 13px; text-decoration: none; transition: all 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.05);"
+                            onmouseover="this.style.background='white'; this.style.color='#000'; this.style.transform='translateY(-2px)';"
+                            onmouseout="this.style.background='rgba(255, 255, 255, 0.15)'; this.style.color='white'; this.style.transform='translateY(0)';">
+                            <i class="bi <?= $icono_p ?>" style="opacity:0.8;"></i> <?= htmlspecialchars($pill['texto']) ?>
+                        </a>
+                    <?php endwhile; ?>
+                </div>
+            <?php endif; ?>
+            <!-- Fin: Burbujas Rápidas -->
         </div>
     </div>
 
@@ -337,5 +362,17 @@ $total_slides = count($slides);
         if (!e.target.closest('.search-wrapper')) {
             if (resultadosDiv) resultadosDiv.innerHTML = '';
         }
+    });
+
+    // Tracking de clics en burbujas
+    document.querySelectorAll('[data-burbuja]').forEach(function (el) {
+        el.addEventListener('click', function () {
+            const id = this.dataset.burbuja;
+            if (id) {
+                const fd = new FormData();
+                fd.append('id', id);
+                navigator.sendBeacon('<?= APP_URL ?>/ajax/burbuja_clic.php', fd);
+            }
+        });
     });
 </script>

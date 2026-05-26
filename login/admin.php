@@ -12,7 +12,8 @@ $rol = $_SESSION['rol'];
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel <?= ucfirst($rol) ?></title>
     <link rel="icon" href="<?= APP_URL ?>/assets/img/image.png" type="image/png">
-    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css?v=<?= filemtime(__DIR__ . '/../assets/css/login.css') ?>">
+    <link rel="stylesheet"
+        href="<?= APP_URL ?>/assets/css/login.css?v=<?= filemtime(__DIR__ . '/../assets/css/login.css') ?>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
 
@@ -57,6 +58,10 @@ $rol = $_SESSION['rol'];
                     <i class="bi bi-chat-right-quote"></i>
                     <span>Reseñas</span>
                 </a>
+                <a href="gestionar_burbujas.php" class="qa-card">
+                    <i class="bi bi-search-heart"></i>
+                    <span>Burbujas</span>
+                </a>
                 <a href="editar_sobre.php" class="qa-card">
                     <i class="bi bi-info-circle"></i>
                     <span>Sobre Nosotros</span>
@@ -69,7 +74,7 @@ $rol = $_SESSION['rol'];
             $stmt_stats = $conexion->prepare("SELECT SUM(vistas) as total, COUNT(*) as empresas FROM empresas");
             $stmt_stats->execute();
             $stats_global = $stmt_stats->get_result()->fetch_assoc();
-            
+
             $total_visitas = $stats_global['total'] ?? 0;
             $total_emp = $stats_global['empresas'] ?? 0;
 

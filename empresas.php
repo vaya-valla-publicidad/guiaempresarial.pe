@@ -115,8 +115,13 @@ include 'includes/Header.php';
         $empresas_por_pagina = 20;
         $offset = ($pagina_actual - 1) * $empresas_por_pagina;
 
+        $orden_actual = $_GET['orden'] ?? 'populares';
+        if (!in_array($orden_actual, ['populares', 'valoradas', 'recientes']))
+            $orden_actual = 'populares';
+
         $sql_select = "SELECT e.*, c.nombre AS categoria, c.slug AS cat_slug, 
-                              GROUP_CONCAT(g.foto ORDER BY g.orden ASC, g.id_foto ASC SEPARATOR ',') as fotos_galeria 
+                              GROUP_CONCAT(g.foto ORDER BY g.orden ASC, g.id_foto ASC SEPARATOR ',') as fotos_galeria,
+                              (SELECT AVG(estrellas) FROM resenas r WHERE r.id_empresa = e.id_empresa) as promedio 
                        FROM empresas e 
                        JOIN categorias c ON e.id_categoria = c.id_categoria
                        LEFT JOIN empresa_galeria g ON e.id_empresa = g.id_empresa";
@@ -168,6 +173,15 @@ include 'includes/Header.php';
         }
 
         $sql = $sql_select . $clausula_where . " GROUP BY e.id_empresa";
+
+        $orden_sql = " ORDER BY e.destacada DESC, e.vistas DESC";
+        if ($orden_actual === 'valoradas') {
+            $orden_sql = " ORDER BY e.destacada DESC, promedio DESC, e.vistas DESC";
+        } elseif ($orden_actual === 'recientes') {
+            $orden_sql = " ORDER BY e.id_empresa DESC";
+        }
+        $sql .= $orden_sql;
+
         if (!$id_empresa) {
             $sql .= " LIMIT ? OFFSET ?";
             $params[] = intval($empresas_por_pagina);
@@ -214,7 +228,6 @@ include 'includes/Header.php';
                 $stmt_vistas->bind_param("i", $id_empresa_int);
                 $stmt_vistas->execute();
                 $_SESSION[$vista_key] = true;
-                setcookie($vista_key, '1', time() + 86400, '/', '', isset($_SERVER['HTTPS']), true);
             }
             ?>
 
@@ -406,13 +419,21 @@ include 'includes/Header.php';
                 <script>
                     function compartirNegocio() {
                         const url = window.location.href;
-                        navigator.clipboard.writeText(url).then(() => {
-                            if (typeof showToast === 'function') {
-                                showToast('Enlace copiado al portapapeles', 'success');
-                            } else {
-                                alert('Enlace copiado al portapapeles');
-                            }
-                        });
+                        if (navigator.share) {
+                            navigator.share({
+                                title: '<?= htmlspecialchars($fila['nombre'] ?? 'Guía Empresarial') ?>',
+                                text: 'Mira este negocio en Guía Empresarial',
+                                url: url
+                            }).catch((error) => console.log('Error sharing', error));
+                        } else {
+                            navigator.clipboard.writeText(url).then(() => {
+                                if (typeof showToast === 'function') {
+                                    showToast('Enlace copiado al portapapeles', 'success');
+                                } else {
+                                    alert('Enlace copiado al portapapeles');
+                                }
+                            });
+                        }
                     }
                 </script>
 
@@ -741,19 +762,52 @@ include 'includes/Header.php';
             echo renderBreadcrumbs($bc_items);
             ?>
 
-        <?php if ($buscar): ?>
-            <div class="filtro-activo">
-                🔍 Resultados para: "
-                <?= htmlspecialchars($buscar) ?>"
-                <a href="<?= APP_URL ?>/empresas" title="Limpiar">✕</a>
+        <div class="filtros-acciones-top"
+            style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
+            <div class="filtros-activos-wrap" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <?php if ($buscar): ?>
+                    <div class="filtro-activo">
+                        🔍 Resultados para: "
+                        <?= htmlspecialchars($buscar) ?>"
+                        <a href="<?= APP_URL ?>/empresas" title="Limpiar">✕</a>
+                    </div>
+                <?php elseif ($id_categoria): ?>
+                    <div class="filtro-activo">
+                        🏷 Categoría:
+                        <?= htmlspecialchars($cat_nombre ?? 'Categoría') ?>
+                        <a href="<?= APP_URL ?>/empresas" title="Ver todas">✕</a>
+                    </div>
+                <?php endif; ?>
             </div>
-        <?php elseif ($id_categoria): ?>
-            <div class="filtro-activo">
-                🏷 Categoría:
-                <?= htmlspecialchars($cat_nombre ?? 'Categoría') ?>
-                <a href="<?= APP_URL ?>/empresas" title="Ver todas">✕</a>
-            </div>
-        <?php endif; ?>
+
+            <?php if (!$id_empresa && ($resultado && $resultado->num_rows > 0)): ?>
+                <div class="selector-orden" style="display: flex; align-items: center; gap: 10px;">
+                    <label for="orden_select" style="font-size: 14px; font-weight: 600; color: var(--muted); margin: 0;">Ordenar
+                        por:</label>
+                    <select id="orden_select" onchange="window.location.href=this.value"
+                        style="padding: 8px 15px; border-radius: 8px; border: 1px solid var(--borde); background: white; font-family: inherit; font-size: 14px; color: var(--ink); outline: none; cursor: pointer;">
+                        <?php
+                        $base_url = APP_URL . "/empresas?";
+                        $query_params = $_GET;
+                        unset($query_params['pagina']);
+
+                        $query_params['orden'] = 'populares';
+                        $url_pop = $base_url . http_build_query($query_params);
+                        $query_params['orden'] = 'valoradas';
+                        $url_val = $base_url . http_build_query($query_params);
+                        $query_params['orden'] = 'recientes';
+                        $url_rec = $base_url . http_build_query($query_params);
+                        ?>
+                        <option value="<?= htmlspecialchars($url_pop) ?>" <?= $orden_actual === 'populares' ? 'selected' : '' ?>>🔥
+                            Más populares</option>
+                        <option value="<?= htmlspecialchars($url_val) ?>" <?= $orden_actual === 'valoradas' ? 'selected' : '' ?>>⭐
+                            Mejor valoradas</option>
+                        <option value="<?= htmlspecialchars($url_rec) ?>" <?= $orden_actual === 'recientes' ? 'selected' : '' ?>>🆕
+                            Más recientes</option>
+                    </select>
+                </div>
+            <?php endif; ?>
+        </div>
 
         <div class="empresas-list">
             <?php
@@ -772,6 +826,8 @@ include 'includes/Header.php';
                 $params_url['id_categoria'] = $seo_id_categoria;
             if (!empty($seo_id_empresa) && empty($slug_param))
                 $params_url['empresa'] = $seo_id_empresa;
+            if (!empty($orden_actual) && $orden_actual !== 'populares')
+                $params_url['orden'] = $orden_actual;
 
             $query_str = http_build_query($params_url);
             if (!empty($query_str))

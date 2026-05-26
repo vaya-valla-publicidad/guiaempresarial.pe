@@ -3,7 +3,8 @@ include 'db.php';
 include 'includes/security.php';
 
 $q = inputLimpio($_GET['q'] ?? '');
-if ($q === '') exit;
+if ($q === '')
+    exit;
 
 $q_escaped = escaparLike($q);
 $texto = '%' . $q_escaped . '%';
@@ -26,6 +27,20 @@ if (!$stmt) {
 $stmt->bind_param("sss", $texto, $texto, $texto);
 $stmt->execute();
 $resultado = $stmt->get_result();
+if (session_status() === PHP_SESSION_NONE)
+    session_start();
+$log_key = 'busq_' . md5($q);
+if (!isset($_SESSION[$log_key])) {
+    $num_res = $resultado->num_rows;
+    $termino_log = mb_substr($q, 0, 100);
+    $stmt_log = $conexion->prepare("INSERT INTO busquedas_log (termino, resultados) VALUES (?, ?)");
+    if ($stmt_log) {
+        $stmt_log->bind_param("si", $termino_log, $num_res);
+        $stmt_log->execute();
+        $stmt_log->close();
+    }
+    $_SESSION[$log_key] = true;
+}
 
 if ($resultado->num_rows === 0) {
     echo '<p class="buscar-noresult">😕 Sin resultados para <strong>' . htmlspecialchars($q) . '</strong></p>';
@@ -33,31 +48,29 @@ if ($resultado->num_rows === 0) {
 }
 
 while ($f = $resultado->fetch_assoc()):
-    $id   = intval($f['id_empresa']);
+    $id = intval($f['id_empresa']);
     $desc = !empty($f['descripcion']) ? mb_strimwidth($f['descripcion'], 0, 60, '…') : '';
-?>
-<a href="<?= APP_URL ?>/negocio/<?= htmlspecialchars($f['slug']) ?>" class="buscar-result-item">
-    <?php if (!empty($f['logo'])): ?>
-        <img src="<?= APP_URL ?>/assets/img/<?= htmlspecialchars($f['logo']) ?>"
-             alt="<?= htmlspecialchars($f['nombre']) ?>"
-             class="buscar-result-logo"
-             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-        <div class="buscar-result-logo logo-placeholder" style="display:none;">
-            <?= mb_strtoupper(mb_substr($f['nombre'], 0, 1)) ?>
-        </div>
-    <?php else: ?>
-        <div class="buscar-result-logo logo-placeholder">
-            <?= mb_strtoupper(mb_substr($f['nombre'], 0, 1)) ?>
-        </div>
-    <?php endif; ?>
-    <div class="buscar-result-info">
-        <span class="buscar-result-nombre"><?= htmlspecialchars($f['nombre']) ?></span>
-        <span class="buscar-result-cat"><?= htmlspecialchars($f['categoria']) ?></span>
-        <?php if ($desc): ?>
-        <span class="buscar-result-slogan"><?= htmlspecialchars($desc) ?></span>
+    ?>
+    <a href="<?= APP_URL ?>/negocio/<?= htmlspecialchars($f['slug']) ?>" class="buscar-result-item">
+        <?php if (!empty($f['logo'])): ?>
+            <img src="<?= APP_URL ?>/assets/img/<?= htmlspecialchars($f['logo']) ?>" alt="<?= htmlspecialchars($f['nombre']) ?>"
+                class="buscar-result-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            <div class="buscar-result-logo logo-placeholder" style="display:none;">
+                <?= mb_strtoupper(mb_substr($f['nombre'], 0, 1)) ?>
+            </div>
+        <?php else: ?>
+            <div class="buscar-result-logo logo-placeholder">
+                <?= mb_strtoupper(mb_substr($f['nombre'], 0, 1)) ?>
+            </div>
         <?php endif; ?>
-    </div>
-</a>
+        <div class="buscar-result-info">
+            <span class="buscar-result-nombre"><?= htmlspecialchars($f['nombre']) ?></span>
+            <span class="buscar-result-cat"><?= htmlspecialchars($f['categoria']) ?></span>
+            <?php if ($desc): ?>
+                <span class="buscar-result-slogan"><?= htmlspecialchars($desc) ?></span>
+            <?php endif; ?>
+        </div>
+    </a>
 <?php endwhile;
 
 $stmt->close();
