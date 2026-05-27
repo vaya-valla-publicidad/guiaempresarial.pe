@@ -1,31 +1,12 @@
--- phpMyAdmin SQL Dump
--- version 5.2.1
--- https://www.phpmyadmin.net/
---
--- Servidor: 127.0.0.1
--- Tiempo de generación: 21-05-2026 a las 18:21:49
--- Versión del servidor: 10.4.32-MariaDB
--- Versión de PHP: 8.2.12
-
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
-
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
 /*!40101 SET NAMES utf8mb4 */;
 
---
--- Base de datos: `guia_empresarial`
---
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `banner_carrusel`
---
 
 CREATE TABLE `banner_carrusel` (
   `id_banner` int(11) NOT NULL,
@@ -36,20 +17,30 @@ CREATE TABLE `banner_carrusel` (
   `creado_en` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Volcado de datos para la tabla `banner_carrusel`
---
-
 INSERT INTO `banner_carrusel` (`id_banner`, `imagen`, `orden`, `activo`, `tiempo_ms`, `creado_en`) VALUES
 (16, 'banner_1773942209_34cd198b.jpeg', 1, 1, 5000, '2026-03-19 17:43:29'),
 (17, 'banner_1773942391_99c8f743.jpg', 2, 1, 5000, '2026-03-19 17:46:31'),
 (18, 'banner_1773942664_88eca44a.jpg', 3, 1, 5000, '2026-03-19 17:51:04');
 
--- --------------------------------------------------------
+CREATE TABLE `burbujas_busqueda` (
+  `id_burbuja` int(11) NOT NULL,
+  `texto` varchar(50) NOT NULL,
+  `id_categoria` int(11) DEFAULT NULL,
+  `orden` int(11) DEFAULT 0,
+  `activo` tinyint(1) DEFAULT 1,
+  `clics` int(11) DEFAULT 0,
+  `fecha_creacion` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Estructura de tabla para la tabla `categorias`
---
+CREATE TABLE `busquedas_log` (
+  `id_log` int(11) NOT NULL,
+  `termino` varchar(100) NOT NULL,
+  `resultados` int(11) DEFAULT 0,
+  `fecha` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+INSERT INTO `busquedas_log` (`id_log`, `termino`, `resultados`, `fecha`) VALUES
+(1, 'Res', 2, '2026-05-27 09:40:48');
 
 CREATE TABLE `categorias` (
   `id_categoria` int(11) NOT NULL,
@@ -60,10 +51,6 @@ CREATE TABLE `categorias` (
   `orden` int(11) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Volcado de datos para la tabla `categorias`
---
-
 INSERT INTO `categorias` (`id_categoria`, `nombre`, `slug`, `descripcion`, `icono`, `orden`) VALUES
 (1, 'Tecnología', 'tecnologia', 'Empresas relacionadas con software, hardware y servicios digitales', 'bi-cpu', 6),
 (2, 'Restaurante', 'restaurante', 'Restaurantes y negocios de comida', 'bi-egg-fried', 2),
@@ -71,12 +58,6 @@ INSERT INTO `categorias` (`id_categoria`, `nombre`, `slug`, `descripcion`, `icon
 (9, 'Tienda', 'tienda', NULL, 'bi-shop', 7),
 (10, 'Comercio', 'comercio', NULL, 'bi-building', 4),
 (11, 'Salud', 'salud', NULL, 'bi-heart-pulse', 1);
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `empresas`
---
 
 CREATE TABLE `empresas` (
   `id_empresa` int(11) NOT NULL,
@@ -98,21 +79,11 @@ CREATE TABLE `empresas` (
   `clics_whatsapp` int(11) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Volcado de datos para la tabla `empresas`
---
-
 INSERT INTO `empresas` (`id_empresa`, `logo`, `nombre`, `slug`, `email`, `telefono`, `direccion`, `id_categoria`, `fecha_registro`, `horario`, `descripcion`, `ubicacion_link`, `link_empresa`, `vistas`, `destacada`, `facebook`, `clics_whatsapp`) VALUES
-(12, '69b2e6c81a9ce_RosalRestaurant.jpg', 'El Rosal Restaurant', 'el-rosal-restaurant', NULL, '977411702', 'Jr. Salaverry (8va cuadra), Huacho', 2, '2026-03-09 17:12:50', 'de 12 a 10 pm', 'La tradición de Huacho en tu paladar desde 1960. 🥘✨', 'https://www.google.com/maps/place/El+Rosal/@-11.1101762,-77.6124137,17z/data=!3m1!4b1!4m6!3m5!1s0x9106df0b73d6425f:0x6e3e28e69603d472!8m2!3d-11.1101762!4d-77.6124137!16s%2Fg%2F11bwpd_yh9?entry=ttu&amp;g_ep=EgoyMDI2MDMwOC4wIKXMDSoASAFQAw%3D%3D', NULL, 21, 1, 'https://www.facebook.com/ELROSALRESTAURANT', 0),
+(12, '69b2e6c81a9ce_RosalRestaurant.jpg', 'El Rosal Restaurant', 'el-rosal-restaurant', NULL, '977411702', 'Jr. Salaverry (8va cuadra), Huacho', 2, '2026-03-09 17:12:50', 'de 12 a 10 pm', 'La tradición de Huacho en tu paladar desde 1960. 🥘✨', 'https://www.google.com/maps/place/El+Rosal/@-11.1101762,-77.6124137,17z/data=!3m1!4b1!4m6!3m5!1s0x9106df0b73d6425f:0x6e3e28e69603d472!8m2!3d-11.1101762!4d-77.6124137!16s%2Fg%2F11bwpd_yh9?entry=ttu&amp;g_ep=EgoyMDI2MDMwOC4wIKXMDSoASAFQAw%3D%3D', NULL, 23, 1, 'https://www.facebook.com/ELROSALRESTAURANT', 0),
 (13, '69b2eb9d7814f_chifaespaña.jpg', 'Chifa España', 'chifa-espana', NULL, '937 245 536', 'Av. 28 de Julio 544 – Huacho', 2, '2026-03-12 16:36:45', NULL, '¡EL AUTENTICO SABOR ORIENTAL TE ESPERA AQUI!', 'https://www.google.com/maps/place/Chifa+Espa%C3%B1a/@-11.1075533,-77.6095983,19z/data=!4m6!3m5!1s0x9106df7536dc3f1b:0x75454f4e78f60660!8m2!3d-11.1073572!4d-77.6095098!16s%2Fg%2F1tjs5_st?entry=ttu&g_ep=EgoyMDI2MDMxMS4wIKXMDSoASAFQAw%3D%3D', NULL, 11, 1, 'https://www.facebook.com/chifaespana544', 0),
 (14, '69b82b6ce767e_lachutana.jpg', 'La Chutana-Lubricentro', 'la-chutana-lubricentro', NULL, '994337831', 'Av. Cruz Blanca 1890 Santa María, Huaura, Peru, 15138', 8, '2026-03-16 16:10:20', NULL, 'En La Chutana Lubricentro engreimos a tu fierro con productos de la mejor calidad y productos :)', 'https://www.google.com/maps/place/Av.+Cruz+Blanca+1890,+Huacho+15137/@-11.0985195,-77.5959335,17z/data=!3m1!4b1!4m5!3m4!1s0x9106df907e002ea1:0x3e3fe5d41e672a7e!8m2!3d-11.0985195!4d-77.5959335?entry=ttu&g_ep=EgoyMDI2MDMxMS4wIKXMDSoASAFQAw%3D%3D', NULL, 2, 0, 'https://www.facebook.com/lachutana.huacho', 0),
 (15, '69c2b957bfeb7_Odontologia.jpg', 'Cruzado Odontologia Especializada', 'cruzado-odontologia-especializada', NULL, '945 651 054', 'Prologación Miguel Grau 162 - 2do piso, Huacho, Peru', 11, '2026-03-24 16:18:09', NULL, 'Instalaciones modernas, alta calidad de equipos e insumos que en combinación con la ética profesional, brinda atención óptima y segura.', 'https://www.google.com/maps/place/Cruzado+Odontolog%C3%ADa+Especializada/@-11.1080604,-77.604148,18z/data=!4m6!3m5!1s0x9106df557a2f5c59:0x5c3aa558e2691d18!8m2!3d-11.1080578!4d-77.6043518!16s%2Fg%2F11fk1b8y7c?entry=ttu&amp;g_ep=EgoyMDI2MDMxOC4xIKXMDSoASAFQAw%3D%3D', NULL, 2, 1, 'https://www.facebook.com/cruzadoodontologia', 0);
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `empresa_galeria`
---
 
 CREATE TABLE `empresa_galeria` (
   `id_foto` int(11) NOT NULL,
@@ -121,10 +92,6 @@ CREATE TABLE `empresa_galeria` (
   `orden` int(11) DEFAULT 0,
   `fecha_subida` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Volcado de datos para la tabla `empresa_galeria`
---
 
 INSERT INTO `empresa_galeria` (`id_foto`, `id_empresa`, `foto`, `orden`, `fecha_subida`) VALUES
 (1, 12, '1773329527_1.jpg', 1, '2026-03-12 15:32:07'),
@@ -145,24 +112,12 @@ INSERT INTO `empresa_galeria` (`id_foto`, `id_empresa`, `foto`, `orden`, `fecha_
 (40, 15, '69c2b9413ff1c_dolor.jpg', 3, '2026-03-24 16:18:09'),
 (41, 15, '69c2b941414b9_sonrisa.jpg', 4, '2026-03-24 16:18:09');
 
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `favoritos`
---
-
 CREATE TABLE `favoritos` (
   `id_favorito` int(11) NOT NULL,
   `id_usuario_publico` int(11) NOT NULL,
   `id_empresa` int(11) NOT NULL,
   `fecha_agregado` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `otp_intentos`
---
 
 CREATE TABLE `otp_intentos` (
   `id` int(11) NOT NULL,
@@ -172,18 +127,8 @@ CREATE TABLE `otp_intentos` (
   `bloqueado_hasta` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Volcado de datos para la tabla `otp_intentos`
---
-
 INSERT INTO `otp_intentos` (`id`, `identificador`, `intentos`, `ultimo_intento`, `bloqueado_hasta`) VALUES
 (1, 'abelperezcoca058@gmail.com', 1, '2026-05-13 11:16:55', NULL);
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `rate_limits`
---
 
 CREATE TABLE `rate_limits` (
   `id` int(11) NOT NULL,
@@ -193,11 +138,8 @@ CREATE TABLE `rate_limits` (
   `inicio_ventana` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `resenas`
---
+INSERT INTO `rate_limits` (`id`, `ip`, `accion`, `intentos`, `inicio_ventana`) VALUES
+(1, '::1', 'login_admin', 2, '2026-05-27 10:04:06');
 
 CREATE TABLE `resenas` (
   `id_resena` int(11) NOT NULL,
@@ -209,12 +151,6 @@ CREATE TABLE `resenas` (
   `id_usuario_publico` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `resena_votos`
---
-
 CREATE TABLE `resena_votos` (
   `id_voto` int(11) NOT NULL,
   `id_resena` int(11) NOT NULL,
@@ -222,12 +158,6 @@ CREATE TABLE `resena_votos` (
   `tipo` enum('like','dislike') NOT NULL,
   `fecha` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `sesiones_usuario`
---
 
 CREATE TABLE `sesiones_usuario` (
   `id` int(11) NOT NULL,
@@ -237,21 +167,11 @@ CREATE TABLE `sesiones_usuario` (
   `fecha_acceso` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `sobre_info`
---
-
 CREATE TABLE `sobre_info` (
   `id` int(11) NOT NULL,
   `clave` varchar(50) NOT NULL,
   `valor` text NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Volcado de datos para la tabla `sobre_info`
---
 
 INSERT INTO `sobre_info` (`id`, `clave`, `valor`) VALUES
 (1, 'quienes_somos', 'Somos una plataforma digital dedicada a impulsar negocios locales de la región. Creemos que cada empresa merece visibilidad real, sin importar su tamaño'),
@@ -264,12 +184,6 @@ INSERT INTO `sobre_info` (`id`, `clave`, `valor`) VALUES
 (8, 'por_que_3_titulo', '🚀 Fácil y Rápido'),
 (9, 'por_que_3_texto', 'Registramos tu negocio por ti. Sin complicaciones técnicas, sin costos ocultos. Solo visibilidad real.');
 
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `usuarios`
---
-
 CREATE TABLE `usuarios` (
   `id_usuario` int(11) NOT NULL,
   `nombre` varchar(100) NOT NULL,
@@ -279,20 +193,10 @@ CREATE TABLE `usuarios` (
   `fecha_registro` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Volcado de datos para la tabla `usuarios`
---
-
 INSERT INTO `usuarios` (`id_usuario`, `nombre`, `email`, `contraseña_hash`, `rol`, `fecha_registro`) VALUES
 (1, 'admin', NULL, '$2y$10$UWtdCE/XaEpLeuOeEFO9qu84jCuVLNxH6s0NnbdZXY20zEFzkgRZy', 'admin', '2026-02-19 17:21:26'),
 (2, 'Editor1', NULL, '$2y$10$2fg4A5tyjju4Olxs3vAcle3.99zhD.XaRX.1./YbWvw/C6oZFeVR2', 'editor', '2026-02-19 17:38:36'),
 (8, 'Editor2', NULL, '$2y$10$Wv/mEIfF/m8SzZUl/0sCW.9sCizpbCfwISQt2rw24lbLV42PUaehC', 'editor', '2026-04-23 16:02:57');
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `usuarios_publicos`
---
 
 CREATE TABLE `usuarios_publicos` (
   `id` int(11) NOT NULL,
@@ -307,237 +211,147 @@ CREATE TABLE `usuarios_publicos` (
   `visibilidad_resenas` enum('publico','anonimo') DEFAULT 'publico'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Volcado de datos para la tabla `usuarios_publicos`
---
-
 INSERT INTO `usuarios_publicos` (`id`, `nombre`, `email`, `password_hash`, `foto_perfil`, `fecha_registro`, `codigo_verificacion`, `codigo_expira`, `verificado`, `visibilidad_resenas`) VALUES
 (20, 'ejemplo2', 'ejemplo2@gmail.com', '$2y$10$8PJH4mMhz6H9HZLpevV1DOsfNuiuUQV.KKCVGxeVgwM3sDbmGgVma', NULL, '2026-04-17 16:56:00', NULL, NULL, 1, 'publico'),
 (37, 'Abel', 'abelperezcoca058@gmail.com', '$2y$10$azIS.J5.SRP1C3mjuqaRJ.oJVXbn4iARa95M98jisnLIGXreeO1Eq', NULL, '2026-05-13 16:16:52', NULL, NULL, 1, 'publico');
 
---
--- Índices para tablas volcadas
---
 
---
--- Indices de la tabla `banner_carrusel`
---
 ALTER TABLE `banner_carrusel`
   ADD PRIMARY KEY (`id_banner`),
   ADD KEY `idx_banner_orden` (`orden`,`activo`);
 
---
--- Indices de la tabla `categorias`
---
+ALTER TABLE `burbujas_busqueda`
+  ADD PRIMARY KEY (`id_burbuja`),
+  ADD KEY `id_categoria` (`id_categoria`);
+
+ALTER TABLE `busquedas_log`
+  ADD PRIMARY KEY (`id_log`),
+  ADD KEY `idx_fecha` (`fecha`),
+  ADD KEY `idx_termino` (`termino`);
+
 ALTER TABLE `categorias`
   ADD PRIMARY KEY (`id_categoria`),
   ADD UNIQUE KEY `slug` (`slug`);
 
---
--- Indices de la tabla `empresas`
---
 ALTER TABLE `empresas`
   ADD PRIMARY KEY (`id_empresa`),
   ADD UNIQUE KEY `slug` (`slug`),
   ADD KEY `id_categoria` (`id_categoria`),
   ADD KEY `idx_empresa_nombre` (`nombre`);
 
---
--- Indices de la tabla `empresa_galeria`
---
 ALTER TABLE `empresa_galeria`
   ADD PRIMARY KEY (`id_foto`),
   ADD KEY `id_empresa` (`id_empresa`);
 
---
--- Indices de la tabla `favoritos`
---
 ALTER TABLE `favoritos`
   ADD PRIMARY KEY (`id_favorito`),
   ADD UNIQUE KEY `idx_usuario_empresa` (`id_usuario_publico`,`id_empresa`),
   ADD KEY `fk_favorito_empresa` (`id_empresa`);
 
---
--- Indices de la tabla `otp_intentos`
---
 ALTER TABLE `otp_intentos`
   ADD PRIMARY KEY (`id`),
   ADD KEY `identificador` (`identificador`);
 
---
--- Indices de la tabla `rate_limits`
---
 ALTER TABLE `rate_limits`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_ip_accion` (`ip`,`accion`);
 
---
--- Indices de la tabla `resenas`
---
 ALTER TABLE `resenas`
   ADD PRIMARY KEY (`id_resena`),
   ADD UNIQUE KEY `uq_usuario_empresa` (`id_usuario_publico`,`id_empresa`),
   ADD KEY `id_empresa` (`id_empresa`),
   ADD KEY `id_usuario_publico` (`id_usuario_publico`);
 
---
--- Indices de la tabla `resena_votos`
---
 ALTER TABLE `resena_votos`
   ADD PRIMARY KEY (`id_voto`),
   ADD UNIQUE KEY `resena_usuario` (`id_resena`,`id_usuario_publico`),
   ADD KEY `id_resena` (`id_resena`),
   ADD KEY `id_usuario_publico` (`id_usuario_publico`);
 
---
--- Indices de la tabla `sesiones_usuario`
---
 ALTER TABLE `sesiones_usuario`
   ADD PRIMARY KEY (`id`),
   ADD KEY `fk_sesion_usuario` (`id_usuario_publico`);
 
---
--- Indices de la tabla `sobre_info`
---
 ALTER TABLE `sobre_info`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `clave` (`clave`);
 
---
--- Indices de la tabla `usuarios`
---
 ALTER TABLE `usuarios`
   ADD PRIMARY KEY (`id_usuario`),
   ADD UNIQUE KEY `email` (`email`);
 
---
--- Indices de la tabla `usuarios_publicos`
---
 ALTER TABLE `usuarios_publicos`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `email` (`email`);
 
---
--- AUTO_INCREMENT de las tablas volcadas
---
 
---
--- AUTO_INCREMENT de la tabla `banner_carrusel`
---
 ALTER TABLE `banner_carrusel`
   MODIFY `id_banner` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
---
--- AUTO_INCREMENT de la tabla `categorias`
---
+ALTER TABLE `burbujas_busqueda`
+  MODIFY `id_burbuja` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+ALTER TABLE `busquedas_log`
+  MODIFY `id_log` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
 ALTER TABLE `categorias`
   MODIFY `id_categoria` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
---
--- AUTO_INCREMENT de la tabla `empresas`
---
 ALTER TABLE `empresas`
   MODIFY `id_empresa` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
 
---
--- AUTO_INCREMENT de la tabla `empresa_galeria`
---
 ALTER TABLE `empresa_galeria`
   MODIFY `id_foto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
 
---
--- AUTO_INCREMENT de la tabla `favoritos`
---
 ALTER TABLE `favoritos`
   MODIFY `id_favorito` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
---
--- AUTO_INCREMENT de la tabla `otp_intentos`
---
 ALTER TABLE `otp_intentos`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
---
--- AUTO_INCREMENT de la tabla `rate_limits`
---
 ALTER TABLE `rate_limits`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
---
--- AUTO_INCREMENT de la tabla `resenas`
---
 ALTER TABLE `resenas`
   MODIFY `id_resena` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
 
---
--- AUTO_INCREMENT de la tabla `resena_votos`
---
 ALTER TABLE `resena_votos`
   MODIFY `id_voto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
---
--- AUTO_INCREMENT de la tabla `sesiones_usuario`
---
 ALTER TABLE `sesiones_usuario`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
---
--- AUTO_INCREMENT de la tabla `sobre_info`
---
 ALTER TABLE `sobre_info`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
---
--- AUTO_INCREMENT de la tabla `usuarios`
---
 ALTER TABLE `usuarios`
   MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
---
--- AUTO_INCREMENT de la tabla `usuarios_publicos`
---
 ALTER TABLE `usuarios_publicos`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
 
---
--- Restricciones para tablas volcadas
---
 
---
--- Filtros para la tabla `empresas`
---
+ALTER TABLE `burbujas_busqueda`
+  ADD CONSTRAINT `burbujas_busqueda_ibfk_1` FOREIGN KEY (`id_categoria`) REFERENCES `categorias` (`id_categoria`) ON DELETE SET NULL;
+
 ALTER TABLE `empresas`
   ADD CONSTRAINT `empresas_ibfk_1` FOREIGN KEY (`id_categoria`) REFERENCES `categorias` (`id_categoria`);
 
---
--- Filtros para la tabla `empresa_galeria`
---
 ALTER TABLE `empresa_galeria`
   ADD CONSTRAINT `empresa_galeria_ibfk_1` FOREIGN KEY (`id_empresa`) REFERENCES `empresas` (`id_empresa`) ON DELETE CASCADE;
 
---
--- Filtros para la tabla `favoritos`
---
 ALTER TABLE `favoritos`
   ADD CONSTRAINT `fk_favorito_empresa` FOREIGN KEY (`id_empresa`) REFERENCES `empresas` (`id_empresa`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_favorito_usuario` FOREIGN KEY (`id_usuario_publico`) REFERENCES `usuarios_publicos` (`id`) ON DELETE CASCADE;
 
---
--- Filtros para la tabla `resenas`
---
 ALTER TABLE `resenas`
   ADD CONSTRAINT `resenas_ibfk_1` FOREIGN KEY (`id_empresa`) REFERENCES `empresas` (`id_empresa`) ON DELETE CASCADE,
   ADD CONSTRAINT `resenas_ibfk_2` FOREIGN KEY (`id_usuario_publico`) REFERENCES `usuarios_publicos` (`id`) ON DELETE SET NULL;
 
---
--- Filtros para la tabla `resena_votos`
---
 ALTER TABLE `resena_votos`
-  ADD CONSTRAINT `fk_resena_votos_resenas` FOREIGN KEY (`id_resena`) REFERENCES `resenas` (`id_resena`) ON DELETE CASCADE;
+  ADD CONSTRAINT `fk_resena_votos_resenas` FOREIGN KEY (`id_resena`) REFERENCES `resenas` (`id_resena`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_votos_usuario` FOREIGN KEY (`id_usuario_publico`) REFERENCES `usuarios_publicos` (`id`) ON DELETE CASCADE;
 
---
--- Filtros para la tabla `sesiones_usuario`
---
 ALTER TABLE `sesiones_usuario`
   ADD CONSTRAINT `fk_sesion_usuario` FOREIGN KEY (`id_usuario_publico`) REFERENCES `usuarios_publicos` (`id`) ON DELETE CASCADE;
 COMMIT;

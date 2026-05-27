@@ -27,20 +27,28 @@ if (!$stmt) {
 $stmt->bind_param("sss", $texto, $texto, $texto);
 $stmt->execute();
 $resultado = $stmt->get_result();
-if (session_status() === PHP_SESSION_NONE)
-    session_start();
-$log_key = 'busq_' . md5($q);
-if (!isset($_SESSION[$log_key])) {
     $num_res = $resultado->num_rows;
     $termino_log = mb_substr($q, 0, 100);
-    $stmt_log = $conexion->prepare("INSERT INTO busquedas_log (termino, resultados) VALUES (?, ?)");
-    if ($stmt_log) {
-        $stmt_log->bind_param("si", $termino_log, $num_res);
-        $stmt_log->execute();
-        $stmt_log->close();
+    $stmt_check = $conexion->prepare(
+        "SELECT 1 FROM busquedas_log 
+         WHERE termino = ? AND fecha >= DATE_SUB(NOW(), INTERVAL 5 MINUTE) 
+         LIMIT 1"
+    );
+    $stmt_check->bind_param("s", $termino_log);
+    $stmt_check->execute();
+    $ya_registrado = $stmt_check->get_result()->num_rows > 0;
+    $stmt_check->close();
+
+    if (!$ya_registrado) {
+        $stmt_log = $conexion->prepare(
+            "INSERT INTO busquedas_log (termino, resultados) VALUES (?, ?)"
+        );
+        if ($stmt_log) {
+            $stmt_log->bind_param("si", $termino_log, $num_res);
+            $stmt_log->execute();
+            $stmt_log->close();
+        }
     }
-    $_SESSION[$log_key] = true;
-}
 
 if ($resultado->num_rows === 0) {
     echo '<p class="buscar-noresult">😕 Sin resultados para <strong>' . htmlspecialchars($q) . '</strong></p>';

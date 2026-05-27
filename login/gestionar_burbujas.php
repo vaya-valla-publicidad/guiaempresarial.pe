@@ -125,9 +125,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode(['ok' => true]);
         exit;
     }
+    if ($accion === 'borrar_todo_log') {
+        $conexion->query("DELETE FROM busquedas_log");
+        echo json_encode(['ok' => true]);
+        exit;
+    }
 
     echo json_encode(['ok' => false, 'error' => 'Acción no válida']);
     exit;
+}
+
+$res_burbujas_check = $conexion->query("SELECT COUNT(*) as c FROM burbujas_busqueda");
+if ($res_burbujas_check && $res_burbujas_check->fetch_assoc()['c'] == 0) {
+    $res_cats = $conexion->query("SELECT id_categoria, nombre FROM categorias ORDER BY orden ASC");
+    if ($res_cats && $res_cats->num_rows > 0) {
+        $orden = 1;
+        $stmt_ins = $conexion->prepare("INSERT INTO burbujas_busqueda (texto, id_categoria, orden, activo) VALUES (?, ?, ?, 1)");
+        if ($stmt_ins) {
+            while ($cat = $res_cats->fetch_assoc()) {
+                $stmt_ins->bind_param("sii", $cat['nombre'], $cat['id_categoria'], $orden);
+                $stmt_ins->execute();
+                $orden++;
+            }
+            $stmt_ins->close();
+        }
+    }
 }
 
 $burbujas = $conexion->query("SELECT b.*, c.nombre AS categoria_nombre, c.icono FROM burbujas_busqueda b LEFT JOIN categorias c ON b.id_categoria = c.id_categoria ORDER BY b.orden ASC");
@@ -136,10 +158,10 @@ $cats_arr = [];
 while ($c = $categorias->fetch_assoc())
     $cats_arr[] = $c;
 
-$top_busquedas = $conexion->query("SELECT termino, COUNT(*) as veces, SUM(resultados) as total_resultados FROM busquedas_log WHERE fecha >= DATE_SUB(NOW(), INTERVAL 7 DAY) GROUP BY termino ORDER BY veces DESC LIMIT 10");
-$sin_resultados = $conexion->query("SELECT termino, COUNT(*) as veces FROM busquedas_log WHERE resultados = 0 AND fecha >= DATE_SUB(NOW(), INTERVAL 7 DAY) GROUP BY termino ORDER BY veces DESC LIMIT 10");
+$top_busquedas = $conexion->query("SELECT termino, COUNT(*) as veces, SUM(resultados) as total_resultados FROM busquedas_log WHERE fecha >= DATE_SUB(NOW(), INTERVAL 7 DAY) GROUP BY termino ORDER BY veces DESC LIMIT 20");
+$sin_resultados = $conexion->query("SELECT termino, COUNT(*) as veces FROM busquedas_log WHERE resultados = 0 AND fecha >= DATE_SUB(NOW(), INTERVAL 7 DAY) GROUP BY termino ORDER BY veces DESC LIMIT 20");
 $total_busquedas_semana = $conexion->query("SELECT COUNT(*) as t FROM busquedas_log WHERE fecha >= DATE_SUB(NOW(), INTERVAL 7 DAY)")->fetch_assoc()['t'] ?? 0;
-$top_burbujas = $conexion->query("SELECT texto, clics FROM burbujas_busqueda WHERE activo = 1 AND clics > 0 ORDER BY clics DESC LIMIT 5");
+$top_burbujas = $conexion->query("SELECT texto, clics FROM burbujas_busqueda WHERE activo = 1 ORDER BY clics DESC");
 
 $panel_url = ($rol === 'admin') ? 'admin.php' : 'editor.php';
 ?>
@@ -180,7 +202,7 @@ $panel_url = ($rol === 'admin') ? 'admin.php' : 'editor.php';
                 <div class="stat-box" style="border-left-color: #f59e0b;">
                     <i class="bi bi-fire" style="color: #f59e0b;"></i>
                     <span class="stat-title">Top Buscados</span>
-                    <ul class="top5-list">
+                    <ul class="top5-list" style="max-height: 180px; overflow-y: auto;">
                         <?php if ($top_busquedas && $top_busquedas->num_rows > 0): ?>
                             <?php while ($tb = $top_busquedas->fetch_assoc()): ?>
                                 <li class="top5-item">
@@ -198,7 +220,7 @@ $panel_url = ($rol === 'admin') ? 'admin.php' : 'editor.php';
                 <div class="stat-box" style="border-left-color: #ef4444;">
                     <i class="bi bi-emoji-frown" style="color: #ef4444;"></i>
                     <span class="stat-title">Sin Resultados</span>
-                    <ul class="top5-list">
+                    <ul class="top5-list" style="max-height: 180px; overflow-y: auto;">
                         <?php if ($sin_resultados && $sin_resultados->num_rows > 0): ?>
                             <?php while ($sr = $sin_resultados->fetch_assoc()): ?>
                                 <li class="top5-item">
@@ -216,7 +238,7 @@ $panel_url = ($rol === 'admin') ? 'admin.php' : 'editor.php';
                 <div class="stat-box" style="border-left-color: #3b82f6;">
                     <i class="bi bi-cursor-fill" style="color: #3b82f6;"></i>
                     <span class="stat-title">Burbujas Más Usadas</span>
-                    <ul class="top5-list">
+                    <ul class="top5-list" style="max-height: 180px; overflow-y: auto;">
                         <?php if ($top_burbujas && $top_burbujas->num_rows > 0): ?>
                             <?php while ($tb = $top_burbujas->fetch_assoc()): ?>
                                 <li class="top5-item">
@@ -240,7 +262,11 @@ $panel_url = ($rol === 'admin') ? 'admin.php' : 'editor.php';
                 </button>
                 <button onclick="accionGlobal('limpiar_log', '¿Eliminar búsquedas con más de 30 días?')"
                     class="btn-reiniciar-vistas" style="background:#fef3c7;color:#92400e;">
-                    <i class="bi bi-trash3"></i> Limpiar log antiguo
+                    <i class="bi bi-trash3"></i> Borrar datos antiguos
+                </button>
+                <button onclick="accionGlobal('borrar_todo_log', '¿Estás seguro? Esto borrará TODO el historial de búsquedas. Esta acción no se puede deshacer.')"
+                    class="btn-reiniciar-vistas" style="background:#fee2e2;color:#b91c1c;">
+                    <i class="bi bi-trash3-fill"></i> Borrar todos los datos
                 </button>
             </div>
 

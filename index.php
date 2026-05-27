@@ -89,7 +89,7 @@ $total_slides = count($slides);
 
             <!-- Inicio: Burbujas Rápidas (gestionadas desde panel) -->
             <?php
-            $res_pills = $conexion->query("SELECT b.id_burbuja, b.texto, c.slug, c.icono FROM burbujas_busqueda b LEFT JOIN categorias c ON b.id_categoria = c.id_categoria WHERE b.activo = 1 ORDER BY b.orden ASC LIMIT 8");
+            $res_pills = $conexion->query("SELECT b.id_burbuja, b.texto, c.slug, c.icono FROM burbujas_busqueda b LEFT JOIN categorias c ON b.id_categoria = c.id_categoria WHERE b.activo = 1 ORDER BY b.orden ASC LIMIT 5");
             if ($res_pills && $res_pills->num_rows > 0):
                 ?>
                 <div class="quick-pills-ux"
