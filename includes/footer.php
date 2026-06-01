@@ -397,6 +397,111 @@
     window.addEventListener('popstate', startBar);
 
     window.addEventListener('pageshow', finishBar);
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        const d = new Date();
+        const dayNames = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
+        // Support variations (miércoles/miercoles, sábado/sabado) but db assumes no accents
+        const currentDay = dayNames[d.getDay()];
+        const currentHour = d.getHours();
+        const currentMin = d.getMinutes();
+
+        const pad = (n) => n.toString().padStart(2, '0');
+        const currentDateStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+        document.querySelectorAll('.horario-display').forEach(el => {
+            const rawStr = el.getAttribute('data-horario');
+            if (!rawStr) return;
+            
+            let horarioStr = rawStr;
+            let especialStr = '';
+            if (rawStr.includes('|')) {
+                const pipParts = rawStr.split('|');
+                horarioStr = pipParts[0];
+                especialStr = pipParts[1];
+            }
+            
+            // Comprobar días especiales
+            let isEspecial = false;
+            let motivo = '';
+            if (especialStr) {
+                const feriados = especialStr.split(',');
+                for (let f of feriados) {
+                    f = f.trim();
+                    const fParts = f.split(':');
+                    if (fParts[0] === 'feriado' && fParts[1]) {
+                        if (fParts[1] === currentDateStr) {
+                            isEspecial = true;
+                            if (fParts.length >= 3) {
+                                motivo = fParts.slice(2).join(':');
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (isEspecial) {
+                const mText = motivo ? ` (${motivo})` : '';
+                el.innerHTML = `<span style="color:#dc3545; font-weight:600; font-size:0.9em;">🔴 Cerrado por día especial${mText}</span>`;
+                return;
+            }
+            
+            // Horario normal
+            const parts = horarioStr.toLowerCase().split(',');
+            let dayStr = null;
+            
+            for (let p of parts) {
+                // remove accents just in case
+                p = p.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                const colonIdx = p.indexOf(':');
+                if (colonIdx === -1) continue;
+                const dName = p.substring(0, colonIdx).trim();
+                const tRange = p.substring(colonIdx + 1).trim();
+                if (dName === currentDay) {
+                    dayStr = tRange;
+                    break;
+                }
+            }
+
+            if (dayStr) {
+                const rangeParts = dayStr.split('-');
+                if (rangeParts.length === 2) {
+                    const startH_M = rangeParts[0].split(':').map(Number);
+                    const endH_M = rangeParts[1].split(':').map(Number);
+                    
+                    if (startH_M.length === 2 && endH_M.length === 2) {
+                        const startH = startH_M[0], startM = startH_M[1];
+                        const endH = endH_M[0], endM = endH_M[1];
+                        
+                        const startTime = startH * 60 + startM;
+                        const endTime = endH * 60 + endM;
+                        const nowTime = currentHour * 60 + currentMin;
+                        
+                        const format12h = (h, m) => {
+                            const period = h >= 12 ? 'pm' : 'am';
+                            let h12 = h % 12;
+                            if (h12 === 0) h12 = 12;
+                            return `${h12}:${m.toString().padStart(2, '0')} ${period}`;
+                        };
+
+                        const textLegible = `de ${format12h(startH, startM)} a ${format12h(endH, endM)}`;
+                        
+                        let badge = '';
+                        if (nowTime >= startTime && nowTime <= endTime) {
+                            badge = '<span style="color:#28a745; font-weight:600;">🟢 Abierto ahora</span>';
+                        } else {
+                            badge = '<span style="color:#dc3545; font-weight:600;">🔴 Cerrado</span>';
+                        }
+                        
+                        el.innerHTML = `<span>🕒 ${textLegible}</span> <span style="margin-left:6px; font-size:0.9em;">${badge}</span>`;
+                    }
+                }
+            } else {
+                el.style.display = 'none';
+            }
+        });
+    });
 </script>
 </body>
 

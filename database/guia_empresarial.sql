@@ -32,15 +32,20 @@ CREATE TABLE `burbujas_busqueda` (
   `fecha_creacion` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+INSERT INTO `burbujas_busqueda` (`id_burbuja`, `texto`, `id_categoria`, `orden`, `activo`, `clics`, `fecha_creacion`) VALUES
+(2, 'Salud', 11, 1, 1, 0, '2026-05-27 10:13:05'),
+(3, 'Restaurante', 2, 2, 1, 0, '2026-05-27 10:13:05'),
+(4, 'Ferreteria', 8, 3, 1, 0, '2026-05-27 10:13:05'),
+(5, 'Comercio', 10, 4, 1, 0, '2026-05-27 10:13:05'),
+(6, 'Tecnología', 1, 5, 1, 0, '2026-05-27 10:13:05'),
+(7, 'Tienda', 9, 6, 1, 0, '2026-05-27 10:13:05');
+
 CREATE TABLE `busquedas_log` (
   `id_log` int(11) NOT NULL,
   `termino` varchar(100) NOT NULL,
   `resultados` int(11) DEFAULT 0,
   `fecha` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-INSERT INTO `busquedas_log` (`id_log`, `termino`, `resultados`, `fecha`) VALUES
-(1, 'Res', 2, '2026-05-27 09:40:48');
 
 CREATE TABLE `categorias` (
   `id_categoria` int(11) NOT NULL,
@@ -80,7 +85,7 @@ CREATE TABLE `empresas` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `empresas` (`id_empresa`, `logo`, `nombre`, `slug`, `email`, `telefono`, `direccion`, `id_categoria`, `fecha_registro`, `horario`, `descripcion`, `ubicacion_link`, `link_empresa`, `vistas`, `destacada`, `facebook`, `clics_whatsapp`) VALUES
-(12, '69b2e6c81a9ce_RosalRestaurant.jpg', 'El Rosal Restaurant', 'el-rosal-restaurant', NULL, '977411702', 'Jr. Salaverry (8va cuadra), Huacho', 2, '2026-03-09 17:12:50', 'de 12 a 10 pm', 'La tradición de Huacho en tu paladar desde 1960. 🥘✨', 'https://www.google.com/maps/place/El+Rosal/@-11.1101762,-77.6124137,17z/data=!3m1!4b1!4m6!3m5!1s0x9106df0b73d6425f:0x6e3e28e69603d472!8m2!3d-11.1101762!4d-77.6124137!16s%2Fg%2F11bwpd_yh9?entry=ttu&amp;g_ep=EgoyMDI2MDMwOC4wIKXMDSoASAFQAw%3D%3D', NULL, 23, 1, 'https://www.facebook.com/ELROSALRESTAURANT', 0),
+(12, '69b2e6c81a9ce_RosalRestaurant.jpg', 'El Rosal Restaurant', 'el-rosal-restaurant', NULL, '977411702', 'Jr. Salaverry (8va cuadra), Huacho', 2, '2026-03-09 17:12:50', 'lunes:12:00-22:00,martes:12:00-22:00,miercoles:12:00-22:00,jueves:12:00-22:00,viernes:12:00-22:00,sa', 'La tradición de Huacho en tu paladar desde 1960. 🥘✨', 'https://www.google.com/maps/place/El+Rosal/@-11.1101762,-77.6124137,17z/data=!3m1!4b1!4m6!3m5!1s0x9106df0b73d6425f:0x6e3e28e69603d472!8m2!3d-11.1101762!4d-77.6124137!16s%2Fg%2F11bwpd_yh9?entry=ttu&amp;g_ep=EgoyMDI2MDMwOC4wIKXMDSoASAFQAw%3D%3D', NULL, 25, 1, 'https://www.facebook.com/ELROSALRESTAURANT', 0),
 (13, '69b2eb9d7814f_chifaespaña.jpg', 'Chifa España', 'chifa-espana', NULL, '937 245 536', 'Av. 28 de Julio 544 – Huacho', 2, '2026-03-12 16:36:45', NULL, '¡EL AUTENTICO SABOR ORIENTAL TE ESPERA AQUI!', 'https://www.google.com/maps/place/Chifa+Espa%C3%B1a/@-11.1075533,-77.6095983,19z/data=!4m6!3m5!1s0x9106df7536dc3f1b:0x75454f4e78f60660!8m2!3d-11.1073572!4d-77.6095098!16s%2Fg%2F1tjs5_st?entry=ttu&g_ep=EgoyMDI2MDMxMS4wIKXMDSoASAFQAw%3D%3D', NULL, 11, 1, 'https://www.facebook.com/chifaespana544', 0),
 (14, '69b82b6ce767e_lachutana.jpg', 'La Chutana-Lubricentro', 'la-chutana-lubricentro', NULL, '994337831', 'Av. Cruz Blanca 1890 Santa María, Huaura, Peru, 15138', 8, '2026-03-16 16:10:20', NULL, 'En La Chutana Lubricentro engreimos a tu fierro con productos de la mejor calidad y productos :)', 'https://www.google.com/maps/place/Av.+Cruz+Blanca+1890,+Huacho+15137/@-11.0985195,-77.5959335,17z/data=!3m1!4b1!4m5!3m4!1s0x9106df907e002ea1:0x3e3fe5d41e672a7e!8m2!3d-11.0985195!4d-77.5959335?entry=ttu&g_ep=EgoyMDI2MDMxMS4wIKXMDSoASAFQAw%3D%3D', NULL, 2, 0, 'https://www.facebook.com/lachutana.huacho', 0),
 (15, '69c2b957bfeb7_Odontologia.jpg', 'Cruzado Odontologia Especializada', 'cruzado-odontologia-especializada', NULL, '945 651 054', 'Prologación Miguel Grau 162 - 2do piso, Huacho, Peru', 11, '2026-03-24 16:18:09', NULL, 'Instalaciones modernas, alta calidad de equipos e insumos que en combinación con la ética profesional, brinda atención óptima y segura.', 'https://www.google.com/maps/place/Cruzado+Odontolog%C3%ADa+Especializada/@-11.1080604,-77.604148,18z/data=!4m6!3m5!1s0x9106df557a2f5c59:0x5c3aa558e2691d18!8m2!3d-11.1080578!4d-77.6043518!16s%2Fg%2F11fk1b8y7c?entry=ttu&amp;g_ep=EgoyMDI2MDMxOC4xIKXMDSoASAFQAw%3D%3D', NULL, 2, 1, 'https://www.facebook.com/cruzadoodontologia', 0);
@@ -139,7 +144,7 @@ CREATE TABLE `rate_limits` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `rate_limits` (`id`, `ip`, `accion`, `intentos`, `inicio_ventana`) VALUES
-(1, '::1', 'login_admin', 2, '2026-05-27 10:04:06');
+(1, '::1', 'login_admin', 2, '2026-06-01 10:59:37');
 
 CREATE TABLE `resenas` (
   `id_resena` int(11) NOT NULL,
@@ -254,7 +259,7 @@ ALTER TABLE `otp_intentos`
 
 ALTER TABLE `rate_limits`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_ip_accion` (`ip`,`accion`);
+  ADD UNIQUE KEY `unique_ip_accion` (`ip`,`accion`);
 
 ALTER TABLE `resenas`
   ADD PRIMARY KEY (`id_resena`),
@@ -289,13 +294,13 @@ ALTER TABLE `banner_carrusel`
   MODIFY `id_banner` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 ALTER TABLE `burbujas_busqueda`
-  MODIFY `id_burbuja` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id_burbuja` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 ALTER TABLE `busquedas_log`
-  MODIFY `id_log` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id_log` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 ALTER TABLE `categorias`
-  MODIFY `id_categoria` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id_categoria` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 ALTER TABLE `empresas`
   MODIFY `id_empresa` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;

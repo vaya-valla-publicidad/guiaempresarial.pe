@@ -353,11 +353,10 @@ include 'includes/Header.php';
                             <?php endif; ?>
                             <?php if (!empty($fila['horario'])): ?>
                                 <div class="perfil-dato-item">
-                                    <span class="perfil-dato-icon">🕒</span>
+                                    <span class="perfil-dato-icon" style="visibility:hidden;">🕒</span>
                                     <div>
                                         <span class="perfil-dato-label">Horario</span>
-                                        <span class="perfil-dato-valor">
-                                            <?= htmlspecialchars($fila['horario']) ?>
+                                        <span class="perfil-dato-valor horario-display" data-horario="<?= htmlspecialchars($fila['horario']) ?>" style="margin-left:-28px;">
                                         </span>
                                     </div>
                                 </div>

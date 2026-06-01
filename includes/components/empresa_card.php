@@ -38,7 +38,7 @@ function renderEmpresaCard($fila, $fotos_arr = [])
             <?php endif; ?>
             <div class="empresa-datos">
                 <?php if (!empty($fila['horario'])): ?>
-                    <span>🕒 <?= htmlspecialchars($fila['horario']) ?></span>
+                    <span class="horario-display" data-horario="<?= htmlspecialchars($fila['horario']) ?>"></span>
                 <?php endif; ?>
                 <?php if ($numero): ?><span>📞 <?= $numero ?></span><?php endif; ?>
                 <span>👁 <?= number_format($fila['vistas']) ?> vistas</span>

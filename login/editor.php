@@ -58,6 +58,10 @@ $rol = $_SESSION['rol'];
                     <i class="bi bi-chat-right-quote"></i>
                     <span>Reseñas</span>
                 </a>
+                <a href="gestionar_burbujas.php" class="qa-card">
+                    <i class="bi bi-search-heart"></i>
+                    <span>Burbujas</span>
+                </a>
                 <a href="editar_sobre.php" class="qa-card">
                     <i class="bi bi-info-circle"></i>
                     <span>Sobre Nosotros</span>

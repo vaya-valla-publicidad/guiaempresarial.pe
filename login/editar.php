@@ -278,7 +278,129 @@ $total_destacadas = $conexion->query("SELECT COUNT(*) as total FROM empresas WHE
             <textarea name="descripcion"><?= htmlspecialchars($empresa['descripcion'] ?? '') ?></textarea>
 
             <label>Horario</label>
-            <input type="text" name="horario" value="<?= htmlspecialchars($empresa['horario'] ?? '') ?>">
+            <input type="hidden" name="horario" id="horario_hidden" value="<?= htmlspecialchars($empresa['horario'] ?? '') ?>">
+            
+            <div class="horario-editor" style="background:#f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 20px;">
+                <p style="margin-top:0;font-size:0.9em;color:#666;">Selecciona los días y horas de apertura (formato 24h).</p>
+                <?php
+                $dias_semana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+                $horario_str_full = $empresa['horario'] ?? '';
+                $horario_str = $horario_str_full;
+                $especial_str = '';
+                if (strpos($horario_str_full, '|') !== false) {
+                    $parts_p = explode('|', $horario_str_full);
+                    $horario_str = $parts_p[0];
+                    $especial_str = $parts_p[1] ?? '';
+                }
+
+                $horario_parsed = [];
+                if (!empty($horario_str)) {
+                    $parts = explode(',', strtolower($horario_str));
+                    foreach ($parts as $p) {
+                        $p = trim($p);
+                        if(strpos($p, ':') !== false) {
+                            list($dia, $horas) = explode(':', $p, 2);
+                            $horario_parsed[trim($dia)] = trim($horas);
+                        }
+                    }
+                }
+                foreach ($dias_semana as $dia):
+                    $is_active = isset($horario_parsed[$dia]);
+                    $apertura = '09:00';
+                    $cierre = '18:00';
+                    if ($is_active) {
+                        $horas_split = explode('-', $horario_parsed[$dia]);
+                        if(count($horas_split) == 2) {
+                            $apertura = trim($horas_split[0]);
+                            $cierre = trim($horas_split[1]);
+                        }
+                    }
+
+                    // Convert to 12h for dropdowns
+                    $get12h = function($time24) {
+                        if (!$time24) return [9, '00', 'am'];
+                        $pts = explode(':', $time24);
+                        if (count($pts) < 2) return [9, '00', 'am'];
+                        $h = (int)$pts[0];
+                        $m = $pts[1];
+                        $validMins = ['00', '15', '30', '45'];
+                        if (!in_array($m, $validMins)) $m = '00';
+                        $period = $h >= 12 ? 'pm' : 'am';
+                        $h12 = $h % 12;
+                        if ($h12 == 0) $h12 = 12;
+                        return [$h12, $m, $period];
+                    };
+                    
+                    list($ap_h, $ap_m, $ap_p) = $get12h($apertura);
+                    list($ci_h, $ci_m, $ci_p) = $get12h($cierre);
+                ?>
+                <div class="horario-dia-row" style="display:flex; align-items:center; gap: 10px; margin-bottom: 8px; flex-wrap:wrap;">
+                    <label style="width: 100px; display:flex; align-items:center; gap:5px; margin:0; font-weight:normal;">
+                        <input type="checkbox" class="dia-cb" data-dia="<?= $dia ?>" <?= $is_active ? 'checked' : '' ?>>
+                        <?= ucfirst($dia) ?>
+                    </label>
+                    <div class="hora-inputs" style="<?= $is_active ? '' : 'opacity:0.4; pointer-events:none;' ?> display:flex; gap: 3px; align-items:center;">
+                        <select class="hora-ap-h" style="padding: 4px; border:1px solid #ccc; border-radius:4px;">
+                            <?php for($i=1; $i<=12; $i++): ?>
+                                <option value="<?= $i ?>" <?= $ap_h == $i ? 'selected' : '' ?>><?= str_pad($i, 2, '0', STR_PAD_LEFT) ?></option>
+                            <?php endfor; ?>
+                        </select>:
+                        <select class="hora-ap-m" style="padding: 4px; border:1px solid #ccc; border-radius:4px;">
+                            <?php foreach(['00','15','30','45'] as $mOp): ?>
+                                <option value="<?= $mOp ?>" <?= $ap_m == $mOp ? 'selected' : '' ?>><?= $mOp ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <select class="hora-ap-p" style="padding: 4px; border:1px solid #ccc; border-radius:4px;">
+                            <option value="am" <?= $ap_p == 'am' ? 'selected' : '' ?>>AM</option>
+                            <option value="pm" <?= $ap_p == 'pm' ? 'selected' : '' ?>>PM</option>
+                        </select>
+                        
+                        <span style="margin: 0 5px; color:#555;"> a </span>
+                        
+                        <select class="hora-ci-h" style="padding: 4px; border:1px solid #ccc; border-radius:4px;">
+                            <?php for($i=1; $i<=12; $i++): ?>
+                                <option value="<?= $i ?>" <?= $ci_h == $i ? 'selected' : '' ?>><?= str_pad($i, 2, '0', STR_PAD_LEFT) ?></option>
+                            <?php endfor; ?>
+                        </select>:
+                        <select class="hora-ci-m" style="padding: 4px; border:1px solid #ccc; border-radius:4px;">
+                            <?php foreach(['00','15','30','45'] as $mOp): ?>
+                                <option value="<?= $mOp ?>" <?= $ci_m == $mOp ? 'selected' : '' ?>><?= $mOp ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <select class="hora-ci-p" style="padding: 4px; border:1px solid #ccc; border-radius:4px;">
+                            <option value="am" <?= $ci_p == 'am' ? 'selected' : '' ?>>AM</option>
+                            <option value="pm" <?= $ci_p == 'pm' ? 'selected' : '' ?>>PM</option>
+                        </select>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+
+                <hr style="border:0; border-top:1px solid #ddd; margin: 15px 0;">
+                <p style="margin-top:0;font-size:0.9em;color:#666; font-weight:bold;">Días no laborables o fechas especiales</p>
+                <div id="feriados-container">
+                    <?php
+                    if (!empty($especial_str)) {
+                        $feriados = explode(',', $especial_str);
+                        foreach ($feriados as $fer) {
+                            $fer = trim($fer);
+                            if (strpos($fer, 'feriado:') === 0) {
+                                $fer_parts = explode(':', $fer);
+                                if (count($fer_parts) >= 2) {
+                                    $f_date = $fer_parts[1];
+                                    $f_motivo = count($fer_parts) >= 3 ? implode(':', array_slice($fer_parts, 2)) : '';
+                                    echo '<div class="feriado-row" style="display:flex; gap:10px; margin-bottom:8px;">
+                                            <input type="date" class="feriado-date" value="'.htmlspecialchars($f_date).'" style="width:150px; padding:5px;">
+                                            <input type="text" class="feriado-motivo" value="'.htmlspecialchars($f_motivo).'" placeholder="Motivo (opcional)" style="flex:1; padding:5px;">
+                                            <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()" style="padding: 5px 10px;">X</button>
+                                          </div>';
+                                }
+                            }
+                        }
+                    }
+                    ?>
+                </div>
+                <button type="button" id="btn-add-feriado" class="btn btn-sm" style="background:#007BFF; color:#fff; padding: 5px 10px; font-size:13px; border:none; cursor:pointer;">+ Agregar fecha</button>
+            </div>
 
             <label>Ubicación en Google Maps</label>
             <div class="mapa-wrap">
@@ -409,6 +531,92 @@ $total_destacadas = $conexion->query("SELECT COUNT(*) as total FROM empresas WHE
                     });
             });
         }
+
+        document.querySelectorAll('.dia-cb').forEach(cb => {
+            cb.addEventListener('change', function() {
+                const inputs = this.closest('.horario-dia-row').querySelector('.hora-inputs');
+                if (this.checked) {
+                    inputs.style.opacity = '1';
+                    inputs.style.pointerEvents = 'auto';
+                } else {
+                    inputs.style.opacity = '0.4';
+                    inputs.style.pointerEvents = 'none';
+                }
+            });
+        });
+
+        document.getElementById('btn-add-feriado').addEventListener('click', function() {
+            const container = document.getElementById('feriados-container');
+            const div = document.createElement('div');
+            div.className = 'feriado-row';
+            div.style.cssText = 'display:flex; gap:10px; margin-bottom:8px;';
+            div.innerHTML = `
+                <input type="date" class="feriado-date" style="width:150px; padding:5px;">
+                <input type="text" class="feriado-motivo" placeholder="Motivo (opcional)" style="flex:1; padding:5px;">
+                <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()" style="padding: 5px 10px;">X</button>
+            `;
+            container.appendChild(div);
+        });
+
+        const formGeneral = document.querySelector('form');
+        if (formGeneral) {
+            formGeneral.addEventListener('submit', function() {
+                let parts = [];
+                
+                const get24h = (h12, m, p) => {
+                    let h = parseInt(h12, 10);
+                    if (p === 'pm' && h < 12) h += 12;
+                    if (p === 'am' && h === 12) h = 0;
+                    return h.toString().padStart(2, '0') + ':' + m;
+                };
+
+                document.querySelectorAll('.horario-dia-row').forEach(row => {
+                    const cb = row.querySelector('.dia-cb');
+                    if (cb && cb.checked) {
+                        const dia = cb.getAttribute('data-dia');
+                        
+                        const ap_h = row.querySelector('.hora-ap-h').value;
+                        const ap_m = row.querySelector('.hora-ap-m').value;
+                        const ap_p = row.querySelector('.hora-ap-p').value;
+                        
+                        const ci_h = row.querySelector('.hora-ci-h').value;
+                        const ci_m = row.querySelector('.hora-ci-m').value;
+                        const ci_p = row.querySelector('.hora-ci-p').value;
+                        
+                        const ap = get24h(ap_h, ap_m, ap_p);
+                        const ci = get24h(ci_h, ci_m, ci_p);
+                        
+                        parts.push(`${dia}:${ap}-${ci}`);
+                    }
+                });
+                
+                let stringFinal = parts.join(',');
+
+                // Feriados
+                let feriados = [];
+                document.querySelectorAll('.feriado-row').forEach(row => {
+                    const dateVal = row.querySelector('.feriado-date').value;
+                    const motivoVal = row.querySelector('.feriado-motivo').value.trim();
+                    if (dateVal) {
+                        let feriadoStr = `feriado:${dateVal}`;
+                        if (motivoVal) {
+                            // remove : and , and | from motivo to prevent parsing issues
+                            let safeMotivo = motivoVal.replace(/[:|,]/g, ' ');
+                            feriadoStr += `:${safeMotivo}`;
+                        }
+                        feriados.push(feriadoStr);
+                    }
+                });
+
+                if (feriados.length > 0) {
+                    stringFinal += '|' + feriados.join(',');
+                }
+
+                const hiddenH = document.getElementById('horario_hidden');
+                if (hiddenH) hiddenH.value = stringFinal;
+            });
+        }
+
 
     </script>
     <script src="<?= APP_URL ?>/assets/js/toast.js"></script>
