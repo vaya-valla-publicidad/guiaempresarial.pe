@@ -25,92 +25,72 @@ if (!$acceso_autorizado) {
 
 
 $error = "";
-$max_intentos = 3;
-$bloqueo_minutos = 5;
 
-if (!verificarRateLimit('login_admin', 10, 300)) {
-    http_response_code(429);
-    die('Demasiados intentos. Espera 5 minutos.');
-}
-
-if (!isset($_SESSION['intentos'])) {
-    $_SESSION['intentos'] = 0;
-    $_SESSION['ultimo_intento'] = 0;
-}
-
-$tiempo_actual = time();
-$tiempo_bloqueo = $_SESSION['ultimo_intento'] + ($bloqueo_minutos * 60);
-
-if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) {
-    $restante = $tiempo_bloqueo - $tiempo_actual;
-    $minutos = floor($restante / 60);
-    $segundos = $restante % 60;
-    $error = "Demasiados intentos fallidos. Intenta de nuevo en {$minutos} min {$segundos} seg.";
-} elseif (isset($_POST['usu'], $_POST['pass'])) {
-    if (!empty($_POST['segundo_nombre'])) {
-        header("Location: " . APP_URL . "/index");
-        exit();
-    }
-
-    $usu = trim($_POST['usu']);
-    $pass = $_POST['pass'];
-
-    $stmt = $conexion->prepare("SELECT id_usuario, nombre, contraseña_hash, rol FROM usuarios WHERE nombre = ?");
-
-    if (!$stmt) {
-        error_log("Error preparando login: " . $conexion->error);
-        $error = "No se pudo procesar el inicio de sesión. Intenta nuevamente.";
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['usu'], $_POST['pass'])) {
+    if (!validarCSRF()) {
+        $error = "Token de seguridad inválido. Recarga la página e intenta de nuevo.";
     } else {
-        $stmt->bind_param("s", $usu);
+        if (!verificarRateLimit('login_admin', 10, 300)) {
+            http_response_code(429);
+            $error = "Demasiados intentos. Espera 5 minutos.";
+        } else {
+            if (!empty($_POST['segundo_nombre'])) {
+                header("Location: " . APP_URL . "/index");
+                exit();
+            }
 
-        if (!$stmt->execute()) {
-            error_log("Error ejecutando login para usuario {$usu}: " . $stmt->error);
+            $usu = trim($_POST['usu']);
+            $pass = $_POST['pass'];
+
+            $stmt = $conexion->prepare("SELECT id_usuario, nombre, contraseña_hash, rol FROM usuarios WHERE nombre = ?");
+
+        if (!$stmt) {
+            error_log("Error preparando login: " . $conexion->error);
             $error = "No se pudo procesar el inicio de sesión. Intenta nuevamente.";
         } else {
-            $resultado = $stmt->get_result();
+            $stmt->bind_param("s", $usu);
 
-            if (!$resultado) {
-                error_log("Error obteniendo resultado de login para usuario {$usu}: " . $stmt->error);
+            if (!$stmt->execute()) {
+                error_log("Error ejecutando login para usuario {$usu}: " . $stmt->error);
                 $error = "No se pudo procesar el inicio de sesión. Intenta nuevamente.";
-            } elseif ($resultado->num_rows === 1) {
-                $fila = $resultado->fetch_assoc();
+            } else {
+                $resultado = $stmt->get_result();
 
-                if (password_verify($pass, $fila['contraseña_hash'])) {
-                    if ($fila['rol'] === 'viewer') {
-                        $error = "Tu cuenta no tiene acceso al panel de administración.";
-                        $_SESSION['intentos']++;
-                        $_SESSION['ultimo_intento'] = time();
-                    } else {
-                        session_regenerate_id(true);
-                        $_SESSION['usuario'] = $fila['nombre'];
-                        $_SESSION['rol'] = $fila['rol'];
-                        $_SESSION['id_usuario'] = (int) $fila['id_usuario'];
-                        $_SESSION['admin_pw_hash'] = $fila['contraseña_hash'];
-                        $_SESSION['admin_access_granted'] = true;
-                        $_SESSION['ua_hash'] = hash('sha256', $_SERVER['HTTP_USER_AGENT'] ?? '');
+                if (!$resultado) {
+                    error_log("Error obteniendo resultado de login para usuario {$usu}: " . $stmt->error);
+                    $error = "No se pudo procesar el inicio de sesión. Intenta nuevamente.";
+                } elseif ($resultado->num_rows === 1) {
+                    $fila = $resultado->fetch_assoc();
 
-                        $_SESSION['intentos'] = 0;
-                        $_SESSION['ultimo_intento'] = 0;
-
-                        if ($fila['rol'] === 'admin') {
-                            header("Location: " . APP_URL . "/login/admin");
+                    if (password_verify($pass, $fila['contraseña_hash'])) {
+                        if ($fila['rol'] === 'viewer') {
+                            $error = "Tu cuenta no tiene acceso al panel de administración.";
                         } else {
-                            header("Location: " . APP_URL . "/login/editor");
+                            session_regenerate_id(true);
+                            $_SESSION['usuario'] = $fila['nombre'];
+                            $_SESSION['rol'] = $fila['rol'];
+                            $_SESSION['id_usuario'] = (int) $fila['id_usuario'];
+                            $_SESSION['admin_pw_hash'] = $fila['contraseña_hash'];
+                            $_SESSION['admin_access_granted'] = true;
+                            $_SESSION['ua_hash'] = hash('sha256', $_SERVER['HTTP_USER_AGENT'] ?? '');
+
+                            if ($fila['rol'] === 'admin') {
+                                header("Location: " . APP_URL . "/login/admin");
+                            } else {
+                                header("Location: " . APP_URL . "/login/editor");
+                            }
+                            exit();
                         }
-                        exit();
+                    } else {
+                        $error = "Credenciales incorrectas.";
                     }
                 } else {
-                    $_SESSION['intentos']++;
-                    $_SESSION['ultimo_intento'] = time();
                     $error = "Credenciales incorrectas.";
                 }
-            } else {
-                $_SESSION['intentos']++;
-                $_SESSION['ultimo_intento'] = time();
-                $error = "Credenciales incorrectas.";
             }
+            $stmt->close();
         }
-        $stmt->close();
+    }
     }
 }
 ?>
@@ -135,8 +115,8 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) 
                 <p class="login-error"><?= htmlspecialchars($error) ?></p>
             <?php endif; ?>
 
-            <?php if (!($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo)): ?>
                 <form action="" method="post" class="login-form">
+                    <input type="hidden" name="csrf_token" value="<?= generarTokenCSRF() ?>">
 
                     <div style="display:none; visibility:hidden; opacity:0; position:absolute; left:-9999px;">
                         <label for="segundo_nombre">Segundo Nombre</label>
@@ -154,7 +134,6 @@ if ($_SESSION['intentos'] >= $max_intentos && $tiempo_actual < $tiempo_bloqueo) 
 
                     <button type="submit" class="login-btn">Ingresar</button>
                 </form>
-            <?php endif; ?>
         </section>
     </div>
 </body>

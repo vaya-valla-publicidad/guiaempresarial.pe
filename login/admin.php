@@ -309,6 +309,13 @@ $rol = $_SESSION['rol'];
                         <th>Acciones</th>
                     </tr>
                     <?php
+                    $pagina = max(1, intval($_GET['pagina'] ?? 1));
+                    $por_pagina = 25;
+                    $offset_emp = ($pagina - 1) * $por_pagina;
+                    $total_empresas_res = $conexion->query("SELECT COUNT(*) as t FROM empresas")->fetch_assoc();
+                    $total_empresas_p = $total_empresas_res['t'] ?? 0;
+                    $total_paginas = (int) ceil($total_empresas_p / $por_pagina);
+
                     $stmt_emp = $conexion->prepare("
                         SELECT e.id_empresa, e.logo, e.nombre, e.telefono, e.direccion,
                                e.descripcion, e.horario, e.ubicacion_link, e.link_empresa,
@@ -316,7 +323,9 @@ $rol = $_SESSION['rol'];
                         FROM empresas e
                         JOIN categorias c ON e.id_categoria = c.id_categoria
                         ORDER BY e.destacada DESC, e.vistas DESC
+                        LIMIT ?, ?
                     ");
+                    $stmt_emp->bind_param("ii", $offset_emp, $por_pagina);
                     $stmt_emp->execute();
                     $res = $stmt_emp->get_result();
                     while ($fila = $res->fetch_assoc()):
@@ -387,6 +396,17 @@ $rol = $_SESSION['rol'];
                     </tr>
                 </table>
             </div>
+            <?php
+            if ($total_paginas > 1):
+                echo '<div style="display:flex; gap:8px; margin-top:16px; align-items:center; flex-wrap:wrap;">';
+                for ($i = 1; $i <= $total_paginas; $i++) {
+                    $activa = $i === $pagina ? 'background:#334155;color:#fff;' : 'background:#f1f5f9;color:#334155;';
+                    echo '<a href="?pagina=' . $i . '" style="padding:6px 12px; border-radius:6px; text-decoration:none; font-size:14px; ' . $activa . '">' . $i . '</a>';
+                }
+                echo '<span style="font-size:13px; color:#94a3b8; margin-left:8px;">Página ' . $pagina . ' de ' . $total_paginas . ' (' . $total_empresas_p . ' empresas)</span>';
+                echo '</div>';
+            endif;
+            ?>
             <br><br>
 
         </section>
@@ -654,24 +674,38 @@ $rol = $_SESSION['rol'];
 
         function limpiarArchivos() {
             customConfirm('¿Seguro que deseas eliminar permanentemente todas las imágenes sin uso? Esta acción no se puede deshacer.', () => {
-                const fd = new FormData();
-                fd.append('csrf_token', csrfToken);
-                fd.append('accion', 'limpiar');
+                let totalBorrados = 0;
+                
+                function procesarLote(offset) {
+                    const fd = new FormData();
+                    fd.append('csrf_token', csrfToken);
+                    fd.append('accion', 'limpiar');
+                    fd.append('offset', offset);
 
-                fetch('limpiar_archivos.php', {
-                    method: 'POST',
-                    body: fd
-                })
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data.ok) {
-                            showToast('Se eliminaron ' + data.borrados + ' archivos correctamente.', 'success');
-                            document.getElementById('huerfanos-info').style.display = 'none';
-                        } else {
-                            showToast(data.error, 'error');
-                        }
+                    fetch('limpiar_archivos.php', {
+                        method: 'POST',
+                        body: fd
                     })
-                    .catch(() => showToast('Error al limpiar archivos', 'error'));
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.ok) {
+                                totalBorrados += data.borrados;
+                                document.getElementById('huerfanos-count').innerText = "Borrando... " + totalBorrados + " de " + data.total_huerfanos;
+                                
+                                if (data.hay_mas) {
+                                    procesarLote(data.siguiente_offset);
+                                } else {
+                                    showToast('Se eliminaron ' + totalBorrados + ' archivos correctamente.', 'success');
+                                    document.getElementById('huerfanos-info').style.display = 'none';
+                                }
+                            } else {
+                                showToast(data.error, 'error');
+                            }
+                        })
+                        .catch(() => showToast('Error al limpiar archivos', 'error'));
+                }
+                
+                procesarLote(0);
             });
         }
 

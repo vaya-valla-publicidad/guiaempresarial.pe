@@ -16,7 +16,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $nombre = inputLimpio($_POST['nombre']);
         $telefono = inputLimpio($_POST['telefono'] ?? '');
         $direccion = inputLimpio($_POST['direccion'] ?? '');
-        $id_categoria = intval($_POST['id_categoria']);
+        $id_categoria = intval($_POST['id_categoria'] ?? 0);
         $descripcion = inputLimpio($_POST['descripcion'] ?? '') ?: null;
         $horario = inputLimpio($_POST['horario'] ?? '') ?: null;
         $ubicacion_link = inputLimpio($_POST['ubicacion_link'] ?? '') ?: null;
@@ -35,7 +35,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         $logo = null;
 
-        if (!empty($_FILES['logo']['name'])) {
+        if (empty($error) && !empty($_FILES['logo']['name'])) {
             $resultado = subirImagenSegura($_FILES['logo'], __DIR__ . '/../assets/img/', [
                 'tamano_max' => 2 * 1024 * 1024,
                 'redimensionar' => true,
@@ -64,6 +64,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             } else {
                 $id_empresa = $stmt->insert_id;
 
+                $fotos_fallidas = 0;
                 if (!empty($_FILES['fotos']['name'][0])) {
                     $total = min(count($_FILES['fotos']['name']), 5);
                     for ($i = 0; $i < $total; $i++) {
@@ -91,10 +92,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                             $stmtFoto->bind_param("is", $id_empresa, $nombreFoto);
                             $stmtFoto->execute();
                             $stmtFoto->close();
+                        } else {
+                            $fotos_fallidas++;
                         }
                     }
                 }
-                $success = "Empresa agregada correctamente";
+
+                if ($fotos_fallidas > 0) {
+                    $success = "Empresa agregada correctamente, pero " . $fotos_fallidas . " foto(s) secundaria(s) no se pudieron subir (revisa formato o tamaño límite).";
+                } else {
+                    $success = "Empresa agregada correctamente";
+                }
             }
             $stmt->close();
         }
@@ -158,6 +166,7 @@ $categorias = $conexion->query("SELECT id_categoria,nombre FROM categorias ORDER
                     <div class="form-group">
                         <label>Categoría</label>
                         <select name="id_categoria" required>
+                            <option value="">-- Selecciona una categoría --</option>
                             <?php while ($fila = $categorias->fetch_assoc()): ?>
                                 <option value="<?= $fila['id_categoria'] ?>"><?= htmlspecialchars($fila['nombre']) ?>
                                 </option>
@@ -173,58 +182,74 @@ $categorias = $conexion->query("SELECT id_categoria,nombre FROM categorias ORDER
                     <div class="form-group">
                         <label>Horario de atención</label>
                         <input type="hidden" name="horario" id="horario_hidden" value="">
-                        
-                        <div class="horario-editor" style="background:#f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 20px;">
-                            <p style="margin-top:0;font-size:0.9em;color:#666;">Selecciona los días y horas de apertura (formato 24h).</p>
+
+                        <div class="horario-editor"
+                            style="background:#f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 20px;">
+                            <p style="margin-top:0;font-size:0.9em;color:#666;">Selecciona los días y horas de apertura
+                                (formato 24h).</p>
                             <?php
                             $dias_semana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
                             foreach ($dias_semana as $dia):
-                            ?>
-                            <div class="horario-dia-row" style="display:flex; align-items:center; gap: 10px; margin-bottom: 8px; flex-wrap:wrap;">
-                                <label style="width: 100px; display:flex; align-items:center; gap:5px; margin:0; font-weight:normal;">
-                                    <input type="checkbox" class="dia-cb" data-dia="<?= $dia ?>">
-                                    <?= ucfirst($dia) ?>
-                                </label>
-                                <div class="hora-inputs" style="opacity:0.4; pointer-events:none; display:flex; gap: 3px; align-items:center;">
-                                    <select class="hora-ap-h" style="padding: 4px; border:1px solid #ccc; border-radius:4px;">
-                                        <?php for($i=1; $i<=12; $i++): ?>
-                                            <option value="<?= $i ?>" <?= 9 == $i ? 'selected' : '' ?>><?= str_pad($i, 2, '0', STR_PAD_LEFT) ?></option>
-                                        <?php endfor; ?>
-                                    </select>:
-                                    <select class="hora-ap-m" style="padding: 4px; border:1px solid #ccc; border-radius:4px;">
-                                        <?php foreach(['00','15','30','45'] as $mOp): ?>
-                                            <option value="<?= $mOp ?>"><?= $mOp ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                    <select class="hora-ap-p" style="padding: 4px; border:1px solid #ccc; border-radius:4px;">
-                                        <option value="am" selected>AM</option>
-                                        <option value="pm">PM</option>
-                                    </select>
-                                    
-                                    <span style="margin: 0 5px; color:#555;"> a </span>
-                                    
-                                    <select class="hora-ci-h" style="padding: 4px; border:1px solid #ccc; border-radius:4px;">
-                                        <?php for($i=1; $i<=12; $i++): ?>
-                                            <option value="<?= $i ?>" <?= 6 == $i ? 'selected' : '' ?>><?= str_pad($i, 2, '0', STR_PAD_LEFT) ?></option>
-                                        <?php endfor; ?>
-                                    </select>:
-                                    <select class="hora-ci-m" style="padding: 4px; border:1px solid #ccc; border-radius:4px;">
-                                        <?php foreach(['00','15','30','45'] as $mOp): ?>
-                                            <option value="<?= $mOp ?>"><?= $mOp ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                    <select class="hora-ci-p" style="padding: 4px; border:1px solid #ccc; border-radius:4px;">
-                                        <option value="am">AM</option>
-                                        <option value="pm" selected>PM</option>
-                                    </select>
+                                ?>
+                                <div class="horario-dia-row"
+                                    style="display:flex; align-items:center; gap: 10px; margin-bottom: 8px; flex-wrap:wrap;">
+                                    <label
+                                        style="width: 100px; display:flex; align-items:center; gap:5px; margin:0; font-weight:normal;">
+                                        <input type="checkbox" class="dia-cb" data-dia="<?= $dia ?>">
+                                        <?= ucfirst($dia) ?>
+                                    </label>
+                                    <div class="hora-inputs"
+                                        style="opacity:0.4; pointer-events:none; display:flex; gap: 3px; align-items:center;">
+                                        <select class="hora-ap-h"
+                                            style="padding: 4px; border:1px solid #ccc; border-radius:4px;">
+                                            <?php for ($i = 1; $i <= 12; $i++): ?>
+                                                <option value="<?= $i ?>" <?= 9 == $i ? 'selected' : '' ?>>
+                                                    <?= str_pad($i, 2, '0', STR_PAD_LEFT) ?></option>
+                                            <?php endfor; ?>
+                                        </select>:
+                                        <select class="hora-ap-m"
+                                            style="padding: 4px; border:1px solid #ccc; border-radius:4px;">
+                                            <?php foreach (['00', '15', '30', '45'] as $mOp): ?>
+                                                <option value="<?= $mOp ?>"><?= $mOp ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <select class="hora-ap-p"
+                                            style="padding: 4px; border:1px solid #ccc; border-radius:4px;">
+                                            <option value="am" selected>AM</option>
+                                            <option value="pm">PM</option>
+                                        </select>
+
+                                        <span style="margin: 0 5px; color:#555;"> a </span>
+
+                                        <select class="hora-ci-h"
+                                            style="padding: 4px; border:1px solid #ccc; border-radius:4px;">
+                                            <?php for ($i = 1; $i <= 12; $i++): ?>
+                                                <option value="<?= $i ?>" <?= 6 == $i ? 'selected' : '' ?>>
+                                                    <?= str_pad($i, 2, '0', STR_PAD_LEFT) ?></option>
+                                            <?php endfor; ?>
+                                        </select>:
+                                        <select class="hora-ci-m"
+                                            style="padding: 4px; border:1px solid #ccc; border-radius:4px;">
+                                            <?php foreach (['00', '15', '30', '45'] as $mOp): ?>
+                                                <option value="<?= $mOp ?>"><?= $mOp ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <select class="hora-ci-p"
+                                            style="padding: 4px; border:1px solid #ccc; border-radius:4px;">
+                                            <option value="am">AM</option>
+                                            <option value="pm" selected>PM</option>
+                                        </select>
+                                    </div>
                                 </div>
-                            </div>
                             <?php endforeach; ?>
 
                             <hr style="border:0; border-top:1px solid #ddd; margin: 15px 0;">
-                            <p style="margin-top:0;font-size:0.9em;color:#666; font-weight:bold;">Días no laborables o fechas especiales</p>
+                            <p style="margin-top:0;font-size:0.9em;color:#666; font-weight:bold;">Días no laborables o
+                                fechas especiales</p>
                             <div id="feriados-container"></div>
-                            <button type="button" id="btn-add-feriado" class="btn btn-sm" style="background:#007BFF; color:#fff; padding: 5px 10px; font-size:13px; border:none; cursor:pointer;">+ Agregar fecha</button>
+                            <button type="button" id="btn-add-feriado" class="btn btn-sm"
+                                style="background:#007BFF; color:#fff; padding: 5px 10px; font-size:13px; border:none; cursor:pointer;">+
+                                Agregar fecha</button>
                         </div>
                     </div>
 
@@ -245,13 +270,13 @@ $categorias = $conexion->query("SELECT id_categoria,nombre FROM categorias ORDER
                         </div>
                     </div>
 
-                    <div class="form-group"><br>
-                        <div class="form-group">
-                            <label>Facebook</label>
-                            <input type="url" name="facebook" placeholder="https://facebook.com/tuempresa">
-                        </div><br>
-                        <label>Enlace externo de la empresa</label>
+                    <div class="form-group">
+                        <label>Facebook</label>
+                        <input type="url" name="facebook" placeholder="https://facebook.com/tuempresa">
+                    </div>
 
+                    <div class="form-group">
+                        <label>Enlace externo de la empresa</label>
                         <input type="url" name="link_empresa">
                     </div>
 
@@ -284,7 +309,7 @@ $categorias = $conexion->query("SELECT id_categoria,nombre FROM categorias ORDER
         });
 
         document.querySelectorAll('.dia-cb').forEach(cb => {
-            cb.addEventListener('change', function() {
+            cb.addEventListener('change', function () {
                 const inputs = this.closest('.horario-dia-row').querySelector('.hora-inputs');
                 if (this.checked) {
                     inputs.style.opacity = '1';
@@ -296,7 +321,7 @@ $categorias = $conexion->query("SELECT id_categoria,nombre FROM categorias ORDER
             });
         });
 
-        document.getElementById('btn-add-feriado').addEventListener('click', function() {
+        document.getElementById('btn-add-feriado').addEventListener('click', function () {
             const container = document.getElementById('feriados-container');
             const div = document.createElement('div');
             div.className = 'feriado-row';
@@ -311,9 +336,9 @@ $categorias = $conexion->query("SELECT id_categoria,nombre FROM categorias ORDER
 
         const formGeneral = document.querySelector('form');
         if (formGeneral) {
-            formGeneral.addEventListener('submit', function() {
+            formGeneral.addEventListener('submit', function () {
                 let parts = [];
-                
+
                 const get24h = (h12, m, p) => {
                     let h = parseInt(h12, 10);
                     if (p === 'pm' && h < 12) h += 12;
@@ -325,22 +350,22 @@ $categorias = $conexion->query("SELECT id_categoria,nombre FROM categorias ORDER
                     const cb = row.querySelector('.dia-cb');
                     if (cb && cb.checked) {
                         const dia = cb.getAttribute('data-dia');
-                        
+
                         const ap_h = row.querySelector('.hora-ap-h').value;
                         const ap_m = row.querySelector('.hora-ap-m').value;
                         const ap_p = row.querySelector('.hora-ap-p').value;
-                        
+
                         const ci_h = row.querySelector('.hora-ci-h').value;
                         const ci_m = row.querySelector('.hora-ci-m').value;
                         const ci_p = row.querySelector('.hora-ci-p').value;
-                        
+
                         const ap = get24h(ap_h, ap_m, ap_p);
                         const ci = get24h(ci_h, ci_m, ci_p);
-                        
+
                         parts.push(`${dia}:${ap}-${ci}`);
                     }
                 });
-                
+
                 let stringFinal = parts.join(',');
 
                 // Feriados
@@ -351,7 +376,6 @@ $categorias = $conexion->query("SELECT id_categoria,nombre FROM categorias ORDER
                     if (dateVal) {
                         let feriadoStr = `feriado:${dateVal}`;
                         if (motivoVal) {
-                            // remove : and , and | from motivo to prevent parsing issues
                             let safeMotivo = motivoVal.replace(/[:|,]/g, ' ');
                             feriadoStr += `:${safeMotivo}`;
                         }

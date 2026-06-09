@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminar'])) {
         echo json_encode(['ok' => true]);
         exit;
     }
-    header("Location: gestionar_resenas.php?empresa=$id_emp_back&ok=1#resenas");
+    header("Location: gestionar_resenas.php?empresa=$id_emp_back&ok=1#resenas", true, 303);
     exit;
 }
 
@@ -58,7 +58,7 @@ $id_empresa = intval($_GET['empresa'] ?? 0);
 
 if (!$id_empresa):
     $empresas_q = $conexion->query("
-        SELECT DISTINCT e.id_empresa, e.nombre, e.logo,
+        SELECT e.id_empresa, e.nombre, e.logo,
                COUNT(r.id_resena) as total_resenas,
                ROUND(AVG(r.estrellas),1) as promedio
         FROM empresas e
@@ -93,7 +93,7 @@ if (!$id_empresa):
                                         <img src="<?= APP_URL ?>/assets/img/<?= htmlspecialchars($emp['logo']) ?>"
                                             class="empresa-sel-logo">
                                     <?php else: ?>
-                                        <div class="logo-letra"><?= mb_strtoupper(mb_substr($emp['nombre'], 0, 1)) ?></div>
+                                        <div class="logo-letra"><?= mb_strtoupper(mb_substr($emp['nombre'], 0, 1) ?: '?') ?></div>
                                     <?php endif; ?>
                                     <div class="empresa-sel-info">
                                         <div class="empresa-sel-nombre"><?= htmlspecialchars($emp['nombre']) ?></div>
@@ -135,8 +135,9 @@ $stmt_emp = $conexion->prepare("
 $stmt_emp->bind_param("i", $id_empresa);
 $stmt_emp->execute();
 $res = $stmt_emp->get_result();
+$stmt_emp->close();
 if (!$res || $res->num_rows === 0) {
-    header("Location: gestionar_resenas.php");
+    header("Location: gestionar_resenas.php", true, 303);
     exit;
 }
 $fila = $res->fetch_assoc();
@@ -148,15 +149,19 @@ $stmt_fotos = $conexion->prepare("SELECT foto FROM empresa_galeria WHERE id_empr
 $stmt_fotos->bind_param("i", $id_empresa);
 $stmt_fotos->execute();
 $fotos_q = $stmt_fotos->get_result();
+$stmt_fotos->close();
 $fotos_arr = [];
-if ($fotos_q && $fotos_q->num_rows > 0)
-    while ($f = $fotos_q->fetch_assoc())
+if ($fotos_q && $fotos_q->num_rows > 0) {
+    while ($f = $fotos_q->fetch_assoc()) {
         $fotos_arr[] = $f['foto'];
+    }
+}
 
 $stmt_resenas = $conexion->prepare("SELECT * FROM resenas WHERE id_empresa = ? ORDER BY fecha DESC");
 $stmt_resenas->bind_param("i", $id_empresa);
 $stmt_resenas->execute();
 $resenas_q = $stmt_resenas->get_result();
+$stmt_resenas->close();
 $total_resenas = $resenas_q ? $resenas_q->num_rows : 0;
 $promedio = 0;
 $resenas_arr = [];
@@ -165,9 +170,11 @@ if ($total_resenas > 0) {
     $stmt_prom->bind_param("i", $id_empresa);
     $stmt_prom->execute();
     $sum_q = $stmt_prom->get_result();
+    $stmt_prom->close();
     $promedio = round($sum_q->fetch_assoc()['prom'], 1);
-    while ($r = $resenas_q->fetch_assoc())
+    while ($r = $resenas_q->fetch_assoc()) {
         $resenas_arr[] = $r;
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -209,7 +216,7 @@ if ($total_resenas > 0) {
                                 alt="<?= htmlspecialchars($fila['nombre']) ?>">
                         <?php else: ?>
                             <div class="perfil-logo logo-placeholder" style="width:90px;height:90px;font-size:32px;">
-                                <?= mb_strtoupper(mb_substr($fila['nombre'], 0, 1)) ?>
+                                <?= mb_strtoupper(mb_substr($fila['nombre'], 0, 1) ?: '?') ?>
                             </div>
                         <?php endif; ?>
                         <div class="perfil-hero-info">
@@ -350,7 +357,7 @@ if ($total_resenas > 0) {
     <script src="<?= APP_URL ?>/assets/js/toast.js"></script>
     <script>
         function eliminarResena(idResena, idEmpresa, btn) {
-            customConfirm('¿Seguro que deseas eliminar esta reseña permanentemente?', () => {
+            const ejecucionFuerte = () => {
                 btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Eliminando...';
                 btn.disabled = true;
                 btn.style.opacity = '0.5';
@@ -375,21 +382,31 @@ if ($total_resenas > 0) {
                                 resenaDiv.style.transform = 'translateX(30px)';
                                 setTimeout(() => resenaDiv.remove(), 400);
                             }
-                            showToast('Reseña eliminada correctamente.', 'success');
+                            if (typeof showToast !== 'undefined') showToast('Reseña eliminada correctamente.', 'success');
                         } else {
-                            showToast(data.error || 'No se pudo eliminar la reseña.', 'error');
+                            if (typeof showToast !== 'undefined') showToast(data.error || 'No se pudo eliminar la reseña.', 'error');
+                            else alert(data.error || 'No se pudo eliminar la reseña.');
                             btn.innerHTML = '<i class="bi bi-trash3"></i> Eliminar reseña';
                             btn.disabled = false;
                             btn.style.opacity = '1';
                         }
                     })
                     .catch(err => {
-                        showToast('Error de conexión con el servidor.', 'error');
+                        if (typeof showToast !== 'undefined') showToast('Error de conexión con el servidor.', 'error');
+                        else alert('Error de conexión con el servidor.');
                         btn.innerHTML = '<i class="bi bi-trash3"></i> Eliminar reseña';
                         btn.disabled = false;
                         btn.style.opacity = '1';
                     });
-            });
+            };
+
+            if (typeof customConfirm !== 'undefined') {
+                customConfirm('¿Seguro que deseas eliminar esta reseña permanentemente?', ejecucionFuerte);
+            } else {
+                if (confirm('¿Seguro que deseas eliminar esta reseña permanentemente?')) {
+                    ejecucionFuerte();
+                }
+            }
         }
     </script>
 

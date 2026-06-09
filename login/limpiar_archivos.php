@@ -67,8 +67,11 @@ foreach($directorios as $ruta_fisica => $prefijo) {
 if ($accion === 'escanear') {
     echo json_encode(['ok' => true, 'huerfanos' => $archivos_huerfanos]);
 } elseif ($accion === 'limpiar') {
+    $offset = max(0, intval($_POST['offset'] ?? 0));
+    $batch_size = 50;
+    $lote = array_slice($archivos_huerfanos, $offset, $batch_size);
     $borrados = 0;
-    foreach($archivos_huerfanos as $h) {
+    foreach ($lote as $h) {
         if (file_exists($h['ruta_full'])) {
             if (unlink($h['ruta_full'])) {
                 logSeguridad('archivo_huerfano_borrado', 'Archivo eliminado: ' . $h['ruta']);
@@ -76,6 +79,15 @@ if ($accion === 'escanear') {
             }
         }
     }
-    echo json_encode(['ok' => true, 'borrados' => $borrados]);
+    $siguiente_offset = $offset + $batch_size;
+    $hay_mas = $siguiente_offset < count($archivos_huerfanos);
+    echo json_encode([
+        'ok' => true,
+        'borrados' => $borrados,
+        'offset_actual' => $offset,
+        'siguiente_offset' => $siguiente_offset,
+        'hay_mas' => $hay_mas,
+        'total_huerfanos' => count($archivos_huerfanos)
+    ]);
 }
 exit;

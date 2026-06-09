@@ -23,8 +23,10 @@ if (!$id) {
 }
 
 if ($accion === 'destacar') {
-    $total = $conexion->query("SELECT COUNT(*) as t FROM empresas WHERE destacada=1")->fetch_assoc()['t'];
+    $conexion->begin_transaction();
+    $total = $conexion->query("SELECT COUNT(*) as t FROM empresas WHERE destacada=1 FOR UPDATE")->fetch_assoc()['t'];
     if ($total >= 3) {
+        $conexion->rollback();
         echo json_encode(['ok' => false, 'error' => 'Ya hay 3 destacadas. Quita una primero.']);
         exit;
     }
@@ -32,6 +34,7 @@ if ($accion === 'destacar') {
     $stmt_d->bind_param("i", $id);
     $stmt_d->execute();
     $stmt_d->close();
+    $conexion->commit();
 } else {
     $stmt_d = $conexion->prepare("UPDATE empresas SET destacada=0 WHERE id_empresa=?");
     $stmt_d->bind_param("i", $id);

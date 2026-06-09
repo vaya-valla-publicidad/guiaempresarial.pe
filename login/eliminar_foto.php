@@ -10,13 +10,18 @@ if (!hash_equals($_SESSION['csrf_token'], $token)) {
     exit('token_invalido');
 }
 
-if (!isset($_GET['id']) || !isset($_GET['tipo'])) {
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    exit('metodo_no_permitido');
+}
+
+if (!isset($_POST['id']) || !isset($_POST['tipo'])) {
     http_response_code(400);
     exit('parametros_faltantes');
 }
 
-$id   = intval($_GET['id']);
-$tipo = $_GET['tipo'];
+$id   = intval($_POST['id']);
+$tipo = $_POST['tipo'];
 
 if (!in_array($tipo, ['galeria', 'logo'], true)) {
     http_response_code(400);

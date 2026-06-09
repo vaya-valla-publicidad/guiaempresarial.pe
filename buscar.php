@@ -6,6 +6,9 @@ $q = inputLimpio($_GET['q'] ?? '');
 if ($q === '')
     exit;
 
+if (mb_strlen($q) < 3) {
+}
+
 $q_escaped = escaparLike($q);
 $texto = '%' . $q_escaped . '%';
 
@@ -27,12 +30,13 @@ if (!$stmt) {
 $stmt->bind_param("sss", $texto, $texto, $texto);
 $stmt->execute();
 $resultado = $stmt->get_result();
-    $num_res = $resultado->num_rows;
+$num_res = $resultado->num_rows;
+if (mb_strlen($q) >= 3) {
     $termino_log = mb_substr($q, 0, 100);
     $stmt_check = $conexion->prepare(
         "SELECT 1 FROM busquedas_log 
-         WHERE termino = ? AND fecha >= DATE_SUB(NOW(), INTERVAL 5 MINUTE) 
-         LIMIT 1"
+             WHERE termino = ? AND fecha >= DATE_SUB(NOW(), INTERVAL 5 MINUTE) 
+             LIMIT 1"
     );
     $stmt_check->bind_param("s", $termino_log);
     $stmt_check->execute();
@@ -49,6 +53,7 @@ $resultado = $stmt->get_result();
             $stmt_log->close();
         }
     }
+}
 
 if ($resultado->num_rows === 0) {
     echo '<p class="buscar-noresult">😕 Sin resultados para <strong>' . htmlspecialchars($q) . '</strong></p>';
